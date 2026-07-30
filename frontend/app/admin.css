@@ -1,0 +1,257 @@
+/* ==========================================================================
+   GLOBAL AWAAZ — ADMIN PANEL  |  WHITE · RED · BLACK DESIGN SYSTEM
+   ========================================================================== */
+
+/* ─── CSS VARIABLE OVERRIDES FOR ADMIN SCOPE ───────────────────────────── */
+.admin-page-root {
+  /* Palette */
+  --admin-white:   #ffffff;
+  --admin-offwhite:#f5f5f7;
+  --admin-black:   #0a0a0a;
+  --admin-black2:  #111111;
+  --admin-black3:  #1a1a1a;
+  --admin-red:     #e50914;
+  --admin-red-dark:#b80710;
+  --admin-red-pale:rgba(229,9,20,0.08);
+  --admin-border:  #e5e5e5;
+  --admin-muted:   #6b6b6b;
+  --admin-input-bg:#fafafa;
+
+  background: var(--admin-offwhite) !important;
+  min-height: 100vh !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  color: var(--admin-black) !important;
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+}
+
+/* ─── OUTER SHELL ───────────────────────────────────────────────────────── */
+.admin-container {
+  display: flex !important;
+  flex-direction: row !important;
+  min-height: calc(100vh - 40px) !important;
+  margin: 0 auto !important;
+  max-width: 1500px !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
+  border: 1px solid var(--admin-border) !important;
+  background: var(--admin-white) !important;
+  color: var(--admin-black) !important;
+}
+
+/* ─── SIDEBAR ───────────────────────────────────────────────────────────── */
+.admin-sidebar-nav {
+  width: 265px !important;
+  min-width: 265px !important;
+  background: var(--admin-black) !important;
+  color: #ffffff !important;
+  padding: 28px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  border-right: none !important;
+  position: relative !important;
+}
+
+/* Red left border accent on active nav item */
+.admin-sidebar-nav nav button {
+  transition: all 0.2s ease !important;
+  border-left: 3px solid transparent !important;
+}
+
+.admin-sidebar-nav nav button:hover {
+  background: rgba(255,255,255,0.07) !important;
+  color: #ffffff !important;
+  transform: translateX(3px) !important;
+  border-left-color: rgba(229,9,20,0.5) !important;
+}
+
+/* ─── MAIN CONTENT CANVAS ───────────────────────────────────────────────── */
+.admin-main-content {
+  flex: 1 !important;
+  padding: 36px 40px !important;
+  background: var(--admin-white) !important;
+  color: var(--admin-black) !important;
+  overflow-x: hidden !important;
+}
+
+/* ─── DASHBOARD VITALS GRID ─────────────────────────────────────────────── */
+.admin-vitals-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+  gap: 18px !important;
+  margin-bottom: 32px !important;
+}
+
+.admin-stat-box {
+  background: var(--admin-white) !important;
+  border: 1.5px solid var(--admin-border) !important;
+  border-top: 4px solid var(--admin-red) !important;
+  padding: 22px 24px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important;
+  transition: all 0.22s cubic-bezier(0.16,1,0.3,1) !important;
+  color: var(--admin-black) !important;
+}
+
+.admin-stat-box:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 32px rgba(229,9,20,0.12) !important;
+  border-color: var(--admin-red) !important;
+}
+
+/* ─── CARD / AI BOX ─────────────────────────────────────────────────────── */
+.admin-card-box {
+  background: var(--admin-white) !important;
+  border: 1.5px solid var(--admin-border) !important;
+  border-radius: 12px !important;
+  padding: 26px !important;
+  margin-bottom: 28px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04) !important;
+  color: var(--admin-black) !important;
+}
+
+.admin-card-box input,
+.admin-card-box select,
+.admin-card-box textarea {
+  background: var(--admin-input-bg) !important;
+  color: var(--admin-black) !important;
+  border: 1.5px solid var(--admin-border) !important;
+}
+
+/* ─── ARTICLES TABLE ────────────────────────────────────────────────────── */
+.admin-table-container {
+  background: var(--admin-white) !important;
+  border: 1.5px solid var(--admin-border) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05) !important;
+}
+
+.admin-table-header {
+  padding: 20px 26px !important;
+  border-bottom: 1.5px solid var(--admin-border) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  background: var(--admin-offwhite) !important;
+  color: var(--admin-black) !important;
+}
+
+.admin-table-header input,
+.admin-table-header select {
+  background: var(--admin-white) !important;
+  color: var(--admin-black) !important;
+  border: 1.5px solid var(--admin-border) !important;
+}
+
+.admin-data-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  text-align: left !important;
+  font-size: 0.9rem !important;
+  color: var(--admin-black) !important;
+}
+
+.admin-data-table th {
+  padding: 13px 24px !important;
+  font-weight: 800 !important;
+  font-size: 0.74rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  background: var(--admin-black) !important;
+  color: #ffffff !important;
+  border-bottom: none !important;
+}
+
+.admin-data-table td {
+  padding: 15px 24px !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  vertical-align: middle !important;
+  transition: background 0.12s ease !important;
+  color: var(--admin-black) !important;
+}
+
+.admin-data-table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+.admin-data-table tbody tr:hover td {
+  background: var(--admin-red-pale) !important;
+}
+
+/* ─── STATUS & CATEGORY PILLS ───────────────────────────────────────────── */
+.status-published-pill {
+  color: #15803d !important;
+  background: #f0fdf4 !important;
+  border: 1.5px solid #86efac !important;
+  padding: 3px 11px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  font-size: 0.72rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.category-tag-pill {
+  color: var(--admin-red) !important;
+  background: var(--admin-red-pale) !important;
+  border: 1.5px solid rgba(229,9,20,0.25) !important;
+  padding: 3px 11px !important;
+  border-radius: 20px !important;
+  font-weight: 800 !important;
+  font-size: 0.72rem !important;
+}
+
+/* ─── FOCUS STATES ──────────────────────────────────────────────────────── */
+.admin-main-content input:focus,
+.admin-main-content select:focus,
+.admin-main-content textarea:focus,
+.admin-card-box input:focus,
+.admin-card-box select:focus {
+  outline: none !important;
+  border-color: var(--admin-red) !important;
+  box-shadow: 0 0 0 3px rgba(229,9,20,0.15) !important;
+}
+
+/* ─── SCROLLBAR STYLING ─────────────────────────────────────────────────── */
+.admin-main-content::-webkit-scrollbar { width: 6px; }
+.admin-main-content::-webkit-scrollbar-track { background: var(--admin-offwhite); }
+.admin-main-content::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+.admin-main-content::-webkit-scrollbar-thumb:hover { background: var(--admin-red); }
+
+/* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  .admin-page-root {
+    padding: 10px !important;
+  }
+
+  .admin-container {
+    flex-direction: column !important;
+    border-radius: 12px !important;
+  }
+
+  .admin-sidebar-nav {
+    width: 100% !important;
+    min-width: unset !important;
+    border-bottom: 3px solid var(--admin-red) !important;
+    padding: 16px !important;
+  }
+
+  .admin-main-content {
+    padding: 20px !important;
+  }
+
+  .admin-vitals-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-vitals-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

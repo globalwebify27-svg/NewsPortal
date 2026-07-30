@@ -1,0 +1,552 @@
+// =============================================================================
+// Global Awaaz — Enterprise News CMS
+// Prisma Database Schema — MySQL
+// Phase 2 | 22 models covering all CMS entities
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  PUBLISHER
+  EDITOR
+  REPORTER
+  AUTHOR
+  READER
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  PDF
+  DOCUMENT
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum AdZone {
+  HEADER
+  SIDEBAR
+  FOOTER
+  ARTICLE_TOP
+  ARTICLE_MID
+  ARTICLE_BOTTOM
+  STICKY_BANNER
+  VIDEO_PRE_ROLL
+  POPUP
+}
+
+enum AdType {
+  IMAGE_BANNER
+  HTML_EMBED
+  VIDEO_AD
+}
+
+enum SettingType {
+  TEXT
+  JSON
+  BOOLEAN
+  NUMBER
+  COLOR
+  URL
+}
+
+enum FactCheckVerdict {
+  TRUE
+  FALSE
+  MISLEADING
+  MIXED
+  SATIRE
+  UNVERIFIED
+}
+
+// =============================================================================
+// USER & AUTH
+// =============================================================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String?
+  role          Role     @default(READER)
+  avatar        String?
+  bio           String?  @db.Text
+  website       String?
+  twitterHandle String?
+  googleId      String?  @unique
+  facebookId    String?  @unique
+  twoFASecret   String?
+  twoFAEnabled  Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  authoredArticles  Article[]      @relation("AuthorArticles")
+  editedArticles    Article[]      @relation("EditorArticles")
+  publishedArticles Article[]      @relation("PublisherArticles")
+  comments          Comment[]
+  bookmarks         Bookmark[]
+  likes             ArticleLike[]
+  following         AuthorFollow[] @relation("Follower")
+  followers         AuthorFollow[] @relation("Following")
+  notifications     Notification[]
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  liveBlogEntries   LiveBlogEntry[]
+  media             Media[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique @db.VarChar(512)
+  refreshToken String?  @unique @db.VarChar(512)
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?  @db.Text
+  isRevoked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+// =============================================================================
+// CONTENT TAXONOMY
+// =============================================================================
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  nameHi      String?
+  slug        String   @unique
+  description String?  @db.Text
+  descHi      String?  @db.Text
+  parentId    String?
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
+  color       String?  @default("#e50914")
+  icon        String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articles Article[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  nameHi    String?
+  slug      String   @unique
+  color     String?
+  createdAt DateTime @default(now())
+
+  articles ArticleTag[]
+
+  @@index([slug])
+  @@map("tags")
+}
+
+// =============================================================================
+// ARTICLES (Core CMS Entity)
+// =============================================================================
+
+model Article {
+  id           String        @id @default(cuid())
+  title        String        @db.VarChar(500)
+  titleHi      String?       @db.VarChar(500)
+  slug         String        @unique @db.VarChar(600)
+  summary      String?       @db.Text
+  summaryHi    String?       @db.Text
+  body         String        @db.LongText
+  bodyHi       String?       @db.LongText
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  authorId     String
+  author       User          @relation("AuthorArticles", fields: [authorId], references: [id])
+  editorId     String?
+  editor       User?         @relation("EditorArticles", fields: [editorId], references: [id])
+  publisherId  String?
+  publisher    User?         @relation("PublisherArticles", fields: [publisherId], references: [id])
+  status       ArticleStatus @default(DRAFT)
+  isBreaking   Boolean       @default(false)
+  isTrending   Boolean       @default(false)
+  isFeatured   Boolean       @default(false)
+  isEditorsPick Boolean      @default(false)
+  isPremium    Boolean       @default(false)
+  isLiveBlog   Boolean       @default(false)
+  featuredImage String?
+  featuredImageAlt String?
+  readTime     String?
+  views        Int           @default(0)
+  shareCount   Int           @default(0)
+  publishedAt  DateTime?
+  scheduledAt  DateTime?
+  // SEO
+  seoTitle     String?       @db.VarChar(200)
+  seoDesc      String?       @db.VarChar(500)
+  seoKeywords  String?       @db.VarChar(300)
+  ogImage      String?
+  canonicalUrl String?
+  // Fact Check
+  isFactChecked Boolean      @default(false)
+  factCheckVerdict FactCheckVerdict?
+  factCheckNote String?      @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  tags      ArticleTag[]
+  comments  Comment[]
+  bookmarks Bookmark[]
+  likes     ArticleLike[]
+  liveBlog  LiveBlog?
+  poll      Poll?
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([isBreaking])
+  @@index([isTrending])
+  @@index([isFeatured])
+  @@map("articles")
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@id([articleId, tagId])
+  @@map("article_tags")
+}
+
+// =============================================================================
+// MEDIA LIBRARY
+// =============================================================================
+
+model Media {
+  id           String    @id @default(cuid())
+  url          String    @db.VarChar(1000)
+  cloudinaryId String?   @db.VarChar(500)
+  publicId     String?
+  type         MediaType
+  mimeType     String?
+  size         Int?
+  width        Int?
+  height       Int?
+  duration     Float?
+  altText      String?
+  caption      String?
+  folder       String?   @default("general")
+  uploadedById String?
+  uploadedBy   User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+
+  @@index([type])
+  @@index([uploadedById])
+  @@map("media")
+}
+
+// =============================================================================
+// COMMENTS (Threaded)
+// =============================================================================
+
+model Comment {
+  id        String        @id @default(cuid())
+  articleId String
+  article   Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String        @db.Text
+  status    CommentStatus @default(PENDING)
+  parentId  String?
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentReplies")
+  likes     Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([articleId])
+  @@index([userId])
+  @@index([status])
+  @@map("comments")
+}
+
+// =============================================================================
+// USER INTERACTIONS
+// =============================================================================
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@map("bookmarks")
+}
+
+model ArticleLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@map("article_likes")
+}
+
+model AuthorFollow {
+  id         String   @id @default(cuid())
+  followerId String
+  follower   User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followedId String
+  followed   User     @relation("Following", fields: [followedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([followerId, followedId])
+  @@index([followerId])
+  @@index([followedId])
+  @@map("author_follows")
+}
+
+// =============================================================================
+// BREAKING NEWS TICKER
+// =============================================================================
+
+model BreakingNews {
+  id        String   @id @default(cuid())
+  text      String   @db.VarChar(500)
+  textHi    String?  @db.VarChar(500)
+  link      String?
+  isActive  Boolean  @default(true)
+  priority  Int      @default(0)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("breaking_news")
+}
+
+// =============================================================================
+// NEWSLETTER
+// =============================================================================
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  unsubscribedAt DateTime?
+  source       String?  @default("homepage")
+
+  @@index([email])
+  @@index([isActive])
+  @@map("newsletter_subscribers")
+}
+
+// =============================================================================
+// ADVERTISEMENTS
+// =============================================================================
+
+model Advertisement {
+  id          String    @id @default(cuid())
+  name        String
+  zone        AdZone
+  type        AdType    @default(IMAGE_BANNER)
+  imageUrl    String?
+  targetUrl   String?
+  htmlCode    String?   @db.Text
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([zone])
+  @@index([isActive])
+  @@map("advertisements")
+}
+
+// =============================================================================
+// SITE SETTINGS (Key-Value Store)
+// =============================================================================
+
+model SiteSetting {
+  id        String      @id @default(cuid())
+  key       String      @unique
+  value     String      @db.Text
+  type      SettingType @default(TEXT)
+  label     String?
+  group     String?     @default("general")
+  updatedAt DateTime    @updatedAt
+
+  @@index([key])
+  @@index([group])
+  @@map("site_settings")
+}
+
+// =============================================================================
+// POLLS
+// =============================================================================
+
+model Poll {
+  id         String    @id @default(cuid())
+  question   String    @db.VarChar(500)
+  questionHi String?   @db.VarChar(500)
+  articleId  String?   @unique
+  article    Article?  @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  startDate  DateTime?
+  endDate    DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  options PollOption[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id     String @id @default(cuid())
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text   String @db.VarChar(300)
+  textHi String? @db.VarChar(300)
+  votes  Int    @default(0)
+  order  Int    @default(0)
+
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+// =============================================================================
+// LIVE BLOG
+// =============================================================================
+
+model LiveBlog {
+  id        String   @id @default(cuid())
+  articleId String   @unique
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  entries LiveBlogEntry[]
+
+  @@map("live_blogs")
+}
+
+model LiveBlogEntry {
+  id         String   @id @default(cuid())
+  liveBlogId String
+  liveBlog   LiveBlog @relation(fields: [liveBlogId], references: [id], onDelete: Cascade)
+  body       String   @db.Text
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  isBreaking Boolean  @default(false)
+  postedAt   DateTime @default(now())
+
+  @@index([liveBlogId])
+  @@map("live_blog_entries")
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  link      String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// =============================================================================
+// AUDIT LOGS
+// =============================================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
