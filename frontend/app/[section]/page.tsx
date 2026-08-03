@@ -182,7 +182,7 @@ export default function SectionPage() {
                   }}
                 >
                   <img
-                    src={item.featuredImage || "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80"}
+                    src={item.featuredImage || ""}
                     alt={item.title}
                     style={{ width: "100%", height: "100%", objectFit: item.imageFit || "cover", transition: "transform 0.5s ease" }}
                   />

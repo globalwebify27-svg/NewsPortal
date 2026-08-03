@@ -341,7 +341,7 @@ export default function AdminPage() {
 
     const catSlug = formCategory.toLowerCase();
     const catColor = getCategoryColor(formCategory);
-    const finalImage = formImage.trim() || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80";
+    const finalImage = formImage.trim();
 
     const effectiveHeight = formImageHeight === "custom"
       ? (formCustomHeight.trim() || "auto")
@@ -856,7 +856,7 @@ export default function AdminPage() {
                     <td>
                       <div style={{ width: "48px", height: "36px", borderRadius: "6px", overflow: "hidden", background: "#18181b" }}>
                         <img
-                          src={art.featuredImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=150&q=80"}
+                          src={art.featuredImage || ""}
                           alt={art.title}
                           style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />

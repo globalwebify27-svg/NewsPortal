@@ -134,9 +134,6 @@ export default function Home() {
                     src={getArticleImage(mainHero, 0)}
                     alt={mainHero.title}
                     style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80";
-                    }}
                   />
                   <span className="badge badge-accent" style={{ background: mainHero.category?.color || "#e50914" }}>
                     {mainHero.category?.name || (lang === "HI" ? "विदेश" : "WORLD")}
@@ -186,9 +183,6 @@ export default function Home() {
                       src={getArticleImage(item, idx + 1)}
                       alt={item.title}
                       style={{ width: "100%", height: "100%", objectFit: item.imageFit || "cover" }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=600&q=80";
-                      }}
                     />
                     <span className="badge badge-outline" style={{ color: item.category?.color || "#e50914" }}>
                       {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}
@@ -255,9 +249,6 @@ export default function Home() {
                       src={getArticleImage(item, index + 3)}
                       alt={item.title}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1579952318891-22008f861546?auto=format&fit=crop&w=800&q=80";
-                      }}
                     />
                     <span className="badge badge-accent" style={{ background: item.category?.color || "#e50914" }}>
                       {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}

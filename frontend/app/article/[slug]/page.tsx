@@ -269,9 +269,6 @@ export default function ArticlePage() {
             objectFit: article.imageFit || "cover",
             display: "block"
           }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80";
-          }}
         />
         <div style={{ position: "absolute", bottom: "16px", right: "16px" }}>
           <SocialShareButtons title={article.title} slug={slug} size="md" />
