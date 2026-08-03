@@ -7,36 +7,34 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
 
-import { defaultEnglishArticles, defaultHindiArticles, stripHtml } from "@/lib/defaultArticles";
+import { defaultEnglishArticles, defaultHindiArticles, stripHtml, getArticleImage } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 
 interface Article {
   id: string;
   title: string;
   slug: string;
-  summary?: string;
-  body?: string;
-  featuredImage?: string;
-  category?: { name: string; slug: string; color?: string };
+  summary: string;
+  body: string;
+  featuredImage: string;
+  category?: { name: string; slug: string; color: string };
   author?: { name: string };
-  readTime?: string;
-  views?: number;
-  status?: string;
+  readTime: string;
   isPinned?: boolean;
   isHero?: boolean;
+  status?: string;
   language?: "EN" | "HI";
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
 }
 
-
-export default function HomePage() {
+export default function Home() {
   const { lang, t } = useLanguage();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [trendingVideos, setTrendingVideos] = useState<YouTubeVideoItem[]>([]);
   const [activeVideoModal, setActiveVideoModal] = useState<YouTubeVideoItem | null>(null);
+  const [trendingVideos, setTrendingVideos] = useState<YouTubeVideoItem[]>([]);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -118,13 +116,9 @@ export default function HomePage() {
   const displayList = activeArticles;
 
   const explicitHero = articles.find((a) => a.isHero && a.status !== "DRAFT") || displayList.find((a) => a.isHero);
-  const mainHero = explicitHero || displayList[0] || null;
-
-  const secondaryCandidates = displayList.filter((a) => a.id !== mainHero?.id);
-  const secondaryHero = secondaryCandidates.slice(0, 4);
-
-  const rawTopStories = displayList;
-  const todaysTopStories = rawTopStories;
+  const mainHero = explicitHero || displayList[0];
+  const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 2);
+  const todaysTopStories = displayList.filter((a) => a.id !== mainHero?.id && !secondaryHero.some((s) => s.id === a.id));
 
   return (
     <>
@@ -137,11 +131,11 @@ export default function HomePage() {
               <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="hero-img-wrap" style={mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : undefined}>
                   <img
-                    src={mainHero.featuredImage || "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80"}
+                    src={getArticleImage(mainHero, 0)}
                     alt={mainHero.title}
                     style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80";
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80";
                     }}
                   />
                   <span className="badge badge-accent" style={{ background: mainHero.category?.color || "#e50914" }}>
@@ -184,12 +178,12 @@ export default function HomePage() {
 
           {/* Secondary Story Grid */}
           <div className="hero-side-grid">
-            {secondaryHero.map((item) => (
+            {secondaryHero.map((item, idx) => (
               <article key={item.id} className="side-card">
                 <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="side-img-wrap" style={item.imageHeight && item.imageHeight !== "auto" ? { height: item.imageHeight } : undefined}>
                     <img
-                      src={item.featuredImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80"}
+                      src={getArticleImage(item, idx + 1)}
                       alt={item.title}
                       style={{ width: "100%", height: "100%", objectFit: item.imageFit || "cover" }}
                       onError={(e) => {
@@ -258,11 +252,11 @@ export default function HomePage() {
                 <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
                     <img
-                      src={item.featuredImage || "https://images.unsplash.com/photo-1579952318891-22008f861546?auto=format&fit=crop&w=800&q=80"}
+                      src={getArticleImage(item, index + 3)}
                       alt={item.title}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80";
+                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1579952318891-22008f861546?auto=format&fit=crop&w=800&q=80";
                       }}
                     />
                     <span className="badge badge-accent" style={{ background: item.category?.color || "#e50914" }}>
