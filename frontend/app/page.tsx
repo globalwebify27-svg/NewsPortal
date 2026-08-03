@@ -130,11 +130,17 @@ export default function Home() {
             <article className="hero-main-card">
               <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="hero-img-wrap" style={mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : undefined}>
-                  <img
-                    src={getArticleImage(mainHero, 0)}
-                    alt={mainHero.title}
-                    style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
-                  />
+                  {getArticleImage(mainHero, 0) ? (
+                    <img
+                      src={getArticleImage(mainHero, 0)}
+                      alt={mainHero.title}
+                      style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
+                    />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ color: "#94a3b8", fontSize: "1.2rem", fontWeight: 800, letterSpacing: "0.05em" }}>GLOBAL AWAAZ</span>
+                    </div>
+                  )}
                   <span className="badge badge-accent" style={{ background: mainHero.category?.color || "#e50914" }}>
                     {mainHero.category?.name || (lang === "HI" ? "विदेश" : "WORLD")}
                   </span>
@@ -179,11 +185,15 @@ export default function Home() {
               <article key={item.id} className="side-card">
                 <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="side-img-wrap" style={item.imageHeight && item.imageHeight !== "auto" ? { height: item.imageHeight } : undefined}>
-                    <img
-                      src={getArticleImage(item, idx + 1)}
-                      alt={item.title}
-                      style={{ width: "100%", height: "100%", objectFit: item.imageFit || "cover" }}
-                    />
+                    {getArticleImage(item, idx + 1) ? (
+                      <img
+                        src={getArticleImage(item, idx + 1)}
+                        alt={item.title}
+                        style={{ width: "100%", height: "100%", objectFit: item.imageFit || "cover" }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" }} />
+                    )}
                     <span className="badge badge-outline" style={{ color: item.category?.color || "#e50914" }}>
                       {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}
                     </span>
@@ -245,11 +255,15 @@ export default function Home() {
               <article key={`${item.id}-${index}`} className="top-story-item">
                 <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
-                    <img
-                      src={getArticleImage(item, index + 3)}
-                      alt={item.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
+                    {getArticleImage(item, index + 3) ? (
+                      <img
+                        src={getArticleImage(item, index + 3)}
+                        alt={item.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" }} />
+                    )}
                     <span className="badge badge-accent" style={{ background: item.category?.color || "#e50914" }}>
                       {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}
                     </span>

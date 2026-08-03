@@ -1169,6 +1169,42 @@ export default function AdminPage() {
                   />
                 </label>
 
+                {/* 1-Click News Cover Presets */}
+                <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px dashed #e2e8f0" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "0.78rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    ⚡ Or Select a 1-Click HD News Cover Preset:
+                  </p>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    {[
+                      { label: "🇮🇳 India", url: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "🌍 World", url: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "🏏 Sports", url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "📈 Business", url: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "🤖 Tech", url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "🎬 Media", url: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80" },
+                      { label: "🗞️ Breaking", url: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80" }
+                    ].map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => { setFormImage(p.url); setImageFileName(`Preset: ${p.label}`); }}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "20px",
+                          border: formImage === p.url ? "2px solid #e50914" : "1px solid #cbd5e1",
+                          background: formImage === p.url ? "rgba(229,9,20,0.1)" : "#ffffff",
+                          color: formImage === p.url ? "#e50914" : "#1e293b",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Preview */}
                 {formImage && (
                   <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "12px", padding: "12px 14px", background: "rgba(54,179,126,0.06)", border: "1px solid rgba(54,179,126,0.2)", borderRadius: "10px" }}>
