@@ -117,8 +117,8 @@ export default function Home() {
 
   const explicitHero = articles.find((a) => a.isHero && a.status !== "DRAFT") || displayList.find((a) => a.isHero);
   const mainHero = explicitHero || displayList[0];
-  const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 2);
-  const todaysTopStories = displayList.filter((a) => a.id !== mainHero?.id && !secondaryHero.some((s) => s.id === a.id));
+  const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
+  const todaysTopStories = displayList;
 
   return (
     <>
