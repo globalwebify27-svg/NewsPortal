@@ -691,11 +691,15 @@ export default function AdminPage() {
         <div className="admin-vitals-grid">
           <div className="admin-stat-box">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#6b6b6b" }}>Active Readers</span>
+              <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#6b6b6b" }}>Total Story Views</span>
               <Activity size={18} style={{ color: "#e50914" }} />
             </div>
-            <h2 style={{ fontSize: "2.4rem", fontWeight: 900, color: "#e50914", margin: "12px 0 4px 0", lineHeight: 1 }}>1,482</h2>
-            <span style={{ fontSize: "0.78rem", color: "#15803d", fontWeight: 700 }}>↑ +14.2% peak concurrency</span>
+            <h2 style={{ fontSize: "2.4rem", fontWeight: 900, color: "#e50914", margin: "12px 0 4px 0", lineHeight: 1 }}>
+              {articles.reduce((acc, art) => acc + (art.views || 0), 0) > 0 ? articles.reduce((acc, art) => acc + (art.views || 0), 0).toLocaleString() : "0"}
+            </h2>
+            <span style={{ fontSize: "0.78rem", color: articles.reduce((acc, art) => acc + (art.views || 0), 0) > 0 ? "#15803d" : "#6b6b6b", fontWeight: 700 }}>
+              {articles.reduce((acc, art) => acc + (art.views || 0), 0) > 0 ? "⚡ Live Reader Interactions" : "No views recorded yet"}
+            </span>
           </div>
 
           <div className="admin-stat-box">
