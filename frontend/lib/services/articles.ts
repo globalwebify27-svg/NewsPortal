@@ -145,6 +145,7 @@ export async function createOrUpdateArticle(data: any) {
         featuredImage: data.featuredImage,
         status: data.status === "DRAFT" ? ArticleStatus.DRAFT : ArticleStatus.PUBLISHED,
         isFeatured: !!data.isHero,
+        publishedAt: new Date(),
       },
       create: {
         title: data.title,
@@ -154,6 +155,7 @@ export async function createOrUpdateArticle(data: any) {
         featuredImage: data.featuredImage || "",
         status: data.status === "DRAFT" ? ArticleStatus.DRAFT : ArticleStatus.PUBLISHED,
         isFeatured: !!data.isHero,
+        publishedAt: new Date(),
         categoryId: catId,
         authorId: authorId,
       },

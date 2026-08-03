@@ -106,12 +106,14 @@ export default function HomePage() {
     setScrollOffset((prev) => prev - 300);
   };
 
-  const activeArticles = articles.filter((a) => {
+  const langFiltered = articles.filter((a) => {
     if (lang === "HI") {
       return a.language === "HI";
     }
     return a.language !== "HI" || !a.language;
   });
+
+  const activeArticles = langFiltered.length > 0 ? langFiltered : articles;
 
   const displayList = activeArticles;
 
