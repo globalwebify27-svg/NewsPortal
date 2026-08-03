@@ -113,23 +113,16 @@ export default function HomePage() {
     return a.language !== "HI" || !a.language;
   });
 
-  const displayList = lang === "HI"
-    ? (activeArticles.length > 0 ? activeArticles : defaultHindiArticles)
-    : (activeArticles.length > 0 ? activeArticles : defaultEnglishArticles);
+  const displayList = activeArticles;
 
   const explicitHero = articles.find((a) => a.isHero && a.status !== "DRAFT") || displayList.find((a) => a.isHero);
-  const mainHero = explicitHero || displayList[0] || (lang === "HI" ? defaultHindiArticles[0] : defaultEnglishArticles[0]);
+  const mainHero = explicitHero || displayList[0] || null;
 
   const secondaryCandidates = displayList.filter((a) => a.id !== mainHero?.id);
-  const secondaryHero = secondaryCandidates.length >= 4
-    ? secondaryCandidates.slice(0, 4)
-    : (lang === "HI" ? defaultHindiArticles.slice(1, 5) : defaultEnglishArticles.slice(1, 5));
+  const secondaryHero = secondaryCandidates.slice(0, 4);
 
-  const rawTopStories = displayList.length > 0 
-    ? displayList 
-    : (lang === "HI" ? defaultHindiArticles : defaultEnglishArticles);
-
-  const todaysTopStories = [...rawTopStories, ...rawTopStories];
+  const rawTopStories = displayList;
+  const todaysTopStories = rawTopStories;
 
   return (
     <>
@@ -137,45 +130,52 @@ export default function HomePage() {
       <section className="hero-section" style={{ marginTop: "24px" }}>
         <div className="hero-grid">
           {/* Primary Lead Story */}
-          <article className="hero-main-card">
-            <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="hero-img-wrap" style={mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : undefined}>
-                <img
-                  src={mainHero.featuredImage || "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80"}
-                  alt={mainHero.title}
-                  style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
-                />
-                <span className="badge badge-accent" style={{ background: mainHero.category?.color || "#e50914" }}>
-                  {mainHero.category?.name || (lang === "HI" ? "विदेश" : "WORLD")}
-                </span>
-                <span className="read-time-tag">{mainHero.readTime || (lang === "HI" ? "5 मिनट पढ़ें" : "5 min read")}</span>
-              </div>
-              <div className="hero-content">
-                <h1 className="hero-title">{mainHero.title}</h1>
-                {/* Time + Date meta row */}
-                <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
-                  <span className="meta-time" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
-                    <Clock size={13} />
-                    {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+          {mainHero ? (
+            <article className="hero-main-card">
+              <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <div className="hero-img-wrap" style={mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : undefined}>
+                  <img
+                    src={mainHero.featuredImage || "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&q=80"}
+                    alt={mainHero.title}
+                    style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
+                  />
+                  <span className="badge badge-accent" style={{ background: mainHero.category?.color || "#e50914" }}>
+                    {mainHero.category?.name || (lang === "HI" ? "विदेश" : "WORLD")}
                   </span>
-                  <span style={{ color: "var(--color-border)" }}>|</span>
-                  <span className="meta-date" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
-                    <Calendar size={13} />
-                    {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                  </span>
+                  <span className="read-time-tag">{mainHero.readTime || (lang === "HI" ? "5 मिनट पढ़ें" : "5 min read")}</span>
                 </div>
-                <p className="hero-summary">{stripHtml(mainHero.summary)}</p>
-                <div className="author-byline" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "12px" }}>
-                  <div>
-                    <span>{t("by")} {mainHero.author?.name || "Global Awaaz Staff"}</span>
-                    <span className="bullet">•</span>
-                    <span>{lang === "HI" ? "12 मिनट पहले अपडेट किया गया" : "Updated 12m ago"}</span>
+                <div className="hero-content">
+                  <h1 className="hero-title">{mainHero.title}</h1>
+                  {/* Time + Date meta row */}
+                  <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
+                    <span className="meta-time" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
+                      <Clock size={13} />
+                      {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                    </span>
+                    <span style={{ color: "var(--color-border)" }}>|</span>
+                    <span className="meta-date" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
+                      <Calendar size={13} />
+                      {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    </span>
                   </div>
-                  <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
+                  <p className="hero-summary">{stripHtml(mainHero.summary)}</p>
+                  <div className="author-byline" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "12px" }}>
+                    <div>
+                      <span>{t("by")} {mainHero.author?.name || "Global Awaaz Staff"}</span>
+                      <span className="bullet">•</span>
+                      <span>{lang === "HI" ? "12 मिनट पहले अपडेट किया गया" : "Updated 12m ago"}</span>
+                    </div>
+                    <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
+                  </div>
                 </div>
-              </div>
-            </Link>
-          </article>
+              </Link>
+            </article>
+          ) : (
+            <div style={{ padding: "60px 20px", textAlign: "center", background: "#ffffff", borderRadius: "12px", border: "1px solid #e5e5e5" }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, margin: "0 0 8px" }}>No Articles Published Yet</h2>
+              <p style={{ color: "#6b6b6b", fontSize: "0.9rem" }}>Publish stories in the CMS Admin Portal (/admin) to display live articles on the homepage.</p>
+            </div>
+          )}
 
           {/* Secondary Story Grid */}
           <div className="hero-side-grid">

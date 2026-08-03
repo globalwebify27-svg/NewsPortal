@@ -128,14 +128,7 @@ export default function AdminPage() {
         console.warn("LocalStorage parse error:", e);
       }
 
-      if (combined.length === 0) {
-        combined = [
-          { id: "1", title: "Global Market Index Hits Record Highs Amid Tech Surge", slug: "global-market-index-record", category: { name: "Business", slug: "business", color: "#3b82f6" }, author: { name: "Sarah Jenkins" }, status: "PUBLISHED", featuredImage: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=500&q=80", isPinned: true },
-          { id: "2", title: "Diplomatic Accords Signed in Geneva Restoring Trade Corridors", slug: "diplomatic-accords-geneva", category: { name: "World", slug: "world", color: "#e50914" }, author: { name: "Elena Rostova" }, status: "PUBLISHED", featuredImage: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=500&q=80" },
-          { id: "3", title: "Next-Gen Quantum Computing Breakthrough Unveiled in Tokyo", slug: "quantum-computing-breakthrough", category: { name: "Technology", slug: "technology", color: "#8b5cf6" }, author: { name: "Kenji Sato" }, status: "DRAFT", featuredImage: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=500&q=80" }
-        ];
-      }
-
+      // Do not populate hardcoded mock articles
       setArticles(combined);
       setLoading(false);
     }
