@@ -49,6 +49,7 @@ interface AdminArticle {
   language?: "EN" | "HI";
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
+  videoUrl?: string;
 }
 
 const LOCAL_STORAGE_KEY = "ga_custom_articles";
@@ -85,6 +86,7 @@ export default function AdminPage() {
   const [formImageHeight, setFormImageHeight] = useState("auto");
   const [formCustomHeight, setFormCustomHeight] = useState("");
   const [formImageFit, setFormImageFit] = useState<"cover" | "contain" | "fill">("cover");
+  const [formVideoUrl, setFormVideoUrl] = useState("");
 
   // YouTube Video Management States
   const [videosList, setVideosList] = useState<YouTubeVideoItem[]>([]);
@@ -260,6 +262,7 @@ export default function AdminPage() {
     setFormImageHeight("auto");
     setFormCustomHeight("");
     setFormImageFit("cover");
+    setFormVideoUrl("");
     setIsModalOpen(true);
   };
 
@@ -275,6 +278,7 @@ export default function AdminPage() {
     setFormImage(art.featuredImage || "");
     setImageFileName("");
     setFormIsHero(!!art.isHero);
+    setFormVideoUrl(art.videoUrl || "");
     
     // Height & Fit state check
     const h = art.imageHeight || "auto";
@@ -356,6 +360,7 @@ export default function AdminPage() {
             featuredImage: finalImage,
             imageHeight: effectiveHeight,
             imageFit: formImageFit,
+            videoUrl: formVideoUrl.trim(),
             category: { name: formCategory, slug: catSlug, color: catColor },
             author: { name: formAuthor },
             status: formStatus,
@@ -391,6 +396,7 @@ export default function AdminPage() {
         featuredImage: finalImage,
         imageHeight: effectiveHeight,
         imageFit: formImageFit,
+        videoUrl: formVideoUrl.trim(),
         category: { name: formCategory, slug: catSlug, color: catColor },
         author: { name: formAuthor },
         status: formStatus,
@@ -1166,6 +1172,35 @@ export default function AdminPage() {
                     >
                       Remove
                     </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Video URL Attachment (YouTube / Vimeo / MP4) */}
+              <div style={{ background: "#fcf8fa", border: "1.5px solid #fbcfe8", borderRadius: "10px", padding: "16px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", fontWeight: 800, color: "#be185d", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <Video size={16} /> Article Video Story Embed (ऑप्शनल / Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=...) or MP4 video link..."
+                  value={formVideoUrl}
+                  onChange={(e) => setFormVideoUrl(e.target.value)}
+                  style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1.5px solid #cbd5e1", background: "#ffffff", color: "#0f172a", fontSize: "0.9rem", fontWeight: 600 }}
+                />
+                <p style={{ margin: "6px 0 0", fontSize: "0.76rem", color: "#64748b" }}>
+                  🎬 Adding a YouTube/video link will embed an HD video player at the top of the article reader page.
+                </p>
+
+                {/* Live Video Preview in Modal */}
+                {formVideoUrl.trim() && extractYouTubeId(formVideoUrl) && (
+                  <div style={{ marginTop: "12px", borderRadius: "8px", overflow: "hidden", aspectRatio: "16/9", background: "#000", border: "2px solid #be185d" }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${extractYouTubeId(formVideoUrl)}`}
+                      title="Video Preview"
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      allowFullScreen
+                    />
                   </div>
                 )}
               </div>

@@ -8,6 +8,7 @@ import { Clock, Calendar, Heart, MessageSquare, Send, Loader2, ArrowLeft, Share2
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { findDefaultArticle, stripHtml } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { extractYouTubeId } from "@/lib/youtube";
 
 interface ArticleDetail {
   id: string;
@@ -23,6 +24,7 @@ interface ArticleDetail {
   createdAt?: string;
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
+  videoUrl?: string;
 }
 
 function formatDate(dateStr?: string) {
@@ -275,6 +277,36 @@ export default function ArticlePage() {
           <SocialShareButtons title={article.title} slug={slug} size="md" />
         </div>
       </div>
+
+      {/* ── Embedded Article Video Story Player ───────────────────────── */}
+      {article.videoUrl && article.videoUrl.trim() && (
+        <div style={{
+          position: "relative",
+          marginBottom: "32px",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          aspectRatio: "16 / 9",
+          background: "#0a0a0c",
+          border: "2px solid #e50914"
+        }}>
+          {extractYouTubeId(article.videoUrl) ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${extractYouTubeId(article.videoUrl)}?autoplay=1&mute=1`}
+              title={article.title}
+              style={{ width: "100%", height: "100%", border: "none" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <video
+              src={article.videoUrl}
+              controls
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Article Body ──────────────────────────────────────────────── */}
       <div style={{ fontSize: "1.08rem", lineHeight: 1.85, color: "var(--color-primary)", letterSpacing: "0.01em" }}>
