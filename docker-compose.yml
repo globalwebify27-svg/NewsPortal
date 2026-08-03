@@ -40,8 +40,8 @@ services:
     container_name: global_awaaz_meilisearch
     restart: always
     environment:
-      MEILI_ENV: development
-      MEILI_MASTER_KEY: GlobalAwaaz-MeiliSearch-Master-Key-2025
+      MEILI_ENV: ${MEILI_ENV:-production}
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-GlobalAwaaz-MeiliSearch-Master-Key-2025}
     ports:
       - "7700:7700"
     volumes:

@@ -8,6 +8,7 @@ import { getStoredVideos, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
 
 import { defaultEnglishArticles, defaultHindiArticles, stripHtml } from "@/lib/defaultArticles";
+import { API_ENDPOINTS } from "@/lib/config";
 
 interface Article {
   id: string;
@@ -62,7 +63,7 @@ export default function HomePage() {
     async function fetchArticles() {
       let apiList: Article[] = [];
       try {
-        const res = await fetch("http://localhost:5001/api/v1/articles");
+        const res = await fetch(API_ENDPOINTS.articles);
         const json = await res.json();
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           apiList = json.data;

@@ -8,6 +8,7 @@ import { Clock, Calendar, Loader2 } from "lucide-react";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
 import { stripHtml } from "@/lib/defaultArticles";
+import { API_ENDPOINTS } from "@/lib/config";
 
 interface Article {
   id: string;
@@ -60,7 +61,7 @@ export default function SectionPage() {
 
       // 1. Backend API
       try {
-        const res = await fetch("http://localhost:5001/api/v1/articles");
+        const res = await fetch(API_ENDPOINTS.articles);
         const json = await res.json();
         if (json?.data && Array.isArray(json.data)) {
           combined = json.data;

@@ -7,11 +7,14 @@ import { httpServer } from "./app";
 import { prisma } from "./config/database";
 import { redis } from "./config/redis";
 import { logger } from "./config/logger";
+import { validateEnv } from "./config/env.config";
 
 const PORT = Number(process.env.PORT) || 5000;
 
 async function bootstrap() {
   try {
+    validateEnv();
+
     // ─── Database Connection ──────────────────────────────────────────────────
     await prisma.$connect();
     logger.info("✅ MySQL database connected via Prisma");

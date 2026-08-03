@@ -4,6 +4,7 @@
 // =============================================================================
 
 import "dotenv/config";
+import path from "path";
 import express, { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -117,6 +118,9 @@ app.get("/health", (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ─── Static Uploads Directory ──────────────────────────────────────────────
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 const apiVersion = process.env.API_VERSION || "v1";

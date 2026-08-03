@@ -7,6 +7,7 @@ import { Clock, Calendar, Heart, MessageSquare, Send, Loader2, ArrowLeft, Share2
 
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { findDefaultArticle, stripHtml } from "@/lib/defaultArticles";
+import { API_ENDPOINTS } from "@/lib/config";
 
 interface ArticleDetail {
   id: string;
@@ -77,7 +78,7 @@ export default function ArticlePage() {
 
       // 2. Fetch from backend API
       try {
-        const res = await fetch(`http://localhost:5001/api/v1/articles/${slug}`);
+        const res = await fetch(API_ENDPOINTS.articleBySlug(slug));
         if (res.ok) {
           const json = await res.json();
           if (json?.data) {

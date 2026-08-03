@@ -28,13 +28,8 @@ import {
   Video,
   Play
 } from "lucide-react";
-import {
-  YouTubeVideoItem,
-  getStoredVideos,
-  saveStoredVideos,
-  extractYouTubeId,
-  DEFAULT_VIDEOS
-} from "@/lib/youtube";
+import { saveStoredVideos, getStoredVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
+import { API_ENDPOINTS } from "@/lib/config";
 
 interface AdminArticle {
   id: string;
@@ -110,7 +105,7 @@ export default function AdminPage() {
       let combined: AdminArticle[] = [];
 
       try {
-        const res = await fetch("http://localhost:5001/api/v1/articles");
+        const res = await fetch(API_ENDPOINTS.articles);
         const json = await res.json();
         if (json && json.data && Array.isArray(json.data)) {
           combined = json.data;
@@ -303,17 +298,39 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
+  const processAndUploadFile = async (file: File) => {
+    setImageFileName(file.name);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(API_ENDPOINTS.mediaUpload, {
+        method: "POST",
+        body: formData,
+      });
+      const json = await res.json();
+      if (json && json.data && json.data.url) {
+        setFormImage(json.data.url);
+        showToast("Image uploaded & saved on server!");
+        return;
+      }
+    } catch (err) {
+      console.warn("Backend image upload fallback to local Data URI:", err);
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        setFormImage(reader.result);
+        showToast("Image uploaded successfully!");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          setFormImage(reader.result);
-          showToast("Image uploaded successfully!");
-        }
-      };
-      reader.readAsDataURL(file);
+      processAndUploadFile(file);
     }
   };
 
@@ -1083,15 +1100,7 @@ export default function AdminPage() {
                     (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
                     const file = e.dataTransfer.files?.[0];
                     if (file && file.type.startsWith("image/")) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        if (typeof reader.result === "string") {
-                          setFormImage(reader.result);
-                          setImageFileName(file.name);
-                          showToast("Image uploaded successfully!");
-                        }
-                      };
-                      reader.readAsDataURL(file);
+                      processAndUploadFile(file);
                     }
                   }}
                   style={{
@@ -1125,20 +1134,7 @@ export default function AdminPage() {
                     type="file"
                     accept="image/png,image/webp,image/jpeg,image/jpg,image/gif"
                     style={{ display: "none" }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          if (typeof reader.result === "string") {
-                            setFormImage(reader.result);
-                            setImageFileName(file.name);
-                            showToast("Image uploaded successfully!");
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={handleFileUpload}
                   />
                 </label>
 

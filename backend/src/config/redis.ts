@@ -36,51 +36,83 @@ const DEFAULT_TTL = Number(process.env.REDIS_TTL) || 3600; // 1 hour
 export const cache = {
   /** Get a cached value (returns parsed JSON or null) */
   async get<T>(key: string): Promise<T | null> {
-    const value = await redis.get(key);
-    if (!value) return null;
     try {
-      return JSON.parse(value) as T;
-    } catch {
-      return value as unknown as T;
+      const value = await redis.get(key);
+      if (!value) return null;
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return value as unknown as T;
+      }
+    } catch (err) {
+      logger.warn(`Redis Cache GET error for key '${key}':`, err);
+      return null;
     }
   },
 
   /** Set a value with optional TTL in seconds */
   async set(key: string, value: unknown, ttl: number = DEFAULT_TTL): Promise<void> {
-    const serialized = JSON.stringify(value);
-    if (ttl > 0) {
-      await redis.setex(key, ttl, serialized);
-    } else {
-      await redis.set(key, serialized);
+    try {
+      const serialized = JSON.stringify(value);
+      if (ttl > 0) {
+        await redis.setex(key, ttl, serialized);
+      } else {
+        await redis.set(key, serialized);
+      }
+    } catch (err) {
+      logger.warn(`Redis Cache SET error for key '${key}':`, err);
     }
   },
 
   /** Delete a cache key */
   async del(key: string | string[]): Promise<void> {
-    const keys = Array.isArray(key) ? key : [key];
-    if (keys.length > 0) await redis.del(...keys);
+    try {
+      const keys = Array.isArray(key) ? key : [key];
+      if (keys.length > 0) await redis.del(...keys);
+    } catch (err) {
+      logger.warn(`Redis Cache DEL error:`, err);
+    }
   },
 
   /** Delete all keys matching a pattern */
   async delPattern(pattern: string): Promise<void> {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) await redis.del(...keys);
+    try {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) await redis.del(...keys);
+    } catch (err) {
+      logger.warn(`Redis Cache DEL PATTERN error for '${pattern}':`, err);
+    }
   },
 
   /** Check if a key exists */
   async exists(key: string): Promise<boolean> {
-    const count = await redis.exists(key);
-    return count > 0;
+    try {
+      const count = await redis.exists(key);
+      return count > 0;
+    } catch (err) {
+      logger.warn(`Redis Cache EXISTS error for key '${key}':`, err);
+      return false;
+    }
   },
 
   /** Get remaining TTL for a key */
   async ttl(key: string): Promise<number> {
-    return redis.ttl(key);
+    try {
+      return await redis.ttl(key);
+    } catch (err) {
+      logger.warn(`Redis Cache TTL error for key '${key}':`, err);
+      return -1;
+    }
   },
 
   /** Increment a counter */
   async incr(key: string, by: number = 1): Promise<number> {
-    return redis.incrby(key, by);
+    try {
+      return await redis.incrby(key, by);
+    } catch (err) {
+      logger.warn(`Redis Cache INCR error for key '${key}':`, err);
+      return 0;
+    }
   },
 };
 
