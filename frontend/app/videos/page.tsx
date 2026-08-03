@@ -56,8 +56,7 @@ export default function VideosPage() {
       const targetV = params?.get("v") || params?.get("id");
 
       if (targetV) {
-        const found = list.find((v) => v.youtubeId === targetV || v.id === targetV) ||
-                      DEFAULT_VIDEOS.find((v) => v.youtubeId === targetV || v.id === targetV);
+        const found = list.find((v) => v.youtubeId === targetV || v.id === targetV);
         if (found) {
           setActiveVideo(found);
           return;
@@ -66,8 +65,8 @@ export default function VideosPage() {
 
       if (list.length > 0) {
         setActiveVideo(list[0]);
-      } else if (DEFAULT_VIDEOS.length > 0) {
-        setActiveVideo(DEFAULT_VIDEOS[0]);
+      } else {
+        setActiveVideo(null);
       }
     }
 
