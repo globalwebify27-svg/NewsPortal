@@ -44,7 +44,7 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
         where,
         skip,
         take: limit,
-        orderBy: { publishedAt: "desc" },
+        orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }],
         include: {
           category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
           author: { select: { id: true, name: true, avatar: true } },
@@ -53,7 +53,15 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
       prisma.article.count({ where }),
     ]);
 
-    return { articles, total, page, limit };
+    const mappedArticles = articles.map((art) => ({
+      ...art,
+      isHero: !!art.isFeatured,
+      imageHeight: (art as any).imageHeight || "auto",
+      imageFit: (art as any).imageFit || "cover",
+      videoUrl: (art as any).videoUrl || "",
+    }));
+
+    return { articles: mappedArticles, total, page, limit };
   } catch (error) {
     console.warn("Database fetch error, using empty set:", error);
     return { articles: [], total: 0, page, limit };
@@ -72,11 +80,10 @@ export async function getArticleBySlug(slug: string) {
     });
 
     if (article) {
-      // Async increment view count
       prisma.article.update({ where: { slug }, data: { views: { increment: 1 } } }).catch(() => {});
     }
 
-    return article;
+    return article ? { ...article, isHero: !!article.isFeatured } : null;
   } catch (error) {
     console.warn("Error fetching article by slug:", error);
     return null;
@@ -135,6 +142,12 @@ export async function createOrUpdateArticle(data: any) {
       }
     }
 
+    if (data.isHero) {
+      await prisma.article.updateMany({
+        data: { isFeatured: false },
+      });
+    }
+
     const slug = data.slug || `story-${Date.now()}`;
     const article = await prisma.article.upsert({
       where: { slug },
@@ -165,7 +178,7 @@ export async function createOrUpdateArticle(data: any) {
       },
     });
 
-    return article;
+    return { ...article, isHero: !!article.isFeatured };
   } catch (error) {
     console.error("Error creating/updating article in database:", error);
     return null;
