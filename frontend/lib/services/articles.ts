@@ -82,3 +82,20 @@ export async function getArticleBySlug(slug: string) {
     return null;
   }
 }
+
+export async function deleteArticleByIdOrSlug(idOrSlug: string) {
+  try {
+    await prisma.article.deleteMany({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug },
+        ],
+      },
+    });
+    return true;
+  } catch (error) {
+    console.warn("Error deleting article from database:", error);
+    return false;
+  }
+}

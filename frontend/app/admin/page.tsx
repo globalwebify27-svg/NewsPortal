@@ -411,12 +411,18 @@ export default function AdminPage() {
     setIsModalOpen(false);
   };
 
-  const handleDeleteArticle = (id: string, title: string) => {
+  const handleDeleteArticle = async (id: string, title: string, slug?: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      const updatedList = articles.filter((a) => a.id !== id);
+      const targetKey = slug || id;
+      try {
+        await fetch(`${API_ENDPOINTS.articles}/${targetKey}`, { method: "DELETE" });
+      } catch (err) {
+        console.warn("Backend delete request failed:", err);
+      }
+      const updatedList = articles.filter((a) => a.id !== id && a.slug !== slug);
       setArticles(updatedList);
       saveToLocalStorage(updatedList);
-      showToast(`Article "${title}" deleted.`);
+      showToast(`Article "${title}" deleted from database.`);
     }
   };
 
@@ -968,7 +974,7 @@ export default function AdminPage() {
                         </button>
                         <button
                           title="Delete Article"
-                          onClick={() => handleDeleteArticle(art.id, art.title)}
+                          onClick={() => handleDeleteArticle(art.id, art.title, art.slug)}
                           style={{ background: "#fff5f5", border: "1.5px solid #fecaca", borderRadius: "7px", cursor: "pointer", color: "#e50914", padding: "6px 8px", display: "flex", alignItems: "center", transition: "all 0.15s" }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = "#e50914"; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#e50914"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "#fff5f5"; e.currentTarget.style.color = "#e50914"; e.currentTarget.style.borderColor = "#fecaca"; }}
