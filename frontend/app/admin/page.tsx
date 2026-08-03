@@ -310,18 +310,22 @@ export default function AdminPage() {
       const json = await res.json();
       if (json && json.data && json.data.url) {
         setFormImage(json.data.url);
-        showToast("Image uploaded & saved on server!");
+        showToast("✓ Image uploaded to Cloudinary CDN!");
         return;
+      } else if (json && json.message) {
+        console.error("Cloudinary upload error response:", json.message);
+        showToast(`Cloudinary Error: ${json.message}`);
       }
     } catch (err) {
-      console.warn("Backend image upload fallback to local Data URI:", err);
+      console.warn("Backend image upload network error:", err);
+      showToast("Network error trying to upload image to Cloudinary.");
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === "string") {
         setFormImage(reader.result);
-        showToast("Image uploaded successfully!");
+        showToast("Using local image preview (Cloudinary upload skipped)");
       }
     };
     reader.readAsDataURL(file);
