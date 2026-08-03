@@ -99,3 +99,73 @@ export async function deleteArticleByIdOrSlug(idOrSlug: string) {
     return false;
   }
 }
+
+export async function createOrUpdateArticle(data: any) {
+  try {
+    let catId = data.categoryId;
+    if (!catId && data.category?.name) {
+      const catSlug = data.category.slug || data.category.name.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const cat = await prisma.category.upsert({
+        where: { slug: catSlug },
+        update: { name: data.category.name },
+        create: {
+          name: data.category.name,
+          slug: catSlug,
+          color: data.category.color || "#e50914",
+        },
+      });
+      catId = cat.id;
+    }
+
+    let authorId = data.authorId;
+    if (!authorId) {
+      const defaultUser = await prisma.user.findFirst();
+      if (defaultUser) {
+        authorId = defaultUser.id;
+      } else {
+        const newUser = await prisma.user.create({
+          data: {
+            name: data.author?.name || "Global Admin",
+            email: "admin@globalawaaz.com",
+            password: "$2a$10$abcdefghijklmnopqrstuv",
+            role: "SUPERADMIN",
+          },
+        });
+        authorId = newUser.id;
+      }
+    }
+
+    const slug = data.slug || `story-${Date.now()}`;
+    const article = await prisma.article.upsert({
+      where: { slug },
+      update: {
+        title: data.title,
+        summary: data.summary,
+        body: data.body,
+        featuredImage: data.featuredImage,
+        status: data.status === "DRAFT" ? ArticleStatus.DRAFT : ArticleStatus.PUBLISHED,
+        isFeatured: !!data.isHero,
+      },
+      create: {
+        title: data.title,
+        slug,
+        summary: data.summary,
+        body: data.body || data.title,
+        featuredImage: data.featuredImage || "",
+        status: data.status === "DRAFT" ? ArticleStatus.DRAFT : ArticleStatus.PUBLISHED,
+        isFeatured: !!data.isHero,
+        categoryId: catId,
+        authorId: authorId,
+      },
+      include: {
+        category: true,
+        author: true,
+      },
+    });
+
+    return article;
+  } catch (error) {
+    console.error("Error creating/updating article in database:", error);
+    return null;
+  }
+}

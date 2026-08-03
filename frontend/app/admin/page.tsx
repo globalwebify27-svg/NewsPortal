@@ -335,7 +335,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleSaveArticle = (e: React.FormEvent) => {
+  const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) return;
 
@@ -415,6 +415,24 @@ export default function AdminPage() {
     setArticles(updatedList);
     saveToLocalStorage(updatedList);
     setIsModalOpen(false);
+
+    // Persist to global MySQL database via API
+    const targetArt = editingArticle ? updatedList.find(a => a.id === editingArticle.id) : updatedList[0];
+    if (targetArt) {
+      try {
+        const res = await fetch(API_ENDPOINTS.articles, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(targetArt),
+        });
+        const json = await res.json();
+        if (json?.success) {
+          showToast("✓ Story saved globally to database!");
+        }
+      } catch (err) {
+        console.warn("Backend article save request failed:", err);
+      }
+    }
   };
 
   const handleDeleteArticle = async (id: string, title: string, slug?: string) => {
