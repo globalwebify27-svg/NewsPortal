@@ -172,12 +172,12 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
         onKeyDown={handleKeyDown}
         data-placeholder="Start writing your article here…  Use headings, paragraphs, bullet lists and bold text to structure premium editorial content."
         style={{
-          minHeight: "380px",
-          padding: "20px 22px",
+          minHeight: "520px",
+          padding: "24px 28px",
           outline: "none",
-          fontSize: "1rem",
+          fontSize: "1.05rem",
           lineHeight: "1.85",
-          color: "#0a0a0a",
+          color: "#0f172a",
           background: "#ffffff",
           fontFamily: "'Georgia', 'Playfair Display', serif",
           wordBreak: "break-word",

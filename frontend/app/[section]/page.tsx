@@ -9,6 +9,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
 import { stripHtml } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { INDIAN_STATES, IndianState } from "@/lib/states";
 
 interface Article {
   id: string;
@@ -25,6 +26,7 @@ interface Article {
   language?: "EN" | "HI";
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
+  state?: string;
 }
 
 function formatCardDate(dateStr?: string) {
@@ -55,6 +57,38 @@ export default function SectionPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // State Sub-Tab selection (Default Jharkhand)
+  const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
+
+  useEffect(() => {
+    const loadState = () => {
+      try {
+        const stored = localStorage.getItem("ga_selected_state");
+        if (stored) {
+          const found = INDIAN_STATES.find(s => s.code === stored || s.slug === stored || s.nameEn.toLowerCase() === stored.toLowerCase());
+          if (found) setSelectedState(found);
+        } else {
+          const jharkhand = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
+          setSelectedState(jharkhand);
+          localStorage.setItem("ga_selected_state", jharkhand.code);
+        }
+      } catch (e) {}
+    };
+    loadState();
+    window.addEventListener("storage", loadState);
+    window.addEventListener("ga_state_changed", loadState);
+    return () => {
+      window.removeEventListener("storage", loadState);
+      window.removeEventListener("ga_state_changed", loadState);
+    };
+  }, []);
+
+  const handleStateClick = (st: IndianState) => {
+    setSelectedState(st);
+    localStorage.setItem("ga_selected_state", st.code);
+    window.dispatchEvent(new Event("ga_state_changed"));
+  };
+
   useEffect(() => {
     async function fetchSectionArticles() {
       let combined: Article[] = [];
@@ -77,7 +111,6 @@ export default function SectionPage() {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed) && parsed.length > 0) {
             const apiIds = new Set(combined.map((a) => a.id));
-            // Only published articles, skip drafts
             const uniqueCustom = parsed.filter(
               (a: Article) => !apiIds.has(a.id) && a.status !== "DRAFT"
             );
@@ -92,11 +125,9 @@ export default function SectionPage() {
         return art.language !== "HI";
       });
 
-      // Use lang-filtered list if available, else all combined
       const pool = langFiltered.length > 0 ? langFiltered : combined;
 
-      // 4. STRICT category filter — match by slug OR name, case-insensitive
-      //    Do NOT fall back to all articles if no match — show empty state instead.
+      // 4. Category filter
       const sectionLower = section.toLowerCase();
       const filtered = pool.filter((art: Article) => {
         const slugMatch = art.category?.slug?.toLowerCase() === sectionLower;
@@ -104,7 +135,7 @@ export default function SectionPage() {
         return slugMatch || nameMatch;
       });
 
-      setArticles(filtered);   // strictly category-filtered — no global fallback
+      setArticles(filtered);
       setLoading(false);
     }
 
@@ -116,7 +147,7 @@ export default function SectionPage() {
   return (
     <div style={{ marginTop: "30px", minHeight: "60vh" }}>
       {/* Category Header Banner */}
-      <div style={{ borderBottom: "3px solid #e50914", paddingBottom: "16px", marginBottom: "30px" }}>
+      <div style={{ borderBottom: "3px solid #e50914", paddingBottom: "16px", marginBottom: "20px" }}>
         <h1 style={{ fontFamily: "serif", fontSize: "2.2rem", fontWeight: 700, margin: 0, textTransform: "capitalize" }}>
           {formattedTitle} {lang === "HI" ? "समाचार और संपादकीय" : "News & Editorial Coverage"}
         </h1>
@@ -126,6 +157,50 @@ export default function SectionPage() {
             : `Live updates, breaking insights, and in-depth analytical reports on ${formattedTitle}.`}
         </p>
       </div>
+
+      {/* Indian States Sub-Tabs Bar (Smartly Active on India Page) */}
+      {section.toLowerCase() === "india" && (
+        <div style={{ marginBottom: "28px", background: "var(--color-card-bg, #ffffff)", padding: "16px 20px", borderRadius: "14px", border: "1px solid var(--color-border, #e2e8f0)", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "6px" }}>
+              📍 {lang === "HI" ? "राज्य-वार समाचार (State-wise News):" : "State-wise News Highlights:"}
+              <span style={{ color: "var(--color-primary)", fontWeight: 900, textTransform: "none" }}>
+                {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
+              </span>
+            </span>
+            <span style={{ fontSize: "0.78rem", color: "var(--color-secondary)", fontWeight: 600 }}>
+              {lang === "HI" ? "डिफ़ॉल्ट: झारखंड" : "Default: Jharkhand"}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "6px", scrollbarWidth: "thin" }}>
+            {INDIAN_STATES.map((st) => {
+              const isSelected = selectedState.code === st.code;
+              return (
+                <button
+                  key={st.code}
+                  onClick={() => handleStateClick(st)}
+                  style={{
+                    padding: "7px 14px",
+                    borderRadius: "20px",
+                    border: isSelected ? "2px solid #e50914" : "1px solid var(--color-border, #cbd5e1)",
+                    background: isSelected ? "#e50914" : "transparent",
+                    color: isSelected ? "#ffffff" : "var(--color-text)",
+                    fontWeight: isSelected ? 800 : 600,
+                    fontSize: "0.84rem",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease",
+                    boxShadow: isSelected ? "0 4px 12px rgba(229,9,20,0.25)" : "none"
+                  }}
+                >
+                  {lang === "HI" ? st.nameHi : st.nameEn}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>

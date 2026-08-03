@@ -1,7 +1,8 @@
 export interface YouTubeVideoItem {
   id: string;
   title: string;
-  youtubeUrl: string;
+  youtubeUrl?: string;
+  videoUrl?: string;
   youtubeId: string;
   category: string;
   description?: string;
@@ -9,6 +10,9 @@ export interface YouTubeVideoItem {
   publishedAt?: string;
   views?: string;
   duration?: string;
+  thumbnailUrl?: string;
+  timeAgo?: string;
+  isLive?: boolean;
 }
 
 export const LOCAL_STORAGE_VIDEOS_KEY = "ga_custom_videos";

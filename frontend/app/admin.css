@@ -31,7 +31,8 @@
   flex-direction: row !important;
   min-height: calc(100vh - 40px) !important;
   margin: 0 auto !important;
-  max-width: 1500px !important;
+  width: 100% !important;
+  max-width: 100% !important;
   border-radius: 16px !important;
   overflow: hidden !important;
   box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
@@ -42,8 +43,9 @@
 
 /* ─── SIDEBAR ───────────────────────────────────────────────────────────── */
 .admin-sidebar-nav {
-  width: 265px !important;
-  min-width: 265px !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  flex-shrink: 0 !important;
   background: var(--admin-black) !important;
   color: #ffffff !important;
   padding: 28px 16px !important;
@@ -67,9 +69,11 @@
 }
 
 /* ─── MAIN CONTENT CANVAS ───────────────────────────────────────────────── */
-.admin-main-content {
+.admin-main-content,
+.admin-main-viewport {
   flex: 1 !important;
-  padding: 36px 40px !important;
+  min-width: 0 !important;
+  padding: 32px 36px !important;
   background: var(--admin-white) !important;
   color: var(--admin-black) !important;
   overflow-x: hidden !important;

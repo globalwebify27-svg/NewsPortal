@@ -123,7 +123,7 @@ export default function Home() {
   return (
     <>
       {/* Editorial Hero Spotlight */}
-      <section className="hero-section" style={{ marginTop: "24px" }}>
+      <section className="hero-section" style={{ marginTop: "0px" }}>
         <div className="hero-grid">
           {/* Primary Lead Story */}
           {mainHero ? (
@@ -225,8 +225,8 @@ export default function Home() {
       </section>
 
       {/* Today's Top Stories Section */}
-      <section className="todays-top-stories-section" style={{ marginTop: "48px", marginBottom: "48px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <section className="todays-top-stories-section" style={{ marginTop: "0px", marginBottom: "0px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
           <div>
             <h2 className="section-title" style={{ fontSize: "1.6rem", fontWeight: 800, margin: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>
               {t("todaysTopStories")}
@@ -297,8 +297,8 @@ export default function Home() {
       </section>
 
       {/* Trending Videos Section */}
-      <section style={{ marginBottom: "60px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <section style={{ marginTop: "-12px", marginBottom: "40px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
           <Link href="/videos" style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: "4px", height: "22px", background: "#e50914", borderRadius: "2px", display: "inline-block" }} />
@@ -459,7 +459,7 @@ export default function Home() {
       )}
 
       {/* Newsletter Subscription Bar */}
-      <section style={{ background: "linear-gradient(135deg, #09090b 0%, #1c1917 100%)", color: "#ffffff", padding: "40px 32px", borderRadius: "20px", marginBottom: "60px", boxShadow: "var(--shadow-md)" }}>
+      <section style={{ background: "linear-gradient(135deg, #09090b 0%, #1c1917 100%)", color: "#ffffff", padding: "40px 32px", borderRadius: "20px", marginBottom: "20px", boxShadow: "var(--shadow-md)" }}>
         <div style={{ maxWidth: "680px", margin: "0 auto", textAlign: "center" }}>
           <Mail size={36} style={{ color: "#e50914", marginBottom: "12px" }} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px 0" }}>{t("newsletterTitle")}</h2>

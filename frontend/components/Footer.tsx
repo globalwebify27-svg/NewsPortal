@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutGrid,
@@ -26,6 +26,62 @@ export default function Footer() {
   const [agree, setAgree] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
 
+  const [socialLinks, setSocialLinks] = useState({
+    facebook: "https://facebook.com",
+    twitter: "https://twitter.com",
+    youtube: "https://youtube.com",
+    instagram: "https://instagram.com",
+    linkedin: "https://linkedin.com"
+  });
+
+  const [customCompanyLinks, setCustomCompanyLinks] = useState<Array<{ nameHi: string; nameEn: string; href: string }>>([
+    { nameHi: "हमारे बारे में", nameEn: "About Us", href: "/#about" },
+    { nameHi: "करियर", nameEn: "Careers", href: "/#careers" },
+    { nameHi: "गोपनीयता नीति", nameEn: "Privacy Policy", href: "/#privacy" },
+    { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
+    { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/#contact" },
+    { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/#advertise" }
+  ]);
+
+  useEffect(() => {
+    const loadSocialLinks = () => {
+      try {
+        const stored = localStorage.getItem("ga_social_links");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setSocialLinks((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch (e) {}
+    };
+
+    const loadCompanyLinks = () => {
+      try {
+        const stored = localStorage.getItem("ga_company_footer_links");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCustomCompanyLinks(parsed);
+          }
+        }
+      } catch (e) {}
+    };
+
+    loadSocialLinks();
+    loadCompanyLinks();
+
+    window.addEventListener("storage", loadSocialLinks);
+    window.addEventListener("ga_social_links_changed", loadSocialLinks);
+    window.addEventListener("storage", loadCompanyLinks);
+    window.addEventListener("ga_company_links_changed", loadCompanyLinks);
+
+    return () => {
+      window.removeEventListener("storage", loadSocialLinks);
+      window.removeEventListener("ga_social_links_changed", loadSocialLinks);
+      window.removeEventListener("storage", loadCompanyLinks);
+      window.removeEventListener("ga_company_links_changed", loadCompanyLinks);
+    };
+  }, []);
+
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -47,15 +103,11 @@ export default function Footer() {
     { name: isHindi ? "स्वास्थ्य" : "Health", slug: "health" }
   ];
 
-  // Company links
-  const companyLinks = [
-    { name: isHindi ? "हमारे बारे में" : "About Us", href: "/#about" },
-    { name: isHindi ? "करियर" : "Careers", href: "/#careers" },
-    { name: isHindi ? "गोपनीयता नीति" : "Privacy Policy", href: "/#privacy" },
-    { name: isHindi ? "सेवा की शर्तें" : "Terms of Service", href: "/#terms" },
-    { name: isHindi ? "संपर्क करें" : "Contact Us", href: "/#contact" },
-    { name: isHindi ? "विज्ञापन दें" : "Advertise", href: "/#advertise" }
-  ];
+  // Dynamic Company links from Admin settings
+  const companyLinks = customCompanyLinks.map(item => ({
+    name: isHindi ? item.nameHi : item.nameEn,
+    href: item.href || "/#link"
+  }));
 
   // Quick links
   const quickLinks = [
@@ -72,8 +124,8 @@ export default function Footer() {
       style={{
         background: "#0b0f17",
         color: "#f8fafc",
-        padding: "60px 0 24px 0",
-        marginTop: "70px",
+        padding: "45px 0 24px 0",
+        marginTop: "0px",
         borderTop: "3px solid #e50914",
         position: "relative",
         overflow: "hidden"
@@ -117,15 +169,17 @@ export default function Footer() {
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               {[
-                { icon: <Facebook size={16} />, href: "#" },
-                { icon: <Twitter size={16} />, href: "#" },
-                { icon: <Instagram size={16} />, href: "#" },
-                { icon: <Youtube size={16} />, href: "#" },
-                { icon: <Linkedin size={16} />, href: "#" }
+                { icon: <Facebook size={16} />, href: socialLinks.facebook || "#" },
+                { icon: <Twitter size={16} />, href: socialLinks.twitter || "#" },
+                { icon: <Instagram size={16} />, href: socialLinks.instagram || "#" },
+                { icon: <Youtube size={16} />, href: socialLinks.youtube || "#" },
+                { icon: <Linkedin size={16} />, href: socialLinks.linkedin || "#" }
               ].map((s, idx) => (
                 <a
                   key={idx}
                   href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     width: "36px",
                     height: "36px",
