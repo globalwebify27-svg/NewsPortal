@@ -1,6 +1,6 @@
 // =============================================================================
 // Cloudinary Integration for Next.js App Router
-// Handles Serverless Image Uploads to Cloudinary CDN
+// Handles Serverless Image Uploads to Cloudinary CDN with Hardcoded Fallbacks
 // =============================================================================
 
 import { v2 as cloudinary } from "cloudinary";
@@ -9,13 +9,9 @@ export async function uploadImageToCloudinary(
   base64Data: string,
   folder: string = "global-awaaz/articles"
 ): Promise<{ url: string; publicId: string; width?: number; height?: number }> {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    throw new Error("Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) are missing.");
-  }
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dbhpvsaf3";
+  const apiKey = process.env.CLOUDINARY_API_KEY || "572187337428435";
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || "0nvTgzxSqD3pqbeFTfuI9qd1XRk";
 
   cloudinary.config({
     cloud_name: cloudName,
