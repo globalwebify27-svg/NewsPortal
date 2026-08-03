@@ -53,23 +53,34 @@ export default function ArticlePage() {
 
   useEffect(() => {
     async function fetchArticle() {
+      const rawParam = params?.slug ? (Array.isArray(params.slug) ? params.slug[0] : params.slug) : "article";
+      const targetSlug = decodeURIComponent(rawParam).trim().toLowerCase();
+
       // 1. Check localStorage (custom admin articles)
       try {
         const local = localStorage.getItem("ga_custom_articles");
         if (local) {
           const parsed = JSON.parse(local);
-          // Match by: exact slug, exact id, or id suffix (custom-123456 → "123456" in URL)
-          const found = parsed.find((a: ArticleDetail) =>
-            a.slug === slug ||
-            a.id === slug ||
-            a.id === `custom-${slug}` ||
-            (a.slug && a.slug.length <= 1 && a.id?.includes(slug))  // broken-slug fallback
-          );
-          if (found) {
-            setArticle(found);
-            if (found.views) setLikes(found.views);
-            setLoading(false);
-            return;
+          if (Array.isArray(parsed)) {
+            const found = parsed.find((a: ArticleDetail) => {
+              if (!a) return false;
+              const aSlug = (a.slug || "").trim().toLowerCase();
+              const aId = (a.id || "").trim().toLowerCase();
+              const cleanId = aId.replace(/^custom-/, "");
+              return (
+                aSlug === targetSlug ||
+                aId === targetSlug ||
+                cleanId === targetSlug ||
+                (aSlug && targetSlug.includes(aSlug)) ||
+                (aSlug && aSlug.includes(targetSlug))
+              );
+            });
+            if (found) {
+              setArticle(found);
+              if (found.views) setLikes(found.views);
+              setLoading(false);
+              return;
+            }
           }
         }
       } catch (e) {
@@ -78,7 +89,7 @@ export default function ArticlePage() {
 
       // 2. Fetch from backend API
       try {
-        const res = await fetch(API_ENDPOINTS.articleBySlug(slug));
+        const res = await fetch(API_ENDPOINTS.articleBySlug(targetSlug));
         if (res.ok) {
           const json = await res.json();
           if (json?.data) {
@@ -93,7 +104,7 @@ export default function ArticlePage() {
       }
 
       // 3. Fall back to built-in default articles (always available, no network needed)
-      const defaultFound = findDefaultArticle(slug);
+      const defaultFound = findDefaultArticle(targetSlug);
       if (defaultFound) {
         setArticle({
           ...defaultFound,
