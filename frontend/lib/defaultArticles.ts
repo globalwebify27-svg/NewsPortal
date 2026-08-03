@@ -71,7 +71,7 @@ const DISTINCT_FALLBACK_IMAGES = [
 ];
 
 export function getArticleImage(article: any, index: number = 0): string {
-  if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 10 && !article.featuredImage.includes("data:image")) {
+  if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 10) {
     return article.featuredImage.trim();
   }
   const catKey = (article?.category?.slug || article?.category?.name || "").toLowerCase();
