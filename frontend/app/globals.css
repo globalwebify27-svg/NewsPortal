@@ -164,48 +164,61 @@
 
 /* ROUNDED CAPSULE PILL NAVIGATION BAR */
 .menu-wrapper-pill {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 12px;
+  max-width: 1340px !important;
+  margin: 0 auto !important;
+  padding: 0 4px !important;
+  position: relative !important;
 }
 
 .pill-nav-container {
-  background: #0f172a;
-  border-radius: 40px;
-  padding: 6px 14px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  overflow-x: auto;
-  scrollbar-width: none;
+  background: #0f172a !important;
+  border-radius: 40px !important;
+  padding: 5px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  scroll-behavior: smooth !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overscroll-behavior-x: contain !important;
 }
 
 .pill-nav-container::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .pill-nav-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .pill-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
-  border-radius: 24px;
-  color: #cbd5e1;
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-decoration: none;
-  position: relative;
-  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  color: #cbd5e1 !important;
+  font-size: 0.83rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  position: relative !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease !important;
 }
 
 .pill-nav-link:hover {
@@ -522,7 +535,7 @@
   border: 1px solid var(--color-border);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
 }
@@ -530,15 +543,27 @@
 .hero-img-wrap {
   position: relative;
   width: 100%;
-  height: 360px;
+  height: 380px;
   overflow: hidden;
-  background: #18181b;
+  background: #0f172a;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
 }
 
 .hero-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 25%;
+  display: block;
+}
+
+.hero-img-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.35) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .badge {
@@ -595,7 +620,8 @@
   font-family: var(--font-serif);
   font-size: 1.45rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.48 !important;
+  padding: 2px 0 !important;
   color: var(--color-primary);
   margin: 0;
   display: -webkit-box;
@@ -607,7 +633,7 @@
 .hero-summary {
   font-size: 0.88rem;
   color: var(--color-secondary);
-  line-height: 1.45;
+  line-height: 1.5;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -669,9 +695,10 @@
 }
 
 .side-title {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.48 !important;
+  padding: 2px 0 !important;
   color: var(--color-primary);
   margin: 0;
   display: -webkit-box;
@@ -2298,4 +2325,26 @@
     grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
+}
+
+/* GLOBAL ARTICLE HEADLINE LINE-HEIGHT & DEVANAGARI MATRA CLIPPING FIX */
+.hero-title,
+.side-title,
+.hero-featured-title,
+.sec-card-title,
+.top-story-title,
+.mobile-story-title,
+.mobile-list-title,
+.section-article-title,
+.split-col-title,
+.tech-title,
+.tech-sub-title,
+.sports-sub-title,
+.news-card-title,
+.article-title {
+  line-height: 1.48 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
 }

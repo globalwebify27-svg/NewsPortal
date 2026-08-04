@@ -52,7 +52,9 @@ import {
   Filter,
   Sliders,
   RotateCcw,
-  Check
+  Check,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
@@ -110,6 +112,20 @@ export default function Header() {
       }
     } catch (e) {}
   }, [pathname]);
+
+  const pillNavRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollNavLeft = () => {
+    if (pillNavRef.current) {
+      pillNavRef.current.scrollBy({ left: -240, behavior: "smooth" });
+    }
+  };
+
+  const scrollNavRight = () => {
+    if (pillNavRef.current) {
+      pillNavRef.current.scrollBy({ left: 240, behavior: "smooth" });
+    }
+  };
 
   const activeFilterCount =
     (filterSort !== "latest" ? 1 : 0) +
@@ -689,14 +705,6 @@ export default function Header() {
                   <span>{t("entertainment")}</span>
                   {isActive("/entertainment") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
-                  <Link href="/entertainment"><Film size={14} />{t("movies")}</Link>
-                  <Link href="/entertainment"><Tv2 size={14} />{t("tvSeries")}</Link>
-                  <Link href="/entertainment"><Music size={14} />{t("music")}</Link>
-                  <Link href="/entertainment"><Star size={14} />{t("celebrity")}</Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/entertainment" className="see-all-dropdown"><ArrowRight size={14} />{t("seeAll")} {t("entertainment")}</Link>
-                </div>
               </li>
               <li>
                 <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`}>
