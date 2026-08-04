@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Settings,
   Upload,
@@ -17,18 +17,38 @@ import {
   Search,
   Plus,
   Trash2,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
+
+import { getStoredAboutData, LOCAL_STORAGE_ABOUT_KEY, AboutPageData } from "@/lib/aboutData";
 
 export default function AdminSettingsPage() {
   // Toast state
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
-  // Site Logo Settings State
+  // About Page Editable State
+  const [aboutData, setAboutData] = useState<AboutPageData>(getStoredAboutData());
+
+  const handleSaveAboutData = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(aboutData));
+      window.dispatchEvent(new Event("ga_about_content_updated"));
+      showToast("About Us page content saved successfully!");
+    } catch (err) {
+      showToast("Failed to save About Us content", "error");
+    }
+  };
+
+  // Site Logo Settings State — DB-backed
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const [logoInputUrl, setLogoInputUrl] = useState("");
   const [logoSize, setLogoSize] = useState<number>(64);
   const [logoMarginLeft, setLogoMarginLeft] = useState<number>(75);
+  const [logoLoading, setLogoLoading] = useState(false); // upload / save in progress
+  const [logoInitLoaded, setLogoInitLoaded] = useState(false);
 
   // Social Media Links State
   const [socialFb, setSocialFb] = useState("https://facebook.com");
@@ -39,7 +59,7 @@ export default function AdminSettingsPage() {
 
   // Company Footer Links State
   const [companyLinks, setCompanyLinks] = useState<Array<{ id: string; nameHi: string; nameEn: string; href: string }>>([
-    { id: "1", nameHi: "हमारे बारे में", nameEn: "About Us", href: "/#about" },
+    { id: "1", nameHi: "हमारे बारे में", nameEn: "About Us", href: "/about" },
     { id: "2", nameHi: "करियर", nameEn: "Careers", href: "/#careers" },
     { id: "3", nameHi: "गोपनीयता नीति", nameEn: "Privacy Policy", href: "/#privacy" },
     { id: "4", nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
@@ -51,29 +71,43 @@ export default function AdminSettingsPage() {
   const [newLinkEn, setNewLinkEn] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
 
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3000);
+    setToastType(type);
+    setTimeout(() => setToastMessage(""), 3500);
   };
 
-  useEffect(() => {
+  // ─── Load logo settings from DB on mount ───────────────────────────────────
+  const loadLogoSettings = useCallback(async () => {
     try {
-      const storedLogo = localStorage.getItem("ga_custom_site_logo");
-      if (storedLogo) {
-        setSiteLogoUrl(storedLogo);
-        if (!storedLogo.startsWith("data:image")) {
-          setLogoInputUrl(storedLogo);
+      const res = await fetch("/api/v1/logo-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        const data = json.data as Record<string, string>;
+        if (data.site_logo_url) {
+          setSiteLogoUrl(data.site_logo_url);
+          if (!data.site_logo_url.startsWith("data:image")) {
+            setLogoInputUrl(data.site_logo_url);
+          }
+        }
+        if (data.site_logo_size) {
+          setLogoSize(parseInt(data.site_logo_size, 10) || 64);
+        }
+        if (data.site_logo_margin) {
+          setLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
         }
       }
-      const storedSize = localStorage.getItem("ga_custom_logo_size");
-      if (storedSize) {
-        setLogoSize(parseInt(storedSize, 10) || 64);
-      }
-      const storedMargin = localStorage.getItem("ga_custom_logo_margin");
-      if (storedMargin) {
-        setLogoMarginLeft(parseInt(storedMargin, 10) || 75);
-      }
+    } catch (e) {
+      // silently fail on initial load
+    } finally {
+      setLogoInitLoaded(true);
+    }
+  }, []);
 
+  useEffect(() => {
+    loadLogoSettings();
+
+    try {
       const storedSocial = localStorage.getItem("ga_social_links");
       if (storedSocial) {
         const parsed = JSON.parse(storedSocial);
@@ -92,7 +126,7 @@ export default function AdminSettingsPage() {
         }
       }
     } catch (e) {}
-  }, []);
+  }, [loadLogoSettings]);
 
   const handleAddCompanyLink = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,54 +161,91 @@ export default function AdminSettingsPage() {
     showToast(`Footer link "${nameHi}" deleted.`);
   };
 
-  const handleUpdateLogoSize = (newSize: number) => {
+
+  // ─── Save a logo setting to DB ─────────────────────────────────────────────
+  const saveLogoSetting = async (key: string, value: string) => {
+    await fetch("/api/v1/logo-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+    // Broadcast update so the Header refreshes
+    window.dispatchEvent(new Event("ga_logo_updated"));
+  };
+
+  const handleUpdateLogoSize = async (newSize: number) => {
     setLogoSize(newSize);
-    localStorage.setItem("ga_custom_logo_size", newSize.toString());
-    window.dispatchEvent(new Event("ga_logo_updated"));
+    await saveLogoSetting("site_logo_size", newSize.toString());
   };
 
-  const handleUpdateLogoMargin = (newMargin: number) => {
+  const handleUpdateLogoMargin = async (newMargin: number) => {
     setLogoMarginLeft(newMargin);
-    localStorage.setItem("ga_custom_logo_margin", newMargin.toString());
-    window.dispatchEvent(new Event("ga_logo_updated"));
+    await saveLogoSetting("site_logo_margin", newMargin.toString());
   };
 
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setSiteLogoUrl(base64);
-        setLogoInputUrl("");
-        localStorage.setItem("ga_custom_site_logo", base64);
-        window.dispatchEvent(new Event("ga_logo_updated"));
-        showToast("✓ Custom Site Logo uploaded & applied globally!");
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setLogoLoading(true);
+    try {
+      // 1. Upload to Cloudinary via existing media upload endpoint
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+
+      if (!uploadJson.success || !uploadJson.data?.url) {
+        showToast("❌ Upload failed: " + (uploadJson.message || "Unknown error"), "error");
+        return;
+      }
+
+      const cloudinaryUrl = uploadJson.data.url as string;
+
+      // 2. Save the Cloudinary URL to DB
+      await saveLogoSetting("site_logo_url", cloudinaryUrl);
+      setSiteLogoUrl(cloudinaryUrl);
+      setLogoInputUrl(cloudinaryUrl);
+      showToast("✓ Logo uploaded to Cloudinary & saved globally!");
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setLogoLoading(false);
+      // Reset file input
+      e.target.value = "";
     }
   };
 
-  const handleSaveLogoUrl = () => {
+  const handleSaveLogoUrl = async () => {
     if (!logoInputUrl.trim()) {
-      localStorage.removeItem("ga_custom_site_logo");
-      setSiteLogoUrl("");
-      window.dispatchEvent(new Event("ga_logo_updated"));
-      showToast("Logo reset to default emblem!");
+      await handleResetLogo();
       return;
     }
-    setSiteLogoUrl(logoInputUrl.trim());
-    localStorage.setItem("ga_custom_site_logo", logoInputUrl.trim());
-    window.dispatchEvent(new Event("ga_logo_updated"));
-    showToast("✓ Custom Logo URL saved & updated globally!");
+    setLogoLoading(true);
+    try {
+      await saveLogoSetting("site_logo_url", logoInputUrl.trim());
+      setSiteLogoUrl(logoInputUrl.trim());
+      showToast("✓ Logo URL saved to database & applied globally!");
+    } catch (err: any) {
+      showToast("❌ Save failed: " + (err?.message || ""), "error");
+    } finally {
+      setLogoLoading(false);
+    }
   };
 
-  const handleResetLogo = () => {
-    localStorage.removeItem("ga_custom_site_logo");
-    setSiteLogoUrl("");
-    setLogoInputUrl("");
-    window.dispatchEvent(new Event("ga_logo_updated"));
-    showToast("Logo reset to default emblem.");
+  const handleResetLogo = async () => {
+    setLogoLoading(true);
+    try {
+      await fetch("/api/v1/logo-settings?key=site_logo_url", { method: "DELETE" });
+      setSiteLogoUrl("");
+      setLogoInputUrl("");
+      window.dispatchEvent(new Event("ga_logo_updated"));
+      showToast("Logo reset to default emblem.");
+    } catch (err: any) {
+      showToast("❌ Reset failed: " + (err?.message || ""), "error");
+    } finally {
+      setLogoLoading(false);
+    }
   };
 
   const handleSaveSocialLinks = () => {
@@ -194,8 +265,8 @@ export default function AdminSettingsPage() {
     <div>
       {/* Toast Notification */}
       {toastMessage && (
-        <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "#0a0a0a", color: "#ffffff", border: "2px solid #e50914", padding: "14px 20px", borderRadius: "10px", boxShadow: "0 10px 30px rgba(229,9,20,0.2)", zIndex: 9999, fontWeight: 600, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "10px" }}>
-          <Check style={{ color: "#22c55e" }} size={18} />
+        <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "#0a0a0a", color: "#ffffff", border: `2px solid ${toastType === "error" ? "#ef4444" : "#e50914"}`, padding: "14px 20px", borderRadius: "10px", boxShadow: `0 10px 30px ${toastType === "error" ? "rgba(239,68,68,0.2)" : "rgba(229,9,20,0.2)"}`, zIndex: 9999, fontWeight: 600, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "10px", maxWidth: "360px", animation: "slideIn 0.2s ease" }}>
+          <Check style={{ color: toastType === "error" ? "#f87171" : "#22c55e", flexShrink: 0 }} size={18} />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -220,16 +291,14 @@ export default function AdminSettingsPage() {
 
           {/* Status Badge */}
           <div>
-            {siteLogoUrl ? (
-              siteLogoUrl.startsWith("data:") ? (
-                <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px", boxShadow: "0 2px 6px rgba(16,185,129,0.08)" }}>
-                  <Check size={15} strokeWidth={2.5} /> Local Logo Image File Active
-                </span>
-              ) : (
-                <span style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px", boxShadow: "0 2px 6px rgba(59,130,246,0.08)" }}>
-                  <Globe size={15} strokeWidth={2.5} /> CDN Image URL Active
-                </span>
-              )
+            {!logoInitLoaded ? (
+              <span style={{ background: "#f8fafc", color: "#94a3b8", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Loading logo...
+              </span>
+            ) : siteLogoUrl ? (
+              <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px", boxShadow: "0 2px 6px rgba(16,185,129,0.08)" }}>
+                <Check size={15} strokeWidth={2.5} /> Custom Logo Active (DB)
+              </span>
             ) : (
               <span style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 <Sparkles size={15} style={{ color: "#e50914" }} strokeWidth={2.5} /> Default Vector Emblem Active
@@ -266,23 +335,11 @@ export default function AdminSettingsPage() {
             <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "nowrap", overflowX: "auto" }}>
               {/* Dynamic Logo & Title Group */}
               <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: `${Math.min(logoMarginLeft, 220)}px`, transition: "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-                <div style={{ width: `${logoSize}px`, height: `${logoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-                  {siteLogoUrl ? (
+                {siteLogoUrl && (
+                  <div style={{ width: `${logoSize}px`, height: `${logoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)" }}>
                     <img src={siteLogoUrl} alt="Live Logo Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%" }}>
-                      <svg viewBox="0 0 100 100" width="100%" height="100%">
-                        <path d="M 50 5 A 45 45 0 0 0 10 76" fill="none" stroke="#dc2626" strokeWidth="5" strokeLinecap="round" />
-                        <path d="M 90 24 A 45 45 0 0 1 50 95" fill="none" stroke="#15803d" strokeWidth="5" strokeLinecap="round" />
-                        <circle cx="50" cy="50" r="37" fill="#ffffff" stroke="#15803d" strokeWidth="2.5" />
-                        <g fill="#15803d">
-                          <path d="M 30 22 C 38 24 38 32 32 40 C 26 48 34 58 32 72 C 24 64 22 48 24 34 Z" />
-                          <path d="M 54 20 C 72 22 76 34 68 44 C 60 54 74 66 64 80 C 50 78 48 62 52 46 Z" />
-                        </g>
-                      </svg>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div style={{ whiteSpace: "nowrap" }}>
                   <span style={{ fontFamily: "Georgia, serif", fontSize: "1.35rem", fontWeight: 900, color: "#000000", display: "block", letterSpacing: "-0.01em", lineHeight: 1.1 }}>
                     GLOBAL AWAAZ
@@ -312,9 +369,10 @@ export default function AdminSettingsPage() {
             {siteLogoUrl && (
               <button
                 onClick={handleResetLogo}
-                style={{ background: "rgba(239, 68, 68, 0.15)", color: "#fca5a5", border: "1px solid rgba(239, 68, 68, 0.3)", padding: "6px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }}
+                disabled={logoLoading}
+                style={{ background: "rgba(239, 68, 68, 0.15)", color: "#fca5a5", border: "1px solid rgba(239, 68, 68, 0.3)", padding: "6px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.78rem", cursor: logoLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }}
               >
-                <RotateCcw size={13} /> Reset to Default Vector Emblem
+                {logoLoading ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <RotateCcw size={13} />} Reset to Default Vector Emblem
               </button>
             )}
           </div>
@@ -333,11 +391,12 @@ export default function AdminSettingsPage() {
               <div style={{ border: "2px dashed #cbd5e1", borderRadius: "12px", padding: "18px 14px", textAlign: "center", background: "#ffffff", marginBottom: "16px", transition: "all 0.2s ease" }}>
                 <ImageIcon2 size={32} style={{ color: "#94a3b8", marginBottom: "6px" }} />
                 <p style={{ margin: "0 0 10px 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-                  Supports PNG, SVG, JPG, WebP
+                  Supports PNG, SVG, JPG, WebP — uploads to Cloudinary
                 </p>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#e50914", color: "#ffffff", padding: "9px 18px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(229,9,20,0.25)" }}>
-                  <Upload size={15} /> Choose Logo Image
-                  <input type="file" accept="image/*" onChange={handleLogoFileUpload} style={{ display: "none" }} />
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: logoLoading ? "#64748b" : "#e50914", color: "#ffffff", padding: "9px 18px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: logoLoading ? "not-allowed" : "pointer", boxShadow: logoLoading ? "none" : "0 4px 12px rgba(229,9,20,0.25)", transition: "all 0.2s ease" }}>
+                  {logoLoading ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={15} />}
+                  {logoLoading ? "Uploading..." : "Choose Logo Image"}
+                  <input type="file" accept="image/*" onChange={handleLogoFileUpload} disabled={logoLoading} style={{ display: "none" }} />
                 </label>
               </div>
 
@@ -359,12 +418,65 @@ export default function AdminSettingsPage() {
                   </div>
                   <button
                     onClick={handleSaveLogoUrl}
-                    style={{ background: "#0f172a", color: "#ffffff", border: "none", padding: "9px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}
+                    disabled={logoLoading}
+                    style={{ background: logoLoading ? "#64748b" : "#0f172a", color: "#ffffff", border: "none", padding: "9px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: logoLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "4px", flexShrink: 0, transition: "all 0.2s ease" }}
                   >
-                    <Check size={14} /> Save
+                    {logoLoading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={14} />} Save
                   </button>
                 </div>
               </div>
+
+              {/* ── Delete Current Logo ─────────────────────────────── */}
+              {siteLogoUrl && (
+                <div style={{ marginTop: "18px", paddingTop: "16px", borderTop: "1px dashed #fca5a5" }}>
+                  <p style={{ margin: "0 0 10px 0", fontSize: "0.78rem", color: "#ef4444", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Trash2 size={13} /> Current Logo Active — delete to restore default emblem
+                  </p>
+                  <button
+                    id="delete-logo-btn"
+                    onClick={handleResetLogo}
+                    disabled={logoLoading}
+                    style={{
+                      width: "100%",
+                      background: logoLoading ? "#f1f5f9" : "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)",
+                      color: logoLoading ? "#94a3b8" : "#dc2626",
+                      border: "1.5px solid",
+                      borderColor: logoLoading ? "#e2e8f0" : "#fca5a5",
+                      padding: "10px 18px",
+                      borderRadius: "10px",
+                      fontWeight: 800,
+                      fontSize: "0.86rem",
+                      cursor: logoLoading ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s ease",
+                      boxShadow: logoLoading ? "none" : "0 2px 8px rgba(220,38,38,0.12)",
+                      letterSpacing: "0.01em"
+                    }}
+                    onMouseEnter={e => {
+                      if (!logoLoading) {
+                        (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(135deg, #fecaca 0%, #fee2e2 100%)";
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 16px rgba(220,38,38,0.22)";
+                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!logoLoading) {
+                        (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)";
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 8px rgba(220,38,38,0.12)";
+                        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                      }
+                    }}
+                  >
+                    {logoLoading
+                      ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Deleting...</>
+                      : <><Trash2 size={15} /> Delete Logo &amp; Restore Default</>
+                    }
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -640,6 +752,230 @@ export default function AdminSettingsPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* ── ABOUT US PAGE CONTENT EDITOR ────────────────────────────────────────── */}
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: "4px solid #e50914", borderRadius: "14px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.03)", marginTop: "30px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "14px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <FileText size={22} style={{ color: "#e50914" }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
+                  हमारे बारे में पेज प्रबंधक (About Us Page Content Manager)
+                </h3>
+                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                  Edit all text, mission, vision, ethics, address, email & phone numbers for /about page
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleSaveAboutData}
+              style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "10px 22px", borderRadius: "8px", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(229, 9, 20, 0.3)" }}
+            >
+              <Check size={16} /> Save About Page
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveAboutData} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            
+            {/* 1. Hero Section */}
+            <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "18px" }}>
+              <h4 style={{ margin: "0 0 14px 0", fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>1. Hero Banner Content (हीरो शीर्षक एवं विवरण)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Tagline (Hindi)</label>
+                  <input
+                    type="text"
+                    value={aboutData.heroTagHi}
+                    onChange={(e) => setAboutData({ ...aboutData, heroTagHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Tagline (English)</label>
+                  <input
+                    type="text"
+                    value={aboutData.heroTagEn}
+                    onChange={(e) => setAboutData({ ...aboutData, heroTagEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Sub-description (Hindi)</label>
+                  <textarea
+                    rows={2}
+                    value={aboutData.heroSubHi}
+                    onChange={(e) => setAboutData({ ...aboutData, heroSubHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Sub-description (English)</label>
+                  <textarea
+                    rows={2}
+                    value={aboutData.heroSubEn}
+                    onChange={(e) => setAboutData({ ...aboutData, heroSubEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Mission & Vision */}
+            <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "18px" }}>
+              <h4 style={{ margin: "0 0 14px 0", fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>2. Mission & Vision (मिशन और विज़न)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Mission Description (Hindi)</label>
+                  <textarea
+                    rows={3}
+                    value={aboutData.missionDescHi}
+                    onChange={(e) => setAboutData({ ...aboutData, missionDescHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Mission Description (English)</label>
+                  <textarea
+                    rows={3}
+                    value={aboutData.missionDescEn}
+                    onChange={(e) => setAboutData({ ...aboutData, missionDescEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Vision Description (Hindi)</label>
+                  <textarea
+                    rows={3}
+                    value={aboutData.visionDescHi}
+                    onChange={(e) => setAboutData({ ...aboutData, visionDescHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Vision Description (English)</label>
+                  <textarea
+                    rows={3}
+                    value={aboutData.visionDescEn}
+                    onChange={(e) => setAboutData({ ...aboutData, visionDescEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Editorial Ethics & Newsroom Email */}
+            <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "18px" }}>
+              <h4 style={{ margin: "0 0 14px 0", fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>3. Editorial Ethics & Newsroom Box (संपादकीय प्रतिबद्धता)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Ethics Section Title (Hindi)</label>
+                  <input
+                    type="text"
+                    value={aboutData.ethicsTitleHi}
+                    onChange={(e) => setAboutData({ ...aboutData, ethicsTitleHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Ethics Section Title (English)</label>
+                  <input
+                    type="text"
+                    value={aboutData.ethicsTitleEn}
+                    onChange={(e) => setAboutData({ ...aboutData, ethicsTitleEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Newsroom Email Address</label>
+                <input
+                  type="email"
+                  value={aboutData.newsroomEmail}
+                  onChange={(e) => setAboutData({ ...aboutData, newsroomEmail: e.target.value })}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                />
+              </div>
+            </div>
+
+            {/* 4. Headquarters Address & Contacts */}
+            <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "18px" }}>
+              <h4 style={{ margin: "0 0 14px 0", fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>4. Headquarters & Contact Helpline (मुख्य कार्यालय व संपर्क)</h4>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Address (Hindi)</label>
+                  <input
+                    type="text"
+                    value={aboutData.addressHi}
+                    onChange={(e) => setAboutData({ ...aboutData, addressHi: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Address (English)</label>
+                  <input
+                    type="text"
+                    value={aboutData.addressEn}
+                    onChange={(e) => setAboutData({ ...aboutData, addressEn: e.target.value })}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}>
+                <div>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Email 1</label>
+                  <input
+                    type="text"
+                    value={aboutData.contactEmail1}
+                    onChange={(e) => setAboutData({ ...aboutData, contactEmail1: e.target.value })}
+                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Email 2</label>
+                  <input
+                    type="text"
+                    value={aboutData.contactEmail2}
+                    onChange={(e) => setAboutData({ ...aboutData, contactEmail2: e.target.value })}
+                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Phone Hotline 1</label>
+                  <input
+                    type="text"
+                    value={aboutData.phone1}
+                    onChange={(e) => setAboutData({ ...aboutData, phone1: e.target.value })}
+                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 700, display: "block", marginBottom: "4px" }}>Phone Hotline 2</label>
+                  <input
+                    type="text"
+                    value={aboutData.phone2}
+                    onChange={(e) => setAboutData({ ...aboutData, phone2: e.target.value })}
+                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="submit"
+                style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "12px 28px", borderRadius: "8px", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(229, 9, 20, 0.35)" }}
+              >
+                <Check size={18} /> Save All About Page Changes
+              </button>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>

@@ -19,4 +19,8 @@ export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/auth/register`,
     me: `${API_BASE_URL}/auth/me`,
   },
+  adminSettings: `${API_BASE_URL}/admin/settings`,
+  adminSettingPublic: `${API_BASE_URL}/admin/settings/public`,
+  adminSettingDelete: (key: string) => `${API_BASE_URL}/admin/settings/${key}`,
 };
+

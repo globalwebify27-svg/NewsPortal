@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bookmark, Mail, ShieldCheck, Zap, Users, PlayCircle, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar } from "lucide-react";
+import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -112,18 +112,24 @@ export default function Home() {
   });
 
   const activeArticles = langFiltered.length > 0 ? langFiltered : articles;
-
   const displayList = activeArticles;
 
   const explicitHero = articles.find((a) => a.isHero && a.status !== "DRAFT") || displayList.find((a) => a.isHero);
   const mainHero = explicitHero || displayList[0];
   const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
+  const topStories = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
+  const stateArticles = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
   const todaysTopStories = displayList;
+
+  const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <>
-      {/* Editorial Hero Spotlight */}
-      <section className="hero-section" style={{ marginTop: "0px" }}>
+      {/* ===========================
+          DESKTOP HERO LAYOUT
+          =========================== */}
+      <section className="hero-section desktop-hero-section" style={{ marginTop: "0px" }}>
         <div className="hero-grid">
           {/* Primary Lead Story */}
           {mainHero ? (
@@ -148,16 +154,15 @@ export default function Home() {
                 </div>
                 <div className="hero-content">
                   <h1 className="hero-title">{mainHero.title}</h1>
-                  {/* Time + Date meta row */}
                   <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
-                    <span className="meta-time" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
                       <Clock size={13} />
-                      {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                      {timeStr}
                     </span>
                     <span style={{ color: "var(--color-border)" }}>|</span>
-                    <span className="meta-date" style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px", fontWeight: 500 }}>
                       <Calendar size={13} />
-                      {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                      {dateStr}
                     </span>
                   </div>
                   <p className="hero-summary">{stripHtml(mainHero.summary)}</p>
@@ -165,7 +170,7 @@ export default function Home() {
                     <div>
                       <span>{t("by")} {mainHero.author?.name || "Global Awaaz Staff"}</span>
                       <span className="bullet">•</span>
-                      <span>{lang === "HI" ? "12 मिनट पहले अपडेट किया गया" : "Updated 12m ago"}</span>
+                      <span>{lang === "HI" ? "12 मिनट पहले" : "12m ago"}</span>
                     </div>
                     <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
                   </div>
@@ -200,16 +205,15 @@ export default function Home() {
                   </div>
                   <div className="side-content">
                     <h3 className="side-title">{item.title}</h3>
-                    {/* Time + Date meta row */}
                     <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.74rem", color: "var(--color-secondary)", marginTop: "4px" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Clock size={12} />
-                        {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                        {timeStr}
                       </span>
                       <span style={{ color: "var(--color-border)" }}>|</span>
                       <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Calendar size={12} />
-                        {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {dateStr}
                       </span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
@@ -224,8 +228,180 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Today's Top Stories Section */}
-      <section className="todays-top-stories-section" style={{ marginTop: "0px", marginBottom: "0px" }}>
+      {/* ===========================
+          MOBILE HERO CARD
+          =========================== */}
+      {/* ===========================
+          MOBILE HERO CARD + 5 LIST CARDS
+          =========================== */}
+      <section className="mobile-hero-section">
+        {mainHero ? (
+          <>
+            {/* 1 Main Hero Card */}
+            <article className="mobile-hero-card">
+              {/* Full-width image */}
+              <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                <div className="mobile-hero-img-wrap">
+                  {getArticleImage(mainHero, 0) ? (
+                    <img src={getArticleImage(mainHero, 0)} alt={mainHero.title} className="mobile-hero-img" />
+                  ) : (
+                    <div className="mobile-hero-img-placeholder">
+                      <span>GLOBAL AWAAZ</span>
+                    </div>
+                  )}
+                  {/* Category badge top-left */}
+                  <span className="mobile-cat-badge" style={{ background: mainHero.category?.color || "#e50914" }}>
+                    {mainHero.category?.name || (lang === "HI" ? "विदेश" : "WORLD")}
+                  </span>
+                  {/* Time badge top-right */}
+                  <span className="mobile-time-badge">
+                    {lang === "HI" ? "5 मिनट पहले" : "5 min ago"}
+                  </span>
+                </div>
+
+                {/* Content below image */}
+                <div className="mobile-hero-content">
+                  <h1 className="mobile-hero-title">{mainHero.title}</h1>
+                  {/* Meta: time, date, read time */}
+                  <div className="mobile-hero-meta">
+                    <span className="mobile-meta-item">
+                      <Clock size={12} />
+                      {timeStr}
+                    </span>
+                    <span className="mobile-meta-sep">|</span>
+                    <span className="mobile-meta-item">
+                      <Calendar size={12} />
+                      {dateStr}
+                    </span>
+                    <span className="mobile-meta-sep">•</span>
+                    <span className="mobile-meta-readtime">{mainHero.readTime || (lang === "HI" ? "4 मिनट पढ़ें" : "4 min read")}</span>
+                  </div>
+                  <p className="mobile-hero-summary">{stripHtml(mainHero.summary)?.slice(0, 120)}{stripHtml(mainHero.summary)?.length > 120 ? "..." : ""}</p>
+                </div>
+              </Link>
+
+              {/* Action row: Save + social share */}
+              <div className="mobile-hero-actions">
+                <button className="mobile-save-btn">
+                  <Bookmark size={16} />
+                  <span>{lang === "HI" ? "सेव करें" : "Save"}</span>
+                </button>
+                <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
+              </div>
+            </article>
+
+            {/* 3 List View Cards */}
+            <div className="mobile-sub-stories-list">
+              <div className="mobile-section-header" style={{ marginTop: "6px", marginBottom: "8px" }}>
+                <h2 className="mobile-section-title">{lang === "HI" ? "मुख्य समाचार" : "Top Stories"}</h2>
+                <Link href="/latest" className="mobile-see-all">{lang === "HI" ? "सभी देखें" : "See All"}</Link>
+              </div>
+              {displayList.filter((a) => a.id !== mainHero?.id).slice(0, 3).map((item, idx) => (
+                <article key={item.id} className="mobile-list-card">
+                  <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
+                    <div className="mobile-list-thumb">
+                      {getArticleImage(item, idx + 1) ? (
+                        <img src={getArticleImage(item, idx + 1)} alt={item.title} />
+                      ) : (
+                        <div className="mobile-list-thumb-placeholder" />
+                      )}
+                    </div>
+                    <div className="mobile-list-info">
+                      <span className="mobile-list-cat" style={{ color: item.category?.color || "#e50914" }}>
+                        {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}
+                      </span>
+                      <h3 className="mobile-list-title">{item.title}</h3>
+                      <div className="mobile-list-meta">
+                        <span><Clock size={11} /> {timeStr}</span>
+                        <span>•</span>
+                        <span>{item.readTime || (lang === "HI" ? "3 मिनट" : "3 min")}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="mobile-no-articles">
+            <h2>कोई समाचार नहीं</h2>
+            <p>Admin से लेख प्रकाशित करें।</p>
+          </div>
+        )}
+      </section>
+
+      {/* ===========================
+          MOBILE: TOP STORIES 2-COL GRID
+          =========================== */}
+      <section className="mobile-top-stories-section">
+        <div className="mobile-section-header">
+          <h2 className="mobile-section-title">{lang === "HI" ? "टॉप स्टोरीज़" : "Top Stories"}</h2>
+          <Link href="/latest" className="mobile-see-all">{lang === "HI" ? "सभी देखें" : "See All"}</Link>
+        </div>
+        <div className="mobile-top-stories-grid">
+          {topStories.slice(0, 4).map((item, idx) => (
+            <article key={item.id} className="mobile-story-card">
+              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+                <div className="mobile-story-img-wrap">
+                  {getArticleImage(item, idx + 2) ? (
+                    <img src={getArticleImage(item, idx + 2)} alt={item.title} className="mobile-story-img" />
+                  ) : (
+                    <div className="mobile-story-img-placeholder" />
+                  )}
+                  <span className="mobile-story-cat-badge" style={{ background: item.category?.color || "#e50914" }}>
+                    {item.category?.name || (lang === "HI" ? "समाचार" : "NEWS")}
+                  </span>
+                </div>
+                <h3 className="mobile-story-title">{item.title}</h3>
+                <div className="mobile-story-footer" style={{ marginTop: "auto" }}>
+                  <span className="mobile-story-time"><Clock size={11} /> {timeStr}</span>
+                  <span className="mobile-story-readtime">{item.readTime || (lang === "HI" ? "4 मिनट" : "4 min")}</span>
+                </div>
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ===========================
+          MOBILE: STATE NEWS LIST SECTION
+          =========================== */}
+      <section className="mobile-state-section">
+        <div className="mobile-section-header">
+          <h2 className="mobile-section-title">{lang === "HI" ? "झारखंड" : "Jharkhand"}</h2>
+          <Link href="/india" className="mobile-see-all">{lang === "HI" ? "सभी देखें" : "See All"}</Link>
+        </div>
+        <div className="mobile-state-list">
+          {stateArticles.map((item, idx) => (
+            <article key={item.id} className="mobile-state-item">
+              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "12px" }}>
+                <div className="mobile-state-thumb">
+                  {getArticleImage(item, idx + 6) ? (
+                    <img src={getArticleImage(item, idx + 6)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: "10px" }} />
+                  )}
+                </div>
+                <div className="mobile-state-content">
+                  <h3 className="mobile-state-title">{item.title}</h3>
+                  <div className="mobile-state-meta">
+                    <span><Clock size={11} /> {timeStr}</span>
+                    <span><Calendar size={11} /> {dateStr}</span>
+                  </div>
+                </div>
+                <button className="mobile-state-bookmark" onClick={(e) => e.preventDefault()}>
+                  <Bookmark size={18} />
+                </button>
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ===========================
+          DESKTOP: Today's Top Stories Horizontal Carousel
+          =========================== */}
+      <section className="todays-top-stories-section desktop-top-stories" style={{ marginTop: "0px", marginBottom: "0px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
           <div>
             <h2 className="section-title" style={{ fontSize: "1.6rem", fontWeight: 800, margin: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>
@@ -241,7 +417,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* MARQUEE CAROUSEL WRAPPER */}
         <div className="top-stories-carousel-wrapper">
           <div
             ref={containerRef}
@@ -256,11 +431,7 @@ export default function Home() {
                 <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
                     {getArticleImage(item, index + 3) ? (
-                      <img
-                        src={getArticleImage(item, index + 3)}
-                        alt={item.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
+                      <img src={getArticleImage(item, index + 3)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" }} />
                     )}
@@ -271,16 +442,15 @@ export default function Home() {
                   </div>
                   <div className="story-info-box">
                     <h3 className="story-heading">{item.title}</h3>
-                    {/* Time + Date meta row */}
                     <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.74rem", color: "var(--color-secondary)", marginTop: "2px" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Clock size={12} />
-                        {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                        {timeStr}
                       </span>
                       <span style={{ color: "var(--color-border)" }}>|</span>
                       <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Calendar size={12} />
-                        {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {dateStr}
                       </span>
                     </div>
                     <p className="story-brief">{stripHtml(item.summary)}</p>
@@ -296,24 +466,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trending Videos Section */}
-      <section style={{ marginTop: "-12px", marginBottom: "40px" }}>
+      {/* ===========================
+          Trending Videos Section
+          =========================== */}
+      <section className="trending-videos-section" style={{ marginTop: "-12px", marginBottom: "32px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
           <Link href="/videos" style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: "4px", height: "22px", background: "#e50914", borderRadius: "2px", display: "inline-block" }} />
               <h2 style={{ fontSize: "1.45rem", fontWeight: 800, margin: 0, color: "var(--color-text)", display: "flex", alignItems: "center", gap: "6px", fontFamily: lang === "HI" ? "var(--font-hindi-heading, sans-serif)" : "inherit" }}>
                 | {t("trendingVideos")}
-                <ChevronRight size={22} style={{ color: "var(--color-text)", strokeWidth: 2.8 }} />
+                <ArrowRight size={22} style={{ color: "var(--color-text)", strokeWidth: 2.8 }} />
               </h2>
             </div>
           </Link>
-          <Link href="/videos" style={{ color: "#e50914", textDecoration: "none", fontWeight: 800, fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Link href="/videos" style={{ color: "#e50914", textDecoration: "none", fontWeight: 800, fontSize: "0.88rem" }}>
             {t("seeAllVideos")}
           </Link>
         </div>
 
-        {/* Video Cards Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "20px 18px" }}>
           {trendingVideos.map((video) => (
             <Link
@@ -321,53 +492,19 @@ export default function Home() {
               href={`/videos?v=${video.youtubeId}`}
               style={{ textDecoration: "none", color: "inherit", cursor: "pointer", transition: "transform 0.2s ease" }}
             >
-              {/* Thumbnail Container */}
               <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", background: "#111", borderRadius: "10px", overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
                 <img
                   src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
                   alt={video.title}
                   style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
                 />
-                
-                {/* Dark Hover Overlay */}
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", transition: "background 0.2s ease" }} />
-
-                {/* Duration Badge Bottom-Left */}
-                <div style={{
-                  position: "absolute",
-                  bottom: "8px",
-                  left: "8px",
-                  background: "rgba(0, 0, 0, 0.85)",
-                  color: "#ffffff",
-                  padding: "3px 8px",
-                  borderRadius: "4px",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  letterSpacing: "0.02em",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.4)"
-                }}>
+                <div style={{ position: "absolute", bottom: "8px", left: "8px", background: "rgba(0,0,0,0.85)", color: "#ffffff", padding: "3px 8px", borderRadius: "4px", fontSize: "0.72rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
                   <Play size={10} style={{ fill: "#ffffff", color: "#ffffff" }} />
                   <span>{video.duration || "01:08"}</span>
                 </div>
               </div>
-
-              {/* Video Title */}
-              <h3 style={{
-                fontSize: "0.92rem",
-                fontWeight: 700,
-                color: "var(--color-text)",
-                marginTop: "10px",
-                marginBottom: "0",
-                lineHeight: "1.4",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                fontFamily: lang === "HI" ? "var(--font-hindi-body, sans-serif)" : "inherit"
-              }}>
+              <h3 style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--color-text)", marginTop: "10px", marginBottom: "0", lineHeight: "1.4", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                 {video.title}
               </h3>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
@@ -379,58 +516,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Embedded YouTube Video Modal Player (Compact 580px Cinema Theater) */}
+      {/* Embedded YouTube Video Modal */}
       {activeVideoModal && (
         <div
           onClick={() => setActiveVideoModal(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.78)",
-            backdropFilter: "blur(6px)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px"
-          }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#111115",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              borderRadius: "16px",
-              width: "100%",
-              maxWidth: "580px",
-              overflow: "hidden",
-              boxShadow: "0 25px 60px -10px rgba(0,0,0,0.85)",
-              color: "#ffffff",
-              display: "flex",
-              flexDirection: "column"
-            }}
+            style={{ background: "#111115", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "16px", width: "100%", maxWidth: "580px", overflow: "hidden", boxShadow: "0 25px 60px -10px rgba(0,0,0,0.85)", color: "#ffffff", display: "flex", flexDirection: "column" }}
           >
-            {/* Modal Header */}
             <div style={{ padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #22222a", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0, flex: 1 }}>
-                <span style={{ background: "#e50914", color: "#fff", padding: "3px 8px", borderRadius: "5px", fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", flexShrink: 0 }}>
+                <span style={{ background: "#e50914", color: "#fff", padding: "3px 8px", borderRadius: "5px", fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase" }}>
                   {activeVideoModal.category}
                 </span>
                 <h3 style={{ fontSize: "0.92rem", fontWeight: 700, margin: 0, color: "#fff", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                   {activeVideoModal.title}
                 </h3>
               </div>
-              <button
-                onClick={() => setActiveVideoModal(null)}
-                style={{ background: "#22222a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.15s ease" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#e50914"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "#22222a"; }}
-              >
+              <button onClick={() => setActiveVideoModal(null)} style={{ background: "#22222a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <X size={16} />
               </button>
             </div>
-
-            {/* Video Player */}
             <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", background: "#000" }}>
               <iframe
                 src={`https://www.youtube.com/embed/${activeVideoModal.youtubeId}?autoplay=1&rel=0&enablejsapi=1`}
@@ -440,17 +548,11 @@ export default function Home() {
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
               />
             </div>
-
-            {/* Modal Footer */}
             <div style={{ padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0c", borderTop: "1px solid #1a1a20", flexWrap: "wrap", gap: "10px" }}>
               <span style={{ fontSize: "0.8rem", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "6px" }}>
                 <Clock size={13} style={{ color: "#e50914" }} /> {t("duration")}: <strong>{activeVideoModal.duration || "01:08"}</strong>
               </span>
-              <Link
-                href="/videos"
-                onClick={() => setActiveVideoModal(null)}
-                style={{ color: "#e50914", fontSize: "0.8rem", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}
-              >
+              <Link href="/videos" onClick={() => setActiveVideoModal(null)} style={{ color: "#e50914", fontSize: "0.8rem", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
                 {t("openVideoPortal")} <ExternalLink size={13} />
               </Link>
             </div>
@@ -459,14 +561,14 @@ export default function Home() {
       )}
 
       {/* Newsletter Subscription Bar */}
-      <section style={{ background: "linear-gradient(135deg, #09090b 0%, #1c1917 100%)", color: "#ffffff", padding: "40px 32px", borderRadius: "20px", marginBottom: "20px", boxShadow: "var(--shadow-md)" }}>
+      <section className="home-newsletter-section" style={{ background: "linear-gradient(135deg, #09090b 0%, #1c1917 100%)", color: "#ffffff", padding: "36px 24px", borderRadius: "20px", marginTop: "16px", marginBottom: "16px", boxShadow: "var(--shadow-md)" }}>
         <div style={{ maxWidth: "680px", margin: "0 auto", textAlign: "center" }}>
           <Mail size={36} style={{ color: "#e50914", marginBottom: "12px" }} />
           <h2 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "0 0 8px 0" }}>{t("newsletterTitle")}</h2>
           <p style={{ color: "#a1a1aa", fontSize: "0.95rem", margin: "0 0 24px 0", lineHeight: 1.5 }}>
             {t("newsletterDesc")}
           </p>
-          <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+          <div className="form-wrap" style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
             <input
               type="email"
               placeholder="Enter your email address..."

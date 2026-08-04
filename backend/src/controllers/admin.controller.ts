@@ -145,6 +145,19 @@ export async function getSiteSettings(_req: Request, res: Response, next: NextFu
   }
 }
 
+// Public settings — no auth required (logo, theme basics visible to all visitors)
+export async function getPublicSiteSettings(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const PUBLIC_KEYS = ["site_logo_url", "site_logo_size", "site_logo_margin"];
+    const settings = await prisma.siteSetting.findMany({
+      where: { key: { in: PUBLIC_KEYS } },
+    });
+    sendSuccess(res, settings);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateSiteSetting(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { key, value } = req.body;
@@ -158,6 +171,17 @@ export async function updateSiteSetting(req: Request, res: Response, next: NextF
     await cache.del(cacheKeys.siteSettings());
 
     sendSuccess(res, setting, "Setting updated.");
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteSiteSetting(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const key = req.params.key as string;
+    await prisma.siteSetting.deleteMany({ where: { key } });
+    await cache.del(cacheKeys.siteSettings());
+    sendNoContent(res);
   } catch (error) {
     next(error);
   }

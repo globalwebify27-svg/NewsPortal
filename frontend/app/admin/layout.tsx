@@ -22,7 +22,8 @@ import {
   EyeOff,
   Zap,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,65 +31,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [adminUser, setAdminUser] = useState("admin@globalawaaz.com");
+  const [adminUser, setAdminUser] = useState<string>("admin@globalawaaz.com");
 
-  // Inline Login Form State
-  const [loginId, setLoginId] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  // Login form state
+  const [emailInput, setEmailInput] = useState("admin@globalawaaz.com");
+  const [passwordInput, setPasswordInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
     if (isAuth) {
       const user = localStorage.getItem("ga_admin_user");
-      if (user) {
-        setAdminUser(user);
-      }
+      if (user) setAdminUser(user);
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
     }
   }, []);
 
-  const handleInlineLogin = (e: React.FormEvent) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg("");
-
-    const cleanId = loginId.trim().toLowerCase();
-    const cleanPass = loginPassword.trim();
-
-    if (!cleanId || !cleanPass) {
-      setErrorMsg("Please enter your Admin Login ID and Password.");
-      return;
-    }
-
+    setLoginError("");
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const isValidAdmin =
-        (cleanId === "admin@globalawaaz.com" || cleanId === "admin" || cleanId.includes("admin")) &&
-        (cleanPass === "admin123" || cleanPass === "admin" || cleanPass === "globalawaaz2026");
+      const userEmail = emailInput.trim().toLowerCase();
+      const pass = passwordInput;
 
-      if (isValidAdmin || (cleanId && cleanPass.length >= 3)) {
-        const userEmail = cleanId.includes("@") ? cleanId : `${cleanId}@globalawaaz.com`;
+      if (userEmail === "admin@globalawaaz.com" && pass === "admin123") {
         localStorage.setItem("ga_admin_logged_in", "true");
         localStorage.setItem("ga_admin_user", userEmail);
         setAdminUser(userEmail);
         setIsAuthenticated(true);
         setIsSubmitting(false);
       } else {
+        setLoginError("Invalid credentials. Try: admin@globalawaaz.com / admin123");
         setIsSubmitting(false);
-        setErrorMsg("Authentication failed. Please verify your credentials or click 'Fill Demo Credentials'.");
       }
-    }, 450);
-  };
-
-  const handleFillDemoCredentials = () => {
-    setLoginId("admin@globalawaaz.com");
-    setLoginPassword("admin123");
-    setErrorMsg("");
+    }, 600);
   };
 
   const handleLogout = () => {
@@ -102,7 +84,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Articles Queue", href: "/admin/articles", icon: FileText },
     { name: "Categories", href: "/admin/categories", icon: FolderTree },
     { name: "Media Library", href: "/admin/media", icon: ImageIcon },
-    { name: "Videos Manager", href: "/admin/videos", icon: Video, badge: "NEW" },
+    { name: "Videos Manager", href: "/admin/videos", icon: Video },
+    { name: "About Us Page", href: "/admin/about", icon: BookOpen, badge: "NEW" },
     { name: "AI Copilot", href: "/admin/ai", icon: Bot, badge: "AI" },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Site Settings", href: "/admin/settings", icon: Settings }
@@ -198,14 +181,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             </div>
 
-            {errorMsg && (
+            {loginError && (
               <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "12px 14px", borderRadius: "10px", fontSize: "0.84rem", fontWeight: 600, marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
                 <AlertCircle size={17} style={{ flexShrink: 0, color: "#ef4444" }} />
-                <span>{errorMsg}</span>
+                <span>{loginError}</span>
               </div>
             )}
 
-            <form onSubmit={handleInlineLogin} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#94a3b8", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Admin Username / Email
@@ -214,9 +197,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Mail size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
                   <input
                     type="text"
-                    placeholder="admin@example.com"
-                    value={loginId}
-                    onChange={(e) => setLoginId(e.target.value)}
+                    placeholder="admin@globalawaaz.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
                     style={{
                       width: "100%",
                       padding: "13px 14px 13px 44px",
@@ -241,8 +224,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
                     style={{
                       width: "100%",
                       padding: "13px 44px 13px 44px",

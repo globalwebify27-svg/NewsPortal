@@ -49,7 +49,10 @@ import {
   MessageSquare,
   Tv,
   ChevronDown,
-  Filter
+  Filter,
+  Sliders,
+  RotateCcw,
+  Check
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
@@ -78,6 +81,69 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  // Interactive News Filter States
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterSort, setFilterSort] = useState<string>("latest");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterTimeRange, setFilterTimeRange] = useState<string>("all");
+  const [filterState, setFilterStateFilter] = useState<string>("all");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ga_active_filters");
+      if (saved && pathname !== "/") {
+        const parsed = JSON.parse(saved);
+        if (parsed.sort) setFilterSort(parsed.sort);
+        if (parsed.category) setFilterCategory(parsed.category);
+        if (parsed.format) setFilterFormat(parsed.format);
+        if (parsed.timeRange) setFilterTimeRange(parsed.timeRange);
+        if (parsed.state) setFilterStateFilter(parsed.state);
+      } else if (pathname === "/") {
+        // Reset any residual filters when opening/refreshing Top News (Homepage)
+        setFilterSort("latest");
+        setFilterCategory("all");
+        setFilterFormat("all");
+        setFilterTimeRange("all");
+        setFilterStateFilter("all");
+      }
+    } catch (e) {}
+  }, [pathname]);
+
+  const activeFilterCount =
+    (filterSort !== "latest" ? 1 : 0) +
+    (filterCategory !== "all" ? 1 : 0) +
+    (filterFormat !== "all" ? 1 : 0) +
+    (filterTimeRange !== "all" ? 1 : 0) +
+    (filterState !== "all" ? 1 : 0);
+
+  const handleApplyFilters = () => {
+    const filters = {
+      sort: filterSort,
+      category: filterCategory,
+      format: filterFormat,
+      timeRange: filterTimeRange,
+      state: filterState
+    };
+    try {
+      localStorage.setItem("ga_active_filters", JSON.stringify(filters));
+      window.dispatchEvent(new Event("ga_filter_changed"));
+    } catch (e) {}
+    setIsFilterModalOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setFilterSort("latest");
+    setFilterCategory("all");
+    setFilterFormat("all");
+    setFilterTimeRange("all");
+    setFilterStateFilter("all");
+    try {
+      localStorage.removeItem("ga_active_filters");
+      window.dispatchEvent(new Event("ga_filter_changed"));
+    } catch (e) {}
+  };
 
   // Custom Admin Logo State
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
@@ -116,25 +182,36 @@ export default function Header() {
   };
 
   useEffect(() => {
-    const loadLogo = () => {
+    const loadLogo = async () => {
       try {
-        const stored = localStorage.getItem("ga_custom_site_logo");
-        if (stored) setCustomLogoUrl(stored);
-        else setCustomLogoUrl(null);
-
-        const storedSize = localStorage.getItem("ga_custom_logo_size");
-        if (storedSize) setCustomLogoSize(parseInt(storedSize, 10) || 56);
-
-        const storedMargin = localStorage.getItem("ga_custom_logo_margin");
-        if (storedMargin) setCustomLogoMarginLeft(parseInt(storedMargin, 10) || 75);
-      } catch (e) {}
+        const res = await fetch("/api/v1/logo-settings");
+        const json = await res.json();
+        if (json.success && json.data) {
+          const data = json.data as Record<string, string>;
+          if (data.site_logo_url) {
+            setCustomLogoUrl(data.site_logo_url);
+          } else {
+            setCustomLogoUrl(null);
+          }
+          if (data.site_logo_size) {
+            setCustomLogoSize(parseInt(data.site_logo_size, 10) || 56);
+          }
+          if (data.site_logo_margin) {
+            setCustomLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
+          }
+        } else {
+          setCustomLogoUrl(null);
+        }
+      } catch (e) {
+        setCustomLogoUrl(null);
+      }
     };
     loadLogo();
-    window.addEventListener("storage", loadLogo);
-    window.addEventListener("ga_logo_updated", loadLogo);
+    // Re-fetch from DB when admin panel signals an update
+    const handleLogoUpdate = () => { loadLogo(); };
+    window.addEventListener("ga_logo_updated", handleLogoUpdate);
     return () => {
-      window.removeEventListener("storage", loadLogo);
-      window.removeEventListener("ga_logo_updated", loadLogo);
+      window.removeEventListener("ga_logo_updated", handleLogoUpdate);
     };
   }, []);
 
@@ -250,10 +327,10 @@ export default function Header() {
           </div>
           <div className="top-bar-right">
             <nav className="top-bar-links">
-              <a href="#">{lang === "HI" ? "हमारे बारे में" : "About Us"}</a>
-              <a href="#">{lang === "HI" ? "करियर" : "Careers"}</a>
-              <a href="#">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</a>
-              <a href="#">{lang === "HI" ? "संपर्क करें" : "Contact Us"}</a>
+              <Link href="/about">{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link>
+              <Link href="/#careers">{lang === "HI" ? "करियर" : "Careers"}</Link>
+              <Link href="/#advertise">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link>
+              <Link href="/#contact">{lang === "HI" ? "संपर्क करें" : "Contact Us"}</Link>
             </nav>
             <span className="top-bar-vdivider">|</span>
             <div className="top-bar-social-icons">
@@ -272,6 +349,7 @@ export default function Header() {
           {/* Left Side: Logo Emblem + Weather + Live Badge */}
           <div className="header-left">
             <button
+              id="mobileMenuBtn"
               className="icon-btn mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle Navigation"
@@ -279,35 +357,14 @@ export default function Header() {
               <Menu size={22} />
             </button>
 
-            {/* Custom Admin Logo Image on Left */}
-            <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
-              <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
-                {customLogoUrl ? (
-                  <img src={customLogoUrl} alt="Global Awaaz Custom Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                ) : (
-                  <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                    {/* Red & Green Orbital Arc Ring */}
-                    <path d="M 50 5 A 45 45 0 0 0 10 76" fill="none" stroke="#dc2626" strokeWidth="5" strokeLinecap="round" />
-                    <path d="M 90 24 A 45 45 0 0 1 50 95" fill="none" stroke="#15803d" strokeWidth="5" strokeLinecap="round" />
-                    
-                    {/* Central Globe Circle */}
-                    <circle cx="50" cy="50" r="37" fill="#ffffff" stroke="#15803d" strokeWidth="2.5" />
-                    
-                    {/* Globe Grid Lines */}
-                    <ellipse cx="50" cy="50" rx="37" ry="18" fill="none" stroke="#15803d" strokeWidth="1.2" opacity="0.4" />
-                    <ellipse cx="50" cy="50" rx="18" ry="37" fill="none" stroke="#15803d" strokeWidth="1.2" opacity="0.4" />
-                    <line x1="50" y1="13" x2="50" y2="87" stroke="#15803d" strokeWidth="1.2" opacity="0.4" />
-                    <line x1="13" y1="50" x2="87" y2="50" stroke="#15803d" strokeWidth="1.2" opacity="0.4" />
-                    
-                    {/* Green Continents Paths */}
-                    <g fill="#15803d">
-                      <path d="M 30 22 C 38 24 38 32 32 40 C 26 48 34 58 32 72 C 24 64 22 48 24 34 Z" />
-                      <path d="M 54 20 C 72 22 76 34 68 44 C 60 54 74 66 64 80 C 50 78 48 62 52 46 Z" />
-                    </g>
-                  </svg>
-                )}
-              </div>
-            </Link>
+            {/* Custom Admin Logo — only shown when set by admin */}
+            {customLogoUrl && (
+              <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
+                <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
+                  <img src={customLogoUrl} alt="Site Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* Center: Site Logo Title and Tagline */}
@@ -316,12 +373,12 @@ export default function Header() {
               {/* Title and Dual-Color Accent Tagline */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <span className="site-logo">GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></span>
-                <div className="site-tagline-wrap" style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
-                  <span style={{ width: "28px", height: "3px", background: "#15803d", borderRadius: "2px" }}></span>
-                  <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
-                    LOCAL <span style={{ color: "#f59e0b", fontWeight: 900 }}>से</span> GLOBAL <span style={{ color: "#e50914", fontWeight: 900 }}>तक</span>
+                <div className="site-tagline-wrap">
+                  <span className="tagline-dash tagline-dash-red"></span>
+                  <span className="site-tagline-text">
+                    LOCAL <span style={{ color: "#e50914", fontWeight: 900 }}>से</span> GLOBAL <span style={{ color: "#e50914", fontWeight: 900 }}>तक</span>
                   </span>
-                  <span style={{ width: "28px", height: "3px", background: "#dc2626", borderRadius: "2px" }}></span>
+                  <span className="tagline-dash tagline-dash-red"></span>
                 </div>
               </div>
             </Link>
@@ -669,12 +726,27 @@ export default function Header() {
                   {isActive("/videos") && <span className="active-pill-bar"></span>}
                 </Link>
               </li>
+              <li>
+                <Link href="/about" className={`nav-link pill-nav-link ${isActive("/about") ? "active" : ""}`}>
+                  <BookOpen size={15} />
+                  <span>{lang === "HI" ? "हमारे बारे में" : "About Us"}</span>
+                  {isActive("/about") && <span className="active-pill-bar"></span>}
+                </Link>
+              </li>
+              <li>
+                <div
+                  className={`filter-pill-btn ${activeFilterCount > 0 ? "active-filter" : ""}`}
+                  onClick={() => setIsFilterModalOpen(true)}
+                  style={{ cursor: "pointer", position: "relative" }}
+                >
+                  <Filter size={13} />
+                  <span>{lang === "HI" ? "फ़िल्टर" : "Filter"}</span>
+                  {activeFilterCount > 0 && (
+                    <span className="filter-badge">{activeFilterCount}</span>
+                  )}
+                </div>
+              </li>
             </ul>
-
-            <div className="filter-pill-btn">
-              <Filter size={13} />
-              <span>{lang === "HI" ? "फ़िल्टर" : "Filter"}</span>
-            </div>
           </div>
         </div>
       </nav>
@@ -728,25 +800,30 @@ export default function Header() {
               <li><Link href="/health" onClick={() => setMobileMenuOpen(false)}>{t("health")}</Link></li>
               <li><Link href="/opinion" onClick={() => setMobileMenuOpen(false)}>{t("opinion")}</Link></li>
               <li><Link href="/videos" onClick={() => setMobileMenuOpen(false)}>{t("videos")}</Link></li>
+              <li><Link href="/about" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link></li>
             </ul>
           </div>
         </div>
       )}
 
-      {/* Indian States Selector Modal */}
+      {/* Interactive State Selector Modal */}
       {isStateModalOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999, padding: "20px" }}>
-          <div style={{ background: "#ffffff", border: "1.5px solid #e2e8f0", borderTop: "4px solid #e50914", borderRadius: "16px", width: "100%", maxWidth: "680px", padding: "24px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", color: "#0f172a" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1.5px solid #f1f5f9", paddingBottom: "12px" }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
-                  🇮🇳 {lang === "HI" ? "भारत के राज्य चुनें (Select State)" : "Select Indian State"}
+        <div
+          onClick={() => setIsStateModalOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "16px", width: "100%", maxWidth: "560px", padding: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <MapPin size={18} style={{ color: "#e50914" }} />
+                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+                  {lang === "HI" ? "अपना राज्य चुनें (Select State)" : "Select Your State"}
                 </h3>
-                <span style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "2px", display: "block" }}>
-                  {lang === "HI" ? "अपने राज्य की ताज़ा खबरें देखने के लिए अपना राज्य चुनें" : "Select your state to filter local news highlights"}
-                </span>
               </div>
-              <button onClick={() => setIsStateModalOpen(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: "8px", cursor: "pointer", color: "#0f172a", padding: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button className="icon-btn" onClick={() => setIsStateModalOpen(false)} style={{ border: "none", background: "#f1f5f9", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <X size={18} />
               </button>
             </div>
@@ -800,6 +877,166 @@ export default function Header() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INTERACTIVE NEWS FILTER MODAL ────────────────────────────────────── */}
+      {isFilterModalOpen && (
+        <div
+          className="filter-modal-overlay"
+          onClick={() => setIsFilterModalOpen(false)}
+        >
+          <div
+            className="filter-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="filter-modal-header">
+              <div className="filter-modal-title">
+                <Sliders size={18} style={{ color: "#e50914" }} />
+                <h3>{lang === "HI" ? "समाचार फ़िल्टर" : "News Filters"}</h3>
+                {activeFilterCount > 0 && (
+                  <span className="filter-count-pill">{activeFilterCount} {lang === "HI" ? "सक्रिय" : "active"}</span>
+                )}
+              </div>
+              <button className="icon-btn close-modal-btn" onClick={() => setIsFilterModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="filter-modal-body">
+
+              {/* 1. Sort By */}
+              <div className="filter-group">
+                <label className="filter-group-label">{lang === "HI" ? "1. क्रमबद्ध करें (Sort By)" : "1. Sort By"}</label>
+                <div className="filter-options-grid">
+                  {[
+                    { id: "latest", nameHi: "🔥 ताज़ा समाचार (Latest)", nameEn: "🔥 Latest First" },
+                    { id: "popular", nameHi: "⭐ लोकप्रिय / ट्रेंडिंग (Trending)", nameEn: "⭐ Most Popular" },
+                    { id: "editors", nameHi: "🏆 संपादकीय पसंद (Editor's Pick)", nameEn: "🏆 Editor's Pick" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      className={`filter-chip ${filterSort === item.id ? "selected" : ""}`}
+                      onClick={() => setFilterSort(item.id)}
+                    >
+                      {filterSort === item.id && <Check size={13} />}
+                      {lang === "HI" ? item.nameHi : item.nameEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Categories */}
+              <div className="filter-group">
+                <label className="filter-group-label">{lang === "HI" ? "2. श्रेणी (Category)" : "2. Category"}</label>
+                <div className="filter-options-grid">
+                  {[
+                    { id: "all", nameHi: "🌐 सभी श्रेणियां (All)", nameEn: "🌐 All Categories" },
+                    { id: "world", nameHi: "🌍 विदेश (World)", nameEn: "🌍 World" },
+                    { id: "india", nameHi: "🇮🇳 भारत (India)", nameEn: "🇮🇳 India" },
+                    { id: "business", nameHi: "💼 व्यापार (Business)", nameEn: "💼 Business" },
+                    { id: "technology", nameHi: "💻 तकनीक (Technology)", nameEn: "💻 Technology" },
+                    { id: "sports", nameHi: "🏆 खेल (Sports)", nameEn: "🏆 Sports" },
+                    { id: "entertainment", nameHi: "🎬 मनोरंजन (Entertainment)", nameEn: "🎬 Entertainment" },
+                    { id: "science", nameHi: "🔬 विज्ञान (Science)", nameEn: "🔬 Science" },
+                    { id: "health", nameHi: "🩺 स्वास्थ्य (Health)", nameEn: "🩺 Health" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      className={`filter-chip ${filterCategory === item.id ? "selected" : ""}`}
+                      onClick={() => setFilterCategory(item.id)}
+                    >
+                      {filterCategory === item.id && <Check size={13} />}
+                      {lang === "HI" ? item.nameHi : item.nameEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Content Type */}
+              <div className="filter-group">
+                <label className="filter-group-label">{lang === "HI" ? "3. सामग्री का प्रकार (Content Format)" : "3. Content Format"}</label>
+                <div className="filter-options-grid">
+                  {[
+                    { id: "all", nameHi: "📰 सभी सामग्री (All)", nameEn: "📰 All Formats" },
+                    { id: "articles", nameHi: "📝 केवल लेख (Articles)", nameEn: "📝 Articles Only" },
+                    { id: "videos", nameHi: "🎥 वीडियो (Videos)", nameEn: "🎥 Videos Only" },
+                    { id: "epaper", nameHi: "📄 ई-पेपर (E-Paper)", nameEn: "📄 E-Paper Edition" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      className={`filter-chip ${filterFormat === item.id ? "selected" : ""}`}
+                      onClick={() => setFilterFormat(item.id)}
+                    >
+                      {filterFormat === item.id && <Check size={13} />}
+                      {lang === "HI" ? item.nameHi : item.nameEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Time Range */}
+              <div className="filter-group">
+                <label className="filter-group-label">{lang === "HI" ? "4. समय सीमा (Time Range)" : "4. Time Range"}</label>
+                <div className="filter-options-grid">
+                  {[
+                    { id: "all", nameHi: "⏱️ सभी समय (All Time)", nameEn: "⏱️ All Time" },
+                    { id: "24h", nameHi: "⚡ पिछले 24 घंटे (Last 24h)", nameEn: "⚡ Last 24 Hours" },
+                    { id: "7d", nameHi: "📅 इस सप्ताह (Past 7 Days)", nameEn: "📅 Past 7 Days" },
+                    { id: "30d", nameHi: "🗓️ इस महीने (Past 30 Days)", nameEn: "🗓️ Past 30 Days" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      className={`filter-chip ${filterTimeRange === item.id ? "selected" : ""}`}
+                      onClick={() => setFilterTimeRange(item.id)}
+                    >
+                      {filterTimeRange === item.id && <Check size={13} />}
+                      {lang === "HI" ? item.nameHi : item.nameEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 5. Regional / State News */}
+              <div className="filter-group">
+                <label className="filter-group-label">{lang === "HI" ? "5. राज्य / क्षेत्र (State Filter)" : "5. State Filter"}</label>
+                <div className="filter-options-grid">
+                  {[
+                    { id: "all", name: "📍 सभी राज्य (All States)" },
+                    { id: "jharkhand", name: "📍 झारखंड (Jharkhand)" },
+                    { id: "bihar", name: "📍 बिहार (Bihar)" },
+                    { id: "uttar-pradesh", name: "📍 उत्तर प्रदेश (UP)" },
+                    { id: "delhi", name: "📍 दिल्ली NCR (Delhi)" },
+                    { id: "maharashtra", name: "📍 महाराष्ट्र (Maharashtra)" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      className={`filter-chip ${filterState === item.id ? "selected" : ""}`}
+                      onClick={() => setFilterStateFilter(item.id)}
+                    >
+                      {filterState === item.id && <Check size={13} />}
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="filter-modal-footer">
+              <button className="filter-reset-btn" onClick={handleResetFilters}>
+                <RotateCcw size={14} />
+                {lang === "HI" ? "रीसेट करें" : "Reset All"}
+              </button>
+              <button className="filter-apply-btn" onClick={handleApplyFilters}>
+                {lang === "HI" ? "फ़िल्टर लागू करें" : "Apply Filters"}
+              </button>
+            </div>
+
           </div>
         </div>
       )}

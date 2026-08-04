@@ -10,7 +10,9 @@ import {
   updateBreakingNews,
   deleteBreakingNews,
   getSiteSettings,
+  getPublicSiteSettings,
   updateSiteSetting,
+  deleteSiteSetting,
   getUsers,
   updateUserRole,
   getAuditLogs,
@@ -20,6 +22,10 @@ import { protect } from "../middleware/auth.middleware";
 import { requireAdmin, requireSuperAdmin } from "../middleware/rbac.middleware";
 
 export const adminRouter = Router();
+
+// ─── Public Routes (no auth) ──────────────────────────────────────────────────
+// Must be registered BEFORE adminRouter.use(protect, requireAdmin)
+adminRouter.get("/settings/public", getPublicSiteSettings);
 
 adminRouter.use(protect, requireAdmin);
 
@@ -36,6 +42,7 @@ adminRouter.delete("/breaking-news/:id", deleteBreakingNews);
 // Settings
 adminRouter.get("/settings", getSiteSettings);
 adminRouter.post("/settings", updateSiteSetting);
+adminRouter.delete("/settings/:key", deleteSiteSetting);
 
 // Users Management
 adminRouter.get("/users", getUsers);
@@ -43,3 +50,4 @@ adminRouter.patch("/users/:id/role", requireSuperAdmin, updateUserRole);
 
 // Audit Logs (SuperAdmin only)
 adminRouter.get("/audit-logs", requireSuperAdmin, getAuditLogs);
+
