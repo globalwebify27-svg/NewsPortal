@@ -1,38 +1,44 @@
 // =============================================================================
-// Cloudinary Integration for Next.js App Router
-// Handles Serverless Image Uploads to Cloudinary CDN with Hardcoded Fallbacks
+// Local Media Storage Handler for Next.js App Router
+// Stores all uploaded files locally in public/uploads on project disk
 // =============================================================================
 
-import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
 export async function uploadImageToCloudinary(
   base64Data: string,
-  folder: string = "global-awaaz/articles"
+  folder: string = "uploads"
 ): Promise<{ url: string; publicId: string; width?: number; height?: number }> {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dbhpvsaf3";
-  const apiKey = process.env.CLOUDINARY_API_KEY || "572187337428435";
-  const apiSecret = process.env.CLOUDINARY_API_SECRET || "0nvTgzxSqD3pqbeFTfuI9qd1XRk";
+  try {
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
 
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true,
-  });
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const filename = `media_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.png`;
+    const filepath = path.join(uploadsDir, filename);
 
-  const result = await cloudinary.uploader.upload(base64Data, {
-    folder,
-    resource_type: "image",
-    format: "webp",
-    quality: "auto:good",
-  });
+    if (matches && matches.length === 3) {
+      const buffer = Buffer.from(matches[2], "base64");
+      fs.writeFileSync(filepath, buffer);
+    } else {
+      const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Clean, "base64");
+      fs.writeFileSync(filepath, buffer);
+    }
 
-  return {
-    url: result.secure_url,
-    publicId: result.public_id,
-    width: result.width,
-    height: result.height,
-  };
+    const publicUrl = `/uploads/${filename}`;
+
+    return {
+      url: publicUrl,
+      publicId: filename,
+      width: 1200,
+      height: 800,
+    };
+  } catch (err: any) {
+    console.error("Local file save error:", err);
+    throw new Error("Failed to save media file to public/uploads directory");
+  }
 }
-
-export { cloudinary };

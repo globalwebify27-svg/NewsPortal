@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ImageIcon, Upload, Check, Copy, Trash2, Loader2, RefreshCw, FolderOpen } from "lucide-react";
+import { convertImageToWebP } from "@/lib/webpConverter";
 
 interface MediaItem {
   id: string;
@@ -18,13 +19,11 @@ export default function AdminMediaPage() {
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [toastMsg, setToastMsg] = useState("");
-  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToastMsg(msg);
-    setToastType(type);
-    setTimeout(() => setToastMsg(""), 3000);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const formatSize = (bytes?: number) => {
@@ -58,18 +57,20 @@ export default function AdminMediaPage() {
 
   useEffect(() => { fetchMedia(); }, [fetchMedia]);
 
-  // ── Upload new file to Cloudinary → save to DB ─────────────────────────────
+  // ── Upload new file → convert to WebP → save to DB ─────────────────────────
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
     setUploading(true);
+    showToast("⏳ Converting image to WebP format...");
     try {
+      const file = await convertImageToWebP(rawFile);
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
       const json = await res.json();
       if (json.success) {
-        showToast("✓ Image uploaded & saved to media library!");
+        showToast("✓ Image converted to WebP & saved to media library!");
         await fetchMedia();
       } else {
         showToast("❌ Upload failed: " + (json.message || "Unknown error"), "error");
@@ -111,13 +112,6 @@ export default function AdminMediaPage() {
 
   return (
     <div>
-      {/* Toast */}
-      {toastMsg && (
-        <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "#0a0a0a", color: "#fff", border: `2px solid ${toastType === "error" ? "#ef4444" : "#e50914"}`, padding: "14px 20px", borderRadius: "10px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", zIndex: 9999, fontWeight: 600, fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "10px", maxWidth: "340px", animation: "slideIn 0.2s ease" }}>
-          <Check size={16} style={{ color: toastType === "error" ? "#f87171" : "#22c55e", flexShrink: 0 }} />
-          <span>{toastMsg}</span>
-        </div>
-      )}
 
       {/* Header */}
       <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "28px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
@@ -226,6 +220,28 @@ export default function AdminMediaPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Toast Popup Notification */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            background: toast.type === "error" ? "#7f1d1d" : "#0f172a",
+            color: "#ffffff",
+            border: `2px solid ${toast.type === "error" ? "#ef4444" : "#00875a"}`,
+            padding: "12px 20px",
+            borderRadius: "10px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            zIndex: 99999,
+            fontWeight: 700,
+            fontSize: "0.88rem"
+          }}
+        >
+          {toast.message}
         </div>
       )}
     </div>

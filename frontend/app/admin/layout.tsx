@@ -23,7 +23,9 @@ import {
   Zap,
   AlertCircle,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Newspaper,
+  Globe
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -31,10 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [adminUser, setAdminUser] = useState<string>("admin@globalawaaz.com");
+  const [adminUser, setAdminUser] = useState<string>("Global2409");
 
-  // Login form state
-  const [emailInput, setEmailInput] = useState("admin@globalawaaz.com");
+  // Login form state — empty by default
+  const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -60,14 +62,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const userEmail = emailInput.trim().toLowerCase();
       const pass = passwordInput;
 
-      if (userEmail === "admin@globalawaaz.com" && pass === "admin123") {
+      const isValidUser = userEmail === "global2409" || userEmail === "global2409@globalawaaz.com";
+      const isValidPass = pass === "Global@#2409";
+
+      if (isValidUser && isValidPass) {
         localStorage.setItem("ga_admin_logged_in", "true");
-        localStorage.setItem("ga_admin_user", userEmail);
-        setAdminUser(userEmail);
+        localStorage.setItem("ga_admin_user", "Global2409");
+        setAdminUser("Global2409");
         setIsAuthenticated(true);
         setIsSubmitting(false);
       } else {
-        setLoginError("Invalid credentials. Try: admin@globalawaaz.com / admin123");
+        setLoginError("Invalid Admin credentials. Access denied.");
         setIsSubmitting(false);
       }
     }, 600);
@@ -86,6 +91,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Media Library", href: "/admin/media", icon: ImageIcon },
     { name: "Videos Manager", href: "/admin/videos", icon: Video },
     { name: "About Us Page", href: "/admin/about", icon: BookOpen, badge: "NEW" },
+    { name: "e-Paper Manager", href: "/admin/epaper", icon: Newspaper, badge: "NEW" },
+    { name: "SEO Settings", href: "/admin/seo", icon: Globe, badge: "SEO" },
     { name: "AI Copilot", href: "/admin/ai", icon: Bot, badge: "AI" },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Site Settings", href: "/admin/settings", icon: Settings }
@@ -197,8 +204,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Mail size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
                   <input
                     type="text"
-                    placeholder="admin@globalawaaz.com"
+                    placeholder="Enter Admin Username or Email"
                     value={emailInput}
+                    autoComplete="off"
                     onChange={(e) => setEmailInput(e.target.value)}
                     style={{
                       width: "100%",

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2 } from "lucide-react";
+import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -37,6 +37,7 @@ export default function Home() {
   const [scrollOffset, setScrollOffset] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const carouselWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateVideos = () => {
@@ -90,25 +91,40 @@ export default function Home() {
     fetchArticles();
     window.addEventListener("storage", fetchArticles);
     window.addEventListener("ga_articles_updated", fetchArticles);
+    window.addEventListener("ga_epaper_updated", fetchArticles);
     return () => {
       window.removeEventListener("storage", fetchArticles);
       window.removeEventListener("ga_articles_updated", fetchArticles);
+      window.removeEventListener("ga_epaper_updated", fetchArticles);
     };
   }, []);
 
   const handleScrollLeft = () => {
-    setScrollOffset((prev) => prev + 300);
+    if (carouselWrapperRef.current) {
+      carouselWrapperRef.current.scrollBy({ left: -320, behavior: "smooth" });
+    }
   };
 
   const handleScrollRight = () => {
-    setScrollOffset((prev) => prev - 300);
+    if (carouselWrapperRef.current) {
+      carouselWrapperRef.current.scrollBy({ left: 320, behavior: "smooth" });
+    }
   };
 
-  const langFiltered = articles.filter((a) => {
-    if (lang === "HI") {
-      return a.language === "HI";
+  const handleCarouselWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    // Convert vertical mouse wheel to horizontal scroll
+    if (carouselWrapperRef.current) {
+      e.preventDefault();
+      carouselWrapperRef.current.scrollBy({ left: e.deltaY * 1.5, behavior: "smooth" });
     }
-    return a.language !== "HI" || !a.language;
+  };
+
+  // Show articles that match the current language OR have no language set (admin default)
+  // This ensures admin-added articles always appear regardless of language toggle
+  const langFiltered = articles.filter((a) => {
+    if (!a.language) return true; // No language set → always show
+    if (lang === "HI") return a.language === "HI" || a.language === "EN"; // In Hindi mode, show all
+    return a.language === "EN" || a.language === "HI"; // In English mode, show all
   });
 
   const activeArticles = langFiltered.length > 0 ? langFiltered : articles;
@@ -123,6 +139,40 @@ export default function Home() {
 
   const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: "65vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "60px 20px",
+        textAlign: "center",
+        margin: "20px 0"
+      }}>
+        <div style={{
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          background: "rgba(229, 9, 20, 0.08)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "18px"
+        }}>
+          <Loader2 size={32} style={{ animation: "spin 1s linear infinite", color: "#e50914" }} />
+        </div>
+        <h3 style={{ fontSize: "1.3rem", fontWeight: 800, margin: "0 0 8px", color: "var(--color-text, #0f172a)" }}>
+          {lang === "HI" ? "ताज़ा ख़बरे लोड हो रही हैं..." : "Loading Latest Stories..."}
+        </h3>
+        <p style={{ color: "var(--color-secondary, #64748b)", fontSize: "0.9rem", margin: 0, maxWidth: "400px" }}>
+          {lang === "HI" ? "कृपया प्रतीक्षा करें, लाइव समाचार अपडेट प्राप्त हो रहे हैं।" : "Please wait while Global Awaaz fetches live articles."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -417,14 +467,14 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="top-stories-carousel-wrapper">
+        <div
+          ref={carouselWrapperRef}
+          className="top-stories-carousel-wrapper"
+          onWheel={handleCarouselWheel}
+        >
           <div
             ref={containerRef}
             className="top-stories-horizontal-grid"
-            style={{
-              transform: scrollOffset !== 0 ? `translateX(calc(-50% + ${scrollOffset}px))` : undefined,
-              transition: scrollOffset !== 0 ? "transform 0.4s ease" : undefined
-            }}
           >
             {todaysTopStories.map((item, index) => (
               <article key={`${item.id}-${index}`} className="top-story-item">

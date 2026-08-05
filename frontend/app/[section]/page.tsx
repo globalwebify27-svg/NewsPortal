@@ -18,7 +18,8 @@ interface Article {
   summary?: string;
   body?: string;
   featuredImage?: string;
-  category?: { name: string; slug: string; color?: string };
+  category?: { name: string; slug: string; color?: string; subCategory?: string };
+  subCategory?: string;
   author?: { name: string };
   readTime?: string;
   createdAt?: string;
@@ -28,6 +29,75 @@ interface Article {
   imageFit?: "cover" | "contain" | "fill";
   state?: string;
 }
+
+const SECTION_SUB_CATEGORIES: Record<string, { en: string; hi: string }[]> = {
+  education: [
+    { en: "Education News", hi: "शिक्षा समाचार" },
+    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
+    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
+    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" },
+    { en: "Career Guidance", hi: "करियर मार्गदर्शन" }
+  ],
+  latest: [
+    { en: "Education News", hi: "शिक्षा समाचार" },
+    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
+    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
+    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" }
+  ],
+  world: [
+    { en: "International Affairs", hi: "अंतरराष्ट्रीय मामले" },
+    { en: "World Politics", hi: "वैश्विक राजनीति" },
+    { en: "Defence & Security", hi: "रक्षा व सुरक्षा" },
+    { en: "Diplomacy", hi: "कूटनीति व संबंध" },
+    { en: "Global Economy", hi: "ग्लोबल अर्थव्यवस्था" }
+  ],
+  business: [
+    { en: "Stock Markets", hi: "शेयर बाज़ार" },
+    { en: "Companies & Startups", hi: "कंपनियां व स्टार्ट-अप" },
+    { en: "Personal Finance & Tax", hi: "पर्सनल फाइनेंस" },
+    { en: "Economy", hi: "अर्थव्यवस्था" },
+    { en: "Crypto & Banking", hi: "क्रिप्टो व बैंकिंग" }
+  ],
+  technology: [
+    { en: "AI & Machine Learning", hi: "एआई और मशीन लर्निंग" },
+    { en: "Smartphones & Gadgets", hi: "स्मार्टफोन और गैजेट्स" },
+    { en: "Cloud & Software", hi: "सॉफ्टवेयर और ऐप्स" },
+    { en: "Space Tech", hi: "अंतरिक्ष तकनीक" },
+    { en: "Cybersecurity", hi: "साइबर सुरक्षा" }
+  ],
+  sports: [
+    { en: "Cricket", hi: "क्रिकेट" },
+    { en: "Football", hi: "फुटबॉल" },
+    { en: "Formula 1", hi: "फॉर्मूला 1" },
+    { en: "Olympics & Athletics", hi: "ओलंपिक व अन्य खेल" }
+  ],
+  entertainment: [
+    { en: "Cinema & Movies", hi: "सिनेमा और फिल्में" },
+    { en: "OTT & Web Series", hi: "ओटीटी और वेब सीरीज" },
+    { en: "Music & Songs", hi: "म्यूजिक और गाने" },
+    { en: "Celebrity Gossips", hi: "सेलेब्रिटी अपडेट्स" }
+  ],
+  science: [
+    { en: "Space Exploration", hi: "अंतरिक्ष अनुसंधान" },
+    { en: "Innovations & Discoveries", hi: "नवाचार व खोजें" },
+    { en: "Environment & Climate", hi: "पर्यावरण व जलवायु" }
+  ],
+  health: [
+    { en: "Fitness & Yoga", hi: "फिटनेस और योग" },
+    { en: "Nutrition & Diet", hi: "आहार और पोषण" },
+    { en: "Medical Breakthroughs", hi: "चिकित्सा शोध" }
+  ],
+  opinion: [
+    { en: "Daily Editorials", hi: "दैनिक संपादकीय" },
+    { en: "Expert Columns", hi: "विशेषज्ञ दृष्टिकोण" },
+    { en: "Special Reports", hi: "विशेष विश्लेषणात्मक रिपोर्ट" }
+  ],
+  videos: [
+    { en: "Trending Video Clips", hi: "ट्रेंडिंग वीडियो" },
+    { en: "Ground Reports", hi: "ग्राउंड रिपोर्ट" },
+    { en: "Documentaries", hi: "वृत्तचित्र" }
+  ]
+};
 
 function formatCardDate(dateStr?: string) {
   if (!dateStr) return "22 July 2026";
@@ -54,11 +124,25 @@ export default function SectionPage() {
   const section = (params?.section as string) || "news";
   const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
 
+  const [allSectionArticles, setAllSectionArticles] = useState<Article[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSubCategory, setSelectedSubCategory] = useState("ALL");
 
   // State Sub-Tab selection (Default Jharkhand)
   const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
+
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const subParam = searchParams.get("sub");
+      if (subParam) {
+        setSelectedSubCategory(subParam);
+      } else {
+        setSelectedSubCategory("ALL");
+      }
+    } catch (e) {}
+  }, [section]);
 
   useEffect(() => {
     const loadState = () => {
@@ -129,13 +213,16 @@ export default function SectionPage() {
 
       // 4. Category filter
       const sectionLower = section.toLowerCase();
-      const filtered = pool.filter((art: Article) => {
-        const slugMatch = art.category?.slug?.toLowerCase() === sectionLower;
-        const nameMatch = art.category?.name?.toLowerCase() === sectionLower;
-        return slugMatch || nameMatch;
+      const sectionFiltered = pool.filter((art: Article) => {
+        const catName = art.category?.name?.toLowerCase() || "";
+        const catSlug = art.category?.slug?.toLowerCase() || "";
+        if (sectionLower === "latest") {
+          return catName === "education" || catSlug === "education" || catName === "top news" || catName === "latest" || true;
+        }
+        return catSlug === sectionLower || catName === sectionLower;
       });
 
-      setArticles(filtered);
+      setAllSectionArticles(sectionFiltered);
       setLoading(false);
     }
 
@@ -143,6 +230,19 @@ export default function SectionPage() {
     window.addEventListener("storage", fetchSectionArticles);
     return () => window.removeEventListener("storage", fetchSectionArticles);
   }, [section, lang]);
+
+  useEffect(() => {
+    if (selectedSubCategory === "ALL") {
+      setArticles(allSectionArticles);
+    } else {
+      const subLower = selectedSubCategory.toLowerCase();
+      const subFiltered = allSectionArticles.filter((art) => {
+        const artSub = (art.subCategory || art.category?.subCategory || "").toLowerCase();
+        return artSub.includes(subLower) || subLower.includes(artSub);
+      });
+      setArticles(subFiltered.length > 0 ? subFiltered : allSectionArticles);
+    }
+  }, [selectedSubCategory, allSectionArticles]);
 
   return (
     <div style={{ marginTop: "30px", minHeight: "60vh" }}>
@@ -157,6 +257,54 @@ export default function SectionPage() {
             : `Live updates, breaking insights, and in-depth analytical reports on ${formattedTitle}.`}
         </p>
       </div>
+
+      {/* Sub-Category Topics Filter Bar */}
+      {SECTION_SUB_CATEGORIES[section.toLowerCase()] && SECTION_SUB_CATEGORIES[section.toLowerCase()].length > 0 && (
+        <div style={{ marginBottom: "20px", display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "6px", scrollbarWidth: "none" }}>
+          <button
+            onClick={() => setSelectedSubCategory("ALL")}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "20px",
+              border: selectedSubCategory === "ALL" ? "2px solid #e50914" : "1px solid var(--color-border, #cbd5e1)",
+              background: selectedSubCategory === "ALL" ? "#e50914" : "var(--color-card-bg, #ffffff)",
+              color: selectedSubCategory === "ALL" ? "#ffffff" : "var(--color-text, #0f172a)",
+              fontWeight: selectedSubCategory === "ALL" ? 800 : 600,
+              fontSize: "0.84rem",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s ease",
+              boxShadow: selectedSubCategory === "ALL" ? "0 4px 12px rgba(229,9,20,0.25)" : "none"
+            }}
+          >
+            {lang === "HI" ? "सभी विषय (All Topics)" : "All Topics"}
+          </button>
+          {SECTION_SUB_CATEGORIES[section.toLowerCase()].map((sub) => {
+            const isSelected = selectedSubCategory.toLowerCase() === sub.en.toLowerCase();
+            return (
+              <button
+                key={sub.en}
+                onClick={() => setSelectedSubCategory(sub.en)}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: "20px",
+                  border: isSelected ? "2px solid #e50914" : "1px solid var(--color-border, #cbd5e1)",
+                  background: isSelected ? "#e50914" : "var(--color-card-bg, #ffffff)",
+                  color: isSelected ? "#ffffff" : "var(--color-text, #0f172a)",
+                  fontWeight: isSelected ? 800 : 600,
+                  fontSize: "0.84rem",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.15s ease",
+                  boxShadow: isSelected ? "0 4px 12px rgba(229,9,20,0.25)" : "none"
+                }}
+              >
+                {lang === "HI" ? sub.hi : sub.en}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Indian States Sub-Tabs Bar (Smartly Active on India Page) */}
       {section.toLowerCase() === "india" && (

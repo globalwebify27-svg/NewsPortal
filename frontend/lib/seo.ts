@@ -1,0 +1,380 @@
+export interface SeoPageConfig {
+  path: string;
+  pageName: string;
+  metaTitle: string;
+  metaDescription: string;
+  keywords: string;
+  canonicalUrl: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: string;
+  ogType: string;
+  twitterCard: "summary_large_image" | "summary";
+  robots: "index, follow" | "noindex, follow" | "index, nofollow" | "noindex, nofollow";
+  jsonLdType: "NewsMediaOrganization" | "WebPage" | "CollectionPage" | "NewsArticle";
+  schemaJson?: string;
+}
+
+export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
+  {
+    path: "/",
+    pageName: "Homepage (मुख्य पृष्ठ)",
+    metaTitle: "GLOBAL AWAAZ | ताज़ा हिंदी और अंग्रेज़ी मुख्य समाचार, ब्रेकिंग न्यूज़ व विश्लेषणात्मक रिपोर्ट",
+    metaDescription: "ग्लोबल आवाज़ पोर्टल पर पाएं भारत, झारखंड, शिक्षा, व्यापार, तकनीक, खेल, मनोरंजन और विश्व राजनीति की ताज़ा खबरें व विस्तृत संपादकीय विश्लेषण।",
+    keywords: "Global Awaaz, Breaking News Hindi, Jharkhand News, Education News, Indian News Portal, World Politics, Technology News, Live News Updates",
+    canonicalUrl: "https://globalawaaz.com",
+    ogTitle: "GLOBAL AWAAZ — निष्पक्ष खबरें, सटीक विश्लेषण",
+    ogDescription: "देश-दुनिया और आपके अपने राज्य की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।",
+    ogImage: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "NewsMediaOrganization"
+  },
+  {
+    path: "/education",
+    pageName: "Education (शिक्षा)",
+    metaTitle: "Education News (शिक्षा समाचार) | Board Exams, Competitive Exams & College Admissions — Global Awaaz",
+    metaDescription: "10वीं और 12वीं बोर्ड परीक्षा, UPSC, JEE, NEET, कॉलेज एडमिशन और सरकारी नौकरी परीक्षा से जुड़ी ताज़ा जानकारी और गाइडेंस पढ़ें।",
+    keywords: "Education News, Board Exams 2026, UPSC Exam News, JEE Main Preparation, NEET Updates, College Admissions, Career Guidance Hindi",
+    canonicalUrl: "https://globalawaaz.com/education",
+    ogTitle: "शिक्षा समाचार एवं प्रतियोगी परीक्षा अपडेट — Global Awaaz",
+    ogDescription: "बोर्ड परीक्षाओं, प्रतियोगी परीक्षाओं और करियर गाइडेंस से जुड़ी ताज़ा अपडेट्स।",
+    ogImage: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/world",
+    pageName: "World (विदेश)",
+    metaTitle: "World News (विदेश व अंतरराष्ट्रीय समाचार) | Global Affairs & Diplomacy — Global Awaaz",
+    metaDescription: "ग्लोबल पॉलिटिक्स, अंतरराष्ट्रीय मामले, कूटनीति, रक्षा समाचार और वैश्विक अर्थव्यवस्था की ताज़ा अंतरराष्ट्रीय रिपोर्ट।",
+    keywords: "World News, International News Hindi, Global Politics, Defence News, US News, Diplomacy, World Economy",
+    canonicalUrl: "https://globalawaaz.com/world",
+    ogTitle: "अंतरराष्ट्रीय समाचार एवं वैश्विक विश्लेषण — Global Awaaz",
+    ogDescription: "दुनिया भर के प्रमुख घटनाक्रमों और वैश्विक राजनीति की सटीक रिपोर्टिंग।",
+    ogImage: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/india",
+    pageName: "India & States (भारत व राज्य)",
+    metaTitle: "India News (राष्ट्रीय एवं राज्य-वार समाचार) | Jharkhand, Bihar, UP & National News — Global Awaaz",
+    metaDescription: "भारत की राजनीति, राष्ट्रीय सुरक्षा, शासन और झारखंड सहित सभी प्रमुख राज्यों से जुड़ी ताज़ा ग्राउंड रिपोर्टिंग।",
+    keywords: "India News, Jharkhand News, State News, National Politics, Governance, State Highlights Hindi",
+    canonicalUrl: "https://globalawaaz.com/india",
+    ogTitle: "राष्ट्रीय एवं राज्य-वार मुख्य समाचार — Global Awaaz",
+    ogDescription: "झारखंड और भारत के सभी राज्यों की विश्वसनीय व सटीक खबरें।",
+    ogImage: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/business",
+    pageName: "Business (व्यापार)",
+    metaTitle: "Business & Market News (व्यापार व शेयर बाज़ार) | Stock Market, Economy & Crypto — Global Awaaz",
+    metaDescription: "शेयर बाज़ार, सेंसेक्स, निफ्टी, स्टार्ट-अप, पर्सनल फाइनेंस, टैक्स और कॉर्पोरेट जगत की ताज़ा खबरें व बाज़ार रुझान।",
+    keywords: "Business News Hindi, Sensex Nifty Today, Stock Market News, Personal Finance, Crypto Updates, Startups India",
+    canonicalUrl: "https://globalawaaz.com/business",
+    ogTitle: "व्यापार, अर्थव्यवस्था एवं शेयर बाज़ार लाइव समाचार — Global Awaaz",
+    ogDescription: "मार्केट मूव्स, कंपनियों के नतीजे और पर्सनल फाइनेंस के नए टिप्स।",
+    ogImage: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/technology",
+    pageName: "Technology (तकनीक)",
+    metaTitle: "Technology News (तकनीक व गैजेट्स) | AI, Smartphones, Space Tech & Apps — Global Awaaz",
+    metaDescription: "आर्टिफिशियल इंटेलिजेंस (AI), स्मार्टफोन रिव्यू, साइबर सुरक्षा, अंतरिक्ष तकनीक और सॉफ्टवेयर अपडेट्स की ताज़ा जानकारी।",
+    keywords: "Technology News Hindi, Artificial Intelligence, AI News, Smartphone Reviews, Space Tech, Cybersecurity Updates",
+    canonicalUrl: "https://globalawaaz.com/technology",
+    ogTitle: "तकनीक एवं एआई की दुनिया से ताज़ा अपडेट्स — Global Awaaz",
+    ogDescription: "स्मार्टफोन रिव्यू, AI टूल एनालिसिस और साइंस-टेक नवाचार।",
+    ogImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/sports",
+    pageName: "Sports (खेल)",
+    metaTitle: "Sports News (खेल समाचार) | Cricket, IPL, Football & Olympics — Global Awaaz",
+    metaDescription: "क्रिकेट मैच स्कोर, आईपीएल अपडेट्स, फुटबॉल टूर्नामेंट, फॉर्मूला 1 और एथलेटिक्स की हर छोटी-बड़ी खेल खबर।",
+    keywords: "Sports News Hindi, Cricket Live Score, IPL 2026, Football Updates, Olympics Athletics",
+    canonicalUrl: "https://globalawaaz.com/sports",
+    ogTitle: "खेल समाचार एवं लाइव मैच कवरेज — Global Awaaz",
+    ogDescription: "क्रिकेट, फुटबॉल और अन्य खेलों की ताज़ा और विशेष रिपोर्टिंग।",
+    ogImage: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/entertainment",
+    pageName: "Entertainment (मनोरंजन)",
+    metaTitle: "Entertainment News (मनोरंजन) | Cinema, OTT Reviews & Celebrity Gossip — Global Awaaz",
+    metaDescription: "बॉलीवुड, हॉलीवुड, ओटीटी वेब सीरीज रिव्यू, नए गानों और फिल्मी दुनिया की चटपटी खबरें पढ़ें।",
+    keywords: "Entertainment News Hindi, Bollywood Gossip, Movie Reviews, OTT Web Series, Celebrity News",
+    canonicalUrl: "https://globalawaaz.com/entertainment",
+    ogTitle: "मनोरंजन एवं सिनेमा की दुनिया से चटपटी खबरें — Global Awaaz",
+    ogDescription: "फिल्मी गॉसिप, नए मूवी रिव्यू और ट्रेंडिंग ओटीटी रिलीज।",
+    ogImage: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/science",
+    pageName: "Science (विज्ञान)",
+    metaTitle: "Science & Discovery News (विज्ञान व अनुसंधान) | ISRO, NASA & Environment — Global Awaaz",
+    metaDescription: "अंतरिक्ष मिशन (ISRO/NASA), नई वैज्ञानिक खोजें, पर्यावरण और जलवायु परिवर्तन की प्रामाणिक वैज्ञानिक रिपोर्ट्स।",
+    keywords: "Science News Hindi, ISRO Missions, Space Exploration, Climate Change, Discoveries",
+    canonicalUrl: "https://globalawaaz.com/science",
+    ogTitle: "विज्ञान अनुसंधान एवं अंतरिक्ष मिशन समाचार — Global Awaaz",
+    ogDescription: "ISRO और दुनिया भर की प्रमुख वैज्ञानिक खोजों की विस्तृत कवरेज।",
+    ogImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/health",
+    pageName: "Health (स्वास्थ्य)",
+    metaTitle: "Health & Fitness (स्वास्थ्य व जीवनशैली) | Wellness, Yoga & Medicine — Global Awaaz",
+    metaDescription: "योग, न्यूट्रिशन, डाइट टिप्स, मानसिक स्वास्थ्य और मेडिकल क्षेत्र के नए अनुसंधानों की भरोसेमंद जानकारी।",
+    keywords: "Health Tips Hindi, Yoga Practices, Nutrition Guide, Mental Health, Medical Breakthroughs",
+    canonicalUrl: "https://globalawaaz.com/health",
+    ogTitle: "स्वास्थ्य एवं सेहत के रामबाण सुझाव — Global Awaaz",
+    ogDescription: "आरोग्य जीवन, सही खान-पान और योग अभ्यास से जुड़ी उपयोगी सलाह।",
+    ogImage: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/opinion",
+    pageName: "Opinion (विचार व संपादकीय)",
+    metaTitle: "Editorials & Expert Opinion (संपादकीय विचार) | In-depth Columnists — Global Awaaz",
+    metaDescription: "देश के वरिष्ठ संपादकों और विषय विशेषज्ञों द्वारा लिखित समसामयिक मुद्दों पर निष्पक्ष और विश्लेषणात्मक विचार।",
+    keywords: "Editorial Columns Hindi, Expert Opinion, Analytical Articles, Daily Perspective",
+    canonicalUrl: "https://globalawaaz.com/opinion",
+    ogTitle: "संपादकीय विचार एवं विश्लेषणात्मक आलेख — Global Awaaz",
+    ogDescription: "महत्वपूर्ण राष्ट्रीय व अंतरराष्ट्रीय मुद्दों पर विशेषज्ञों का नज़रिया।",
+    ogImage: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/videos",
+    pageName: "Videos (वीडियो समाचार)",
+    metaTitle: "Video News & Ground Reports (वीडियो बुलेटिन) | Live Video Coverage — Global Awaaz",
+    metaDescription: "ग्राउंड रिपोर्टिंग, ट्रेंडिंग क्लिप्स, इंटरव्यू और वीडियो बुलेटिन के माध्यम से देखें खबरें सीधे मौके से।",
+    keywords: "Video News Hindi, Live News Video, Ground Reports, Video Bulletin Global Awaaz",
+    canonicalUrl: "https://globalawaaz.com/videos",
+    ogTitle: "वीडियो बुलेटिन एवं लाइव ग्राउंड कवरेज — Global Awaaz",
+    ogDescription: "वीडियो के ज़रिए देखें देश-दुनिया की बड़ी खबरें।",
+    ogImage: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  },
+  {
+    path: "/epaper",
+    pageName: "e-Paper (डिजिटल ई-पेपर)",
+    metaTitle: "Digital e-Paper (डिजिटल ई-पेपर संस्करण) | Read Daily Newspaper PDF — Global Awaaz",
+    metaDescription: "ग्लोबल आवाज़ का दैनिक ई-पेपर डिजिटल फॉर्मेट में पढ़ें। प्रिंट संस्करण की तरह हर पन्ने का स्पष्ट अनुभव।",
+    keywords: "e-Paper Hindi, Read Newspaper Online, Digital Hindi Newspaper PDF, Global Awaaz ePaper",
+    canonicalUrl: "https://globalawaaz.com/epaper",
+    ogTitle: "ग्लोबल आवाज़ दैनिक ई-पेपर — ऑनलाइन पठन",
+    ogDescription: "दैनिक अखबार का डिजिटल संस्करण कहीं भी, कभी भी आसानी से पढ़ें।",
+    ogImage: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "WebPage"
+  },
+  {
+    path: "/shorts",
+    pageName: "Shorts (क्विक रील्स व शॉर्ट्स)",
+    metaTitle: "Quick News Shorts (60-सेकंड शॉर्ट्स) | Fast Visual News — Global Awaaz",
+    metaDescription: "60 सेकंड में पढ़ें देश-दुनिया की बड़ी खबरें। त्वरित दृश्य समाचार कार्ड्स और रील्स।",
+    keywords: "News Shorts Hindi, 60 Second News, Visual News Cards, Fast News Updates",
+    canonicalUrl: "https://globalawaaz.com/shorts",
+    ogTitle: "60 सेकंड में तेज़ और संक्षिप्त खबरें — Global Awaaz Shorts",
+    ogDescription: "समय की बचत के साथ मिनटों में जानें दिन की मुख्य खबरें।",
+    ogImage: "https://images.unsplash.com/photo-1616469829941-c7200edec809?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "WebPage"
+  },
+  {
+    path: "/about",
+    pageName: "About Us (हमारे बारे में)",
+    metaTitle: "About Us (हमारे बारे में) | Editorial Values & Mission — Global Awaaz",
+    metaDescription: "ग्लोबल आवाज़ न्यूज़ पोर्टल का संपादकीय मिशन, हमारी निष्पक्ष पत्रकारिता नीति और लीडरशिप टीम की जानकारी।",
+    keywords: "About Global Awaaz, Editorial Principles, News Media Ethics, Media Team",
+    canonicalUrl: "https://globalawaaz.com/about",
+    ogTitle: "हमारे बारे में — निष्पक्ष एवं प्रामाणिक पत्रकारिता",
+    ogDescription: "जानिए ग्लोबल आवाज़ के विज़न और सत्यनिष्ठ समाचार मानकों के बारे में।",
+    ogImage: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary",
+    robots: "index, follow",
+    jsonLdType: "WebPage"
+  }
+];
+
+export const SEO_STORAGE_KEY = "ga_seo_settings";
+
+export function getAllSeoConfigs(): SeoPageConfig[] {
+  if (typeof window === "undefined") return DEFAULT_SEO_PAGES;
+  try {
+    const stored = localStorage.getItem(SEO_STORAGE_KEY);
+    if (!stored) return DEFAULT_SEO_PAGES;
+    const parsed: SeoPageConfig[] = JSON.parse(stored);
+    
+    // Merge default pages with stored pages to ensure any missing path exists
+    const merged = DEFAULT_SEO_PAGES.map((def) => {
+      const found = parsed.find((p) => p.path === def.path);
+      return found ? { ...def, ...found } : def;
+    });
+
+    // Also keep any extra custom routes user added
+    const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
+    const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
+
+    return [...merged, ...extraCustom];
+  } catch {
+    return DEFAULT_SEO_PAGES;
+  }
+}
+
+export function getSeoConfigForPath(currentPath: string): SeoPageConfig {
+  const configs = getAllSeoConfigs();
+  const normalized = currentPath === "" ? "/" : currentPath;
+
+  const exact = configs.find((c) => c.path === normalized);
+  if (exact) return exact;
+
+  // Prefix matching for dynamic section/article pages
+  if (normalized.startsWith("/article/")) {
+    return {
+      path: normalized,
+      pageName: "Article Reading Page",
+      metaTitle: "Exclusive News Story — Global Awaaz",
+      metaDescription: "Read in-depth breaking coverage, expert analysis, and updates on Global Awaaz.",
+      keywords: "Article, News Story, Breaking News, Live Updates, Editorial Report",
+      canonicalUrl: `https://globalawaaz.com${normalized}`,
+      ogTitle: "Exclusive Coverage — Global Awaaz",
+      ogDescription: "In-depth investigative report and analytical news coverage.",
+      ogImage: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80",
+      ogType: "article",
+      twitterCard: "summary_large_image",
+      robots: "index, follow",
+      jsonLdType: "NewsArticle"
+    };
+  }
+
+  // Fallback to homepage config
+  const home = configs.find((c) => c.path === "/");
+  return home || DEFAULT_SEO_PAGES[0];
+}
+
+export function calculateSeoScore(config: SeoPageConfig): { score: number; label: string; tips: string[] } {
+  let score = 0;
+  const tips: string[] = [];
+
+  // 1. Meta Title (Max 25 pts)
+  const titleLen = config.metaTitle ? config.metaTitle.length : 0;
+  if (titleLen >= 45 && titleLen <= 65) {
+    score += 25;
+  } else if (titleLen > 0 && titleLen < 45) {
+    score += 15;
+    tips.push("Meta title is too short (recommended 45–65 characters).");
+  } else if (titleLen > 65) {
+    score += 18;
+    tips.push("Meta title exceeds 65 characters and may get truncated on Google SERP.");
+  } else {
+    tips.push("Meta title is missing.");
+  }
+
+  // 2. Meta Description (Max 25 pts)
+  const descLen = config.metaDescription ? config.metaDescription.length : 0;
+  if (descLen >= 120 && descLen <= 165) {
+    score += 25;
+  } else if (descLen > 0 && descLen < 120) {
+    score += 15;
+    tips.push("Meta description is too brief (recommended 120–165 characters).");
+  } else if (descLen > 165) {
+    score += 18;
+    tips.push("Meta description exceeds 165 characters.");
+  } else {
+    tips.push("Meta description is missing.");
+  }
+
+  // 3. Keywords & Canonical (Max 20 pts)
+  if (config.keywords && config.keywords.split(",").length >= 3) {
+    score += 10;
+  } else {
+    tips.push("Add at least 3 relevant comma-separated target keywords.");
+  }
+
+  if (config.canonicalUrl && config.canonicalUrl.startsWith("http")) {
+    score += 10;
+  } else {
+    tips.push("Canonical URL is missing or invalid.");
+  }
+
+  // 4. Open Graph Image & Title (Max 20 pts)
+  if (config.ogImage && config.ogImage.length > 5) {
+    score += 10;
+  } else {
+    tips.push("Social Share (OG) Image URL is missing.");
+  }
+
+  if (config.ogTitle && config.ogTitle.length > 10) {
+    score += 10;
+  } else {
+    tips.push("Social Share (OG) Title is missing.");
+  }
+
+  // 5. Robots & Schema (Max 10 pts)
+  if (config.robots) score += 5;
+  if (config.jsonLdType) score += 5;
+
+  let label = "Needs Work";
+  if (score >= 90) label = "Optimal SEO (A+)";
+  else if (score >= 75) label = "Good SEO (B)";
+  else if (score >= 50) label = "Average (C)";
+
+  return { score, label, tips };
+}
+
+export function saveSeoConfigs(list: SeoPageConfig[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(SEO_STORAGE_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event("ga_seo_updated"));
+  } catch (e) {
+    console.error("Failed saving SEO configs:", e);
+  }
+}

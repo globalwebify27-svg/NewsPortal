@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES } from "@/lib/states";
+import { convertImageToWebP } from "@/lib/webpConverter";
 
 interface AdminArticle {
   id: string;
@@ -24,7 +25,8 @@ interface AdminArticle {
   summary?: string;
   body?: string;
   featuredImage?: string;
-  category?: { name: string; slug?: string; color?: string };
+  category?: { name: string; slug?: string; color?: string; subCategory?: string };
+  subCategory?: string;
   author?: { name: string };
   status: string;
   views?: number;
@@ -41,6 +43,79 @@ interface AdminArticle {
 
 const LOCAL_STORAGE_KEY = "ga_custom_articles";
 
+const SUB_CATEGORIES_MAP: Record<string, { en: string; hi: string }[]> = {
+  "Top News": [
+    { en: "Lead Headlines", hi: "मुख्य समाचार" },
+    { en: "Live Updates", hi: "लाइव समाचार" },
+    { en: "Editor's Pick", hi: "संपादकीय चयन" }
+  ],
+  "Education": [
+    { en: "Education News", hi: "शिक्षा समाचार" },
+    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
+    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
+    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" },
+    { en: "Career Guidance", hi: "करियर मार्गदर्शन" }
+  ],
+  "World": [
+    { en: "International Affairs", hi: "अंतरराष्ट्रीय मामले" },
+    { en: "World Politics", hi: "वैश्विक राजनीति" },
+    { en: "Defence & Security", hi: "रक्षा व सुरक्षा" },
+    { en: "Diplomacy", hi: "कूटनीति व संबंध" },
+    { en: "Global Economy", hi: "ग्लोबल अर्थव्यवस्था" }
+  ],
+  "India": [
+    { en: "National News", hi: "राष्ट्रीय समाचार" },
+    { en: "State Spotlight", hi: "राज्य मुख्य समाचार" },
+    { en: "Governance & Society", hi: "शासन व समाज" }
+  ],
+  "Business": [
+    { en: "Stock Markets", hi: "शेयर बाज़ार" },
+    { en: "Companies & Startups", hi: "कंपनियां व स्टार्ट-अप" },
+    { en: "Personal Finance & Tax", hi: "पर्सनल फाइनेंस" },
+    { en: "Economy", hi: "अर्थव्यवस्था" },
+    { en: "Crypto & Banking", hi: "क्रिप्टो व बैंकिंग" }
+  ],
+  "Technology": [
+    { en: "AI & Machine Learning", hi: "एआई और मशीन लर्निंग" },
+    { en: "Smartphones & Gadgets", hi: "स्मार्टफोन और गैजेट्स" },
+    { en: "Cloud & Software", hi: "सॉफ्टवेयर और ऐप्स" },
+    { en: "Space Tech", hi: "अंतरिक्ष तकनीक" },
+    { en: "Cybersecurity", hi: "साइबर सुरक्षा" }
+  ],
+  "Sports": [
+    { en: "Cricket", hi: "क्रिकेट" },
+    { en: "Football", hi: "फुटबॉल" },
+    { en: "Formula 1", hi: "फॉर्मूला 1" },
+    { en: "Olympics & Athletics", hi: "ओलंपिक व अन्य खेल" }
+  ],
+  "Entertainment": [
+    { en: "Cinema & Movies", hi: "सिनेमा और फिल्में" },
+    { en: "OTT & Web Series", hi: "ओटीटी और वेब सीरीज" },
+    { en: "Music & Songs", hi: "म्यूजिक और गाने" },
+    { en: "Celebrity Gossips", hi: "सेलेब्रिटी अपडेट्स" }
+  ],
+  "Science": [
+    { en: "Space Exploration", hi: "अंतरिक्ष अनुसंधान" },
+    { en: "Innovations & Discoveries", hi: "नवाचार व खोजें" },
+    { en: "Environment & Climate", hi: "पर्यावरण व जलवायु" }
+  ],
+  "Health": [
+    { en: "Fitness & Yoga", hi: "फिटनेस और योग" },
+    { en: "Nutrition & Diet", hi: "आहार और पोषण" },
+    { en: "Medical Breakthroughs", hi: "चिकित्सा शोध" }
+  ],
+  "Opinion": [
+    { en: "Daily Editorials", hi: "दैनिक संपादकीय" },
+    { en: "Expert Columns", hi: "विशेषज्ञ दृष्टिकोण" },
+    { en: "Special Reports", hi: "विशेष विश्लेषणात्मक रिपोर्ट" }
+  ],
+  "Videos": [
+    { en: "Trending Video Clips", hi: "ट्रेंडिंग वीडियो" },
+    { en: "Ground Reports", hi: "ग्राउंड रिपोर्ट" },
+    { en: "Documentaries", hi: "वृत्तचित्र" }
+  ]
+};
+
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +130,12 @@ export default function AdminArticlesPage() {
 
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
-  const [formCategory, setFormCategory] = useState("World");
+  const [formCategory, setFormCategory] = useState("Education");
+  const [formSubCategory, setFormSubCategory] = useState("General");
   const [formState, setFormState] = useState("Jharkhand");
   const [formAuthor, setFormAuthor] = useState("Global Admin");
   const [formStatus, setFormStatus] = useState("PUBLISHED");
-  const [formLanguage, setFormLanguage] = useState<"EN" | "HI">("EN");
+  const [formLanguage, setFormLanguage] = useState<"EN" | "HI">("HI");
   const [formSummary, setFormSummary] = useState("");
   const [formContent, setFormContent] = useState("");
   const [formImage, setFormImage] = useState("");
@@ -70,6 +146,7 @@ export default function AdminArticlesPage() {
   const [formImageFit, setFormImageFit] = useState<"cover" | "contain" | "fill">("cover");
   const [formVideoUrl, setFormVideoUrl] = useState("");
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -89,6 +166,7 @@ export default function AdminArticlesPage() {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
       window.dispatchEvent(new Event("ga_articles_updated"));
+      window.dispatchEvent(new Event("ga_epaper_updated"));
     } catch (e) {
       console.error(e);
     }
@@ -123,11 +201,12 @@ export default function AdminArticlesPage() {
     if (art) {
       setEditingArticle(art);
       setFormTitle(art.title);
-      setFormCategory(art.category?.name || "World");
+      setFormCategory(art.category?.name || "Education");
+      setFormSubCategory(art.subCategory || art.category?.subCategory || "General");
       setFormState(art.state || "Jharkhand");
       setFormAuthor(art.author?.name || "Global Admin");
       setFormStatus(art.status);
-      setFormLanguage(art.language || "EN");
+      setFormLanguage(art.language || "HI");
       setFormSummary(art.summary || "");
       setFormContent(art.body || "");
       setFormImage(art.featuredImage || "");
@@ -147,11 +226,12 @@ export default function AdminArticlesPage() {
     } else {
       setEditingArticle(null);
       setFormTitle("");
-      setFormCategory("World");
+      setFormCategory("Education");
+      setFormSubCategory("General");
       setFormState("Jharkhand");
       setFormAuthor("Global Admin");
       setFormStatus("PUBLISHED");
-      setFormLanguage("EN");
+      setFormLanguage("HI");
       setFormSummary("");
       setFormContent("");
       setFormImage("");
@@ -165,15 +245,45 @@ export default function AdminArticlesPage() {
     setIsModalOpen(true);
   };
 
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    setIsUploadingImage(true);
+    showToast("⏳ Converting photo to ultra-optimized WebP format...");
+
+    // Auto-convert any image type (JPG, PNG, GIF, BMP) to WebP format
+    const file = await convertImageToWebP(rawFile);
+    setImageFileName(file.name);
+
+    // Show local WebP preview immediately while uploading
+    const reader = new FileReader();
+    reader.onloadend = () => setFormImage(reader.result as string);
+    reader.readAsDataURL(file);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/v1/media/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+
+      if (json?.success && json?.data?.url) {
+        // Replace preview with saved local WebP URL
+        setFormImage(json.data.url);
+        setImageFileName(file.name + " (WebP Format ✓)");
+        showToast("✅ Image converted to WebP & saved to /public/uploads/!");
+      } else {
+        showToast("⚠️ Upload failed: " + (json?.message || "Unknown error"));
+      }
+    } catch (err: any) {
+      console.error("Local upload error:", err);
+      showToast("⚠️ Upload failed — image saved as local preview only.");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -194,7 +304,8 @@ export default function AdminArticlesPage() {
       summary: formSummary,
       body: formContent,
       featuredImage: formImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=60",
-      category: { name: formCategory, slug: formCategory.toLowerCase(), color: getCategoryColor(formCategory) },
+      category: { name: formCategory, slug: formCategory.toLowerCase(), color: getCategoryColor(formCategory), subCategory: formSubCategory },
+      subCategory: formSubCategory,
       author: { name: formAuthor },
       status: formStatus,
       views: editingArticle ? editingArticle.views : 100,
@@ -211,15 +322,39 @@ export default function AdminArticlesPage() {
     let updatedList: AdminArticle[];
     if (editingArticle) {
       updatedList = articles.map((a) => (a.id === newArt.id ? newArt : a));
-      showToast(`Article "${formTitle}" updated successfully!`);
     } else {
       updatedList = [newArt, ...articles];
-      showToast(`New Article "${formTitle}" published successfully!`);
     }
 
+    // 1. Instantly update UI & localStorage (fast, offline-friendly cache)
     setArticles(updatedList);
     saveToLocalStorage(updatedList);
     setIsModalOpen(false);
+    showToast(editingArticle ? `Article "${formTitle}" updated!` : `Article "${formTitle}" published!`);
+
+    // 2. Persist to real database so it survives page refresh
+    try {
+      const res = await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newArt,
+          slug: newArt.slug,
+          status: newArt.status === "DRAFT" ? "DRAFT" : "PUBLISHED",
+        }),
+      });
+      const json = await res.json();
+      if (json?.success && json?.data) {
+        // Update the local article with the real DB id/slug
+        const dbArt = { ...newArt, id: json.data.id || newArt.id, slug: json.data.slug || newArt.slug };
+        const synced = updatedList.map((a) => (a.id === newArt.id ? dbArt : a));
+        setArticles(synced);
+        saveToLocalStorage(synced);
+      }
+    } catch (err) {
+      console.warn("DB save failed – article is kept in localStorage only:", err);
+      showToast(`"${formTitle}" saved locally (DB unreachable).`);
+    }
   };
 
   const handleDeleteArticle = async (id: string, slug: string, title: string) => {
@@ -227,7 +362,14 @@ export default function AdminArticlesPage() {
       const updatedList = articles.filter((a) => a.id !== id && a.slug !== slug);
       setArticles(updatedList);
       saveToLocalStorage(updatedList);
-      showToast(`Article "${title}" deleted from database.`);
+      showToast(`Article "${title}" deleted.`);
+
+      // Also delete from the real database
+      try {
+        await fetch(`${API_ENDPOINTS.articles}/${slug}`, { method: "DELETE" });
+      } catch (err) {
+        console.warn("DB delete failed – removed from localStorage only:", err);
+      }
     }
   };
 
@@ -409,16 +551,38 @@ export default function AdminArticlesPage() {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: formCategory.toLowerCase() === "india" ? "1fr 1fr 1fr" : "1fr 1fr", gap: "14px", transition: "all 0.2s ease" }}>
+              <div style={{ display: "grid", gridTemplateColumns: formCategory.toLowerCase() === "india" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: "12px", transition: "all 0.2s ease" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Category</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Category (Nav Tab)</label>
                   <select
                     value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setFormCategory(newCat);
+                      const subs = SUB_CATEGORIES_MAP[newCat];
+                      if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
+                      else setFormSubCategory("General");
+                    }}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
-                    {["Top News", "India", "World", "Business", "Sports", "Technology", "Entertainment", "Health", "Science", "Education", "Opinion"].map((c) => (
+                    {["Top News", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Health", "Opinion", "Videos"].map((c) => (
                       <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Sub-Category / Topic</label>
+                  <select
+                    value={formSubCategory}
+                    onChange={(e) => setFormSubCategory(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
+                  >
+                    <option value="General">General / All Topics</option>
+                    {(SUB_CATEGORIES_MAP[formCategory] || []).map((sub) => (
+                      <option key={sub.en} value={sub.en}>
+                        {sub.en} ({sub.hi})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -448,8 +612,8 @@ export default function AdminArticlesPage() {
                     onChange={(e) => setFormLanguage(e.target.value as "EN" | "HI")}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
-                    <option value="EN">English Portal</option>
                     <option value="HI">Hindi (हिंदी) Portal</option>
+                    <option value="EN">English Portal</option>
                   </select>
                 </div>
               </div>
@@ -471,8 +635,12 @@ export default function AdminArticlesPage() {
                           <span style={{ fontSize: "0.86rem", fontWeight: 800, color: "#0f172a", display: "block" }}>
                             {imageFileName || "Uploaded Article Image"}
                           </span>
-                          <span style={{ fontSize: "0.76rem", color: "#16a34a", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
-                            <CheckCircle size={14} /> Image Loaded & Ready to Publish
+                          <span style={{ fontSize: "0.76rem", color: isUploadingImage ? "#ea580c" : "#16a34a", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
+                            {isUploadingImage ? (
+                              <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #ea580c", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading to Cloudinary…</>
+                            ) : (
+                              <><CheckCircle size={14} /> Uploaded to Cloudinary ✓</>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -565,9 +733,14 @@ export default function AdminArticlesPage() {
                 </button>
                 <button
                   type="submit"
-                  style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "10px 24px", borderRadius: "8px", fontWeight: 800, cursor: "pointer" }}
+                  disabled={isUploadingImage}
+                  style={{ background: isUploadingImage ? "#94a3b8" : "#e50914", color: "#ffffff", border: "none", padding: "10px 24px", borderRadius: "8px", fontWeight: 800, cursor: isUploadingImage ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "8px" }}
                 >
-                  Publish Article
+                  {isUploadingImage ? (
+                    <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading Image…</>
+                  ) : (
+                    editingArticle ? "Update Article" : "Publish Article"
+                  )}
                 </button>
               </div>
             </form>

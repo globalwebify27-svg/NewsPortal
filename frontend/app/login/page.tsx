@@ -50,12 +50,11 @@ function LoginForm() {
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const isValidAdmin =
-        (cleanEmail === "admin@globalawaaz.com" || cleanEmail === "admin" || cleanEmail.includes("admin")) &&
-        (cleanPassword === "admin123" || cleanPassword === "admin" || cleanPassword === "globalawaaz2026");
+      const isValidUser = cleanEmail === "global2409" || cleanEmail === "global2409@globalawaaz.com";
+      const isValidPass = password === "Global@#2409";
 
-      if (isValidAdmin || (cleanEmail && cleanPassword.length >= 3)) {
-        const userEmail = cleanEmail.includes("@") ? cleanEmail : `${cleanEmail}@globalawaaz.com`;
+      if (isValidUser && isValidPass) {
+        const userEmail = "Global2409";
         localStorage.setItem("ga_admin_logged_in", "true");
         localStorage.setItem("ga_admin_user", userEmail);
         setLoggedInUser(userEmail);
@@ -63,14 +62,14 @@ function LoginForm() {
         router.push(redirectUrl);
       } else {
         setIsSubmitting(false);
-        setErrorMsg("Authentication failed. Please verify credentials.");
+        setErrorMsg("Authentication failed. Invalid Admin ID or Password.");
       }
     }, 450);
   };
 
   const handleFillDemoCredentials = () => {
-    setEmail("admin@globalawaaz.com");
-    setPassword("admin123");
+    setEmail("Global2409");
+    setPassword("Global@#2409");
     setErrorMsg("");
   };
 

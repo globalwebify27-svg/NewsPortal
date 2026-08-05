@@ -54,7 +54,9 @@ import {
   RotateCcw,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  Play
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
@@ -551,41 +553,77 @@ export default function Header() {
       <nav className={`mega-menu-nav ${isSticky ? "is-sticky" : ""}`}>
         <div className="container menu-wrapper-pill">
           <div className="pill-nav-container">
-            {/* State Location Selector Pill */}
-            <button
-              onClick={() => setIsStateModalOpen(true)}
-              className="location-pill-btn"
-              style={{
-                background: "#ffffff",
-                color: "#0f172a",
-                border: "1px solid #cbd5e1",
-                borderRadius: "20px",
-                padding: "6px 14px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontWeight: 800,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
-              }}
-              title="Click to select Indian State / राज्य चुनें"
-            >
-              <MapPin size={14} style={{ color: "#16a34a" }} />
-              <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
-                {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
-              </span>
-              <ChevronDown size={14} style={{ color: "#64748b" }} />
-            </button>
+            {/* State Location Selector Pill with Hover Sub-menu */}
+            <div style={{ position: "relative" }} className="location-pill-wrapper">
+              <button
+                onClick={() => setIsStateModalOpen(true)}
+                className="location-pill-btn"
+                style={{
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "20px",
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontWeight: 800,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
+                }}
+                title="Click to select Indian State / राज्य चुनें"
+              >
+                <MapPin size={14} style={{ color: "#16a34a" }} />
+                <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
+                  {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
+                </span>
+                <ChevronDown size={14} style={{ color: "#64748b" }} />
+              </button>
+              <div className="mega-dropdown" style={{ minWidth: "220px", top: "calc(100% + 8px)" }}>
+                {INDIAN_STATES.slice(0, 6).map((st) => (
+                  <Link
+                    key={st.code}
+                    href={`/india?state=${st.slug}`}
+                    onClick={() => handleSelectState(st)}
+                  >
+                    <span>📍</span>
+                    <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
+                  </Link>
+                ))}
+                <div className="dropdown-divider"></div>
+                <button
+                  onClick={() => setIsStateModalOpen(true)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#e50914",
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                    padding: "6px 10px",
+                    width: "100%",
+                    textAlign: "left"
+                  }}
+                >
+                  {lang === "HI" ? "सभी राज्य देखें →" : "View All States →"}
+                </button>
+              </div>
+            </div>
 
             <span className="location-pill-divider"></span>
 
-            <ul className="nav-links pill-nav-links">
+            <ul className="nav-links pill-nav-links" onMouseEnter={() => setIsStateModalOpen(false)}>
               <li>
                 <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`}>
                   <Home size={15} />
                   <span>{t("home")}</span>
                   {isActive("/") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/"><Zap size={14} />{lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}</Link>
+                  <Link href="/"><Clock size={14} />{lang === "HI" ? "लाइव समाचार" : "Live Updates"}</Link>
+                  <Link href="/"><Star size={14} />{lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/latest" className={`nav-link pill-nav-link ${isActive("/latest") ? "active" : ""}`}>
@@ -593,6 +631,12 @@ export default function Header() {
                   <span>{t("latest")}</span>
                   {isActive("/latest") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/latest"><BookOpen size={14} />{lang === "HI" ? "शिक्षा समाचार" : "Education News"}</Link>
+                  <Link href="/latest"><Star size={14} />{lang === "HI" ? "बोर्ड परीक्षा 10वीं/12वीं" : "Board Exams"}</Link>
+                  <Link href="/latest"><Trophy size={14} />{lang === "HI" ? "प्रतियोगी परीक्षाएं" : "Competitive Exams"}</Link>
+                  <Link href="/latest"><Building2 size={14} />{lang === "HI" ? "कॉलेज और प्रवेश" : "College & Admissions"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`}>
@@ -705,6 +749,12 @@ export default function Header() {
                   <span>{t("entertainment")}</span>
                   {isActive("/entertainment") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/entertainment"><Film size={14} />{lang === "HI" ? "सिनेमा और बॉलीवुड" : "Cinema & Movies"}</Link>
+                  <Link href="/entertainment"><Tv2 size={14} />{lang === "HI" ? "ओटीटी और वेब सीरीज" : "OTT & Web Series"}</Link>
+                  <Link href="/entertainment"><Music size={14} />{lang === "HI" ? "म्यूजिक और गाने" : "Music & Hits"}</Link>
+                  <Link href="/entertainment"><Star size={14} />{lang === "HI" ? "सेलेब्रिटी अपडेट्स" : "Celebrity Gossips"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`}>
@@ -712,6 +762,11 @@ export default function Header() {
                   <span>{t("science")}</span>
                   {isActive("/science") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/science"><Rocket size={14} />{lang === "HI" ? "अंतरिक्ष अनुसंधान" : "Space Exploration"}</Link>
+                  <Link href="/science"><Atom size={14} />{lang === "HI" ? "नवाचार और खोजें" : "Innovations"}</Link>
+                  <Link href="/science"><CloudSun size={14} />{lang === "HI" ? "पर्यावरण व जलवायु" : "Environment"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/health" className={`nav-link pill-nav-link ${isActive("/health") ? "active" : ""}`}>
@@ -719,6 +774,11 @@ export default function Header() {
                   <span>{t("health")}</span>
                   {isActive("/health") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/health"><HeartPulse size={14} />{lang === "HI" ? "स्वास्थ्य व लाइफस्टाइल" : "Health & Fitness"}</Link>
+                  <Link href="/health"><ShieldCheck size={14} />{lang === "HI" ? "आहार और पोषण" : "Nutrition & Wellness"}</Link>
+                  <Link href="/health"><Atom size={14} />{lang === "HI" ? "चिकित्सा अनुसंधान" : "Medical Advances"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/opinion" className={`nav-link pill-nav-link ${isActive("/opinion") ? "active" : ""}`}>
@@ -726,6 +786,11 @@ export default function Header() {
                   <span>{t("opinion")}</span>
                   {isActive("/opinion") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/opinion"><MessageSquare size={14} />{lang === "HI" ? "दैनिक संपादकीय" : "Daily Editorials"}</Link>
+                  <Link href="/opinion"><Users size={14} />{lang === "HI" ? "विशेषज्ञ दृष्टिकोण" : "Expert Columns"}</Link>
+                  <Link href="/opinion"><BookOpen size={14} />{lang === "HI" ? "विशेष विश्लेषणात्मक रिपोर्ट" : "Special Reports"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`}>
@@ -733,6 +798,11 @@ export default function Header() {
                   <span>{t("videos")}</span>
                   {isActive("/videos") && <span className="active-pill-bar"></span>}
                 </Link>
+                <div className="mega-dropdown">
+                  <Link href="/videos"><Tv size={14} />{lang === "HI" ? "ट्रेंडिंग वीडियो" : "Trending Videos"}</Link>
+                  <Link href="/videos"><Play size={14} />{lang === "HI" ? "ग्राउंड रिपोर्ट" : "Ground Reports"}</Link>
+                  <Link href="/videos"><Film size={14} />{lang === "HI" ? "विशेष वृत्तचित्र" : "Documentaries"}</Link>
+                </div>
               </li>
               <li>
                 <Link href="/about" className={`nav-link pill-nav-link ${isActive("/about") ? "active" : ""}`}>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SeoHeadManager from "@/components/SeoHeadManager";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Home, Video, Newspaper, Clapperboard, LayoutGrid } from "lucide-react";
 
@@ -18,6 +19,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
 
   return (
     <LanguageProvider>
+      <SeoHeadManager />
       <Header />
       <main className="main-content container">{children}</main>
       <Footer />

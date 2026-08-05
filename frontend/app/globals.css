@@ -156,10 +156,16 @@
 
 /* STICKY CATEGORY NAVIGATION BAR */
 .mega-menu-nav {
-  background-color: var(--color-bg, #ffffff);
-  border-top: 1px solid var(--color-border, #eaeaea);
-  padding: 6px 0;
-  transition: background-color 0.3s ease;
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 999999 !important;
+  background-color: var(--color-bg, #ffffff) !important;
+  border-top: 1px solid var(--color-border, #eaeaea) !important;
+  border-bottom: 1px solid var(--color-border, #eaeaea) !important;
+  padding: 6px 0 !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ROUNDED CAPSULE PILL NAVIGATION BAR */
@@ -168,24 +174,24 @@
   margin: 0 auto !important;
   padding: 0 4px !important;
   position: relative !important;
+  z-index: 500 !important;
+  overflow: visible !important;
 }
 
 .pill-nav-container {
   background: #0f172a !important;
   border-radius: 40px !important;
-  padding: 5px 12px !important;
+  padding: 4px 10px !important;
   display: flex !important;
   align-items: center !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18) !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-  scroll-behavior: smooth !important;
+  overflow: visible !important;
   white-space: nowrap !important;
   width: 100% !important;
+  height: 46px !important;
   box-sizing: border-box !important;
-  overscroll-behavior-x: contain !important;
+  position: relative !important;
+  z-index: 500 !important;
 }
 
 .pill-nav-container::-webkit-scrollbar {
@@ -197,22 +203,90 @@
 .pill-nav-links {
   display: flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: 2px !important;
   list-style: none !important;
   margin: 0 !important;
   padding: 0 !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
+  overflow: visible !important;
+  position: relative !important;
+}
+
+.location-pill-wrapper,
+.pill-nav-links > li {
+  position: relative !important;
+  list-style: none !important;
+}
+
+/* MEGA DROPDOWN HOVER MECHANICS */
+.location-pill-wrapper .mega-dropdown,
+.pill-nav-links > li .mega-dropdown {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  left: 0 !important;
+  min-width: 220px !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5) !important;
+  padding: 10px !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(8px) !important;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease !important;
+  z-index: 10000 !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.pill-nav-links > li:hover > .mega-dropdown,
+.location-pill-wrapper:hover > .mega-dropdown {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) !important;
+}
+
+/* Instantly dismiss previous tab's sub-menu on mouse leave so sub-titles never overlap */
+.pill-nav-links > li:not(:hover) > .mega-dropdown,
+.location-pill-wrapper:not(:hover) > .mega-dropdown {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(8px) !important;
+  transition: none !important;
+}
+
+.location-pill-wrapper .mega-dropdown a,
+.pill-nav-links > li .mega-dropdown a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 0.83rem !important;
+  font-weight: 600 !important;
+  color: #cbd5e1 !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+}
+
+.location-pill-wrapper .mega-dropdown a:hover,
+.pill-nav-links > li .mega-dropdown a:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
 }
 
 .pill-nav-link {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  padding: 6px 12px !important;
+  padding: 6px 11px !important;
   border-radius: 20px !important;
   color: #cbd5e1 !important;
-  font-size: 0.83rem !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
   text-decoration: none !important;
   position: relative !important;
@@ -290,20 +364,24 @@
   margin-left: 8px;
 }
 
+/* Sticky active state when scrolling down */
 .mega-menu-nav.is-sticky {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   width: 100% !important;
-  z-index: 99999 !important;
-  background-color: var(--color-bg, #ffffff) !important;
-  border-top: 1px solid var(--color-border, #eaeaea) !important;
+  z-index: 999999 !important;
   border-bottom: 3px solid #e50914 !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  animation: slideDownNav 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  animation: slideDownNav 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+[data-theme="dark"] .mega-menu-nav.is-sticky {
+  background-color: rgba(15, 23, 42, 0.96) !important;
 }
 
 @keyframes spin {
@@ -739,31 +817,35 @@
 }
 
 .top-stories-carousel-wrapper {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
   position: relative;
-  padding: 4px 0 2px 0;
+  padding: 4px 0 8px 0;
+  scroll-behavior: smooth;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+  cursor: grab;
+}
+
+.top-stories-carousel-wrapper::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
+}
+
+.top-stories-carousel-wrapper:active {
+  cursor: grabbing;
 }
 
 .top-stories-horizontal-grid {
   display: flex;
   gap: 20px;
   width: max-content;
-  animation: top-stories-smooth-marquee 28s linear infinite;
   will-change: transform;
 }
 
+/* pause auto-scroll on hover — kept for backward compat */
 .top-stories-carousel-wrapper:hover .top-stories-horizontal-grid {
   animation-play-state: paused;
-}
-
-@keyframes top-stories-smooth-marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
 }
 
 .top-story-item {
@@ -991,6 +1073,11 @@
     transition: all 0.15s ease !important;
   }
 
+  .header-right .search-trigger,
+  .header-right .notification-btn {
+    display: none !important;
+  }
+
   [data-theme="dark"] .mobile-menu-btn,
   [data-theme="dark"] .header-right .icon-btn {
     background: #1e293b !important;
@@ -1014,7 +1101,7 @@
     border: 1.5px solid #ffffff !important;
   }
 
-  /* Center column: shifted slightly to the left for visual balance */
+  /* Center column: perfectly balanced header logo with emblem */
   .header-logo-container {
     flex: 1 !important;
     display: flex !important;
@@ -1023,9 +1110,16 @@
     justify-content: center !important;
     text-align: center !important;
     padding: 0 !important;
-    margin-left: -32px !important;
+    margin-left: 0 !important;
     min-width: 0 !important;
     overflow: visible !important;
+  }
+
+  .header-brand-logo-emblem {
+    height: 38px !important;
+    width: auto !important;
+    max-height: 38px !important;
+    object-fit: contain !important;
   }
 
   .site-logo-wrap {
