@@ -64,9 +64,31 @@ export default function SocialShareButtons({
     e.stopPropagation();
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
+        // Try attaching the actual image file on supported mobile devices
+        if (image && typeof fetch !== "undefined") {
+          try {
+            const res = await fetch(image);
+            if (res.ok) {
+              const blob = await res.blob();
+              const file = new File([blob], "article-image.jpg", { type: blob.type || "image/jpeg" });
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  title: title,
+                  text: cleanSummary ? `${title}\n\n${cleanSummary}` : title,
+                  url: shareUrl,
+                  files: [file],
+                });
+                return;
+              }
+            }
+          } catch (fileErr) {
+            // If image fetch/sharing fails, fall through to text+URL share
+          }
+        }
+
         await navigator.share({
           title: title,
-          text: cleanSummary || title,
+          text: cleanSummary ? `${title}\n\n${cleanSummary}` : title,
           url: shareUrl,
         });
         return;
