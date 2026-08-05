@@ -644,7 +644,8 @@
 .hero-img-wrap {
   position: relative;
   width: 100%;
-  height: 380px;
+  aspect-ratio: 16 / 9;
+  max-height: 440px;
   overflow: hidden;
   background: #0f172a;
   border-top-left-radius: 15px;
@@ -655,7 +656,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 25%;
+  object-position: center center !important;
   display: block;
 }
 

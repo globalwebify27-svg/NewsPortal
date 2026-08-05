@@ -490,7 +490,7 @@ export default function SectionPage() {
                     <span style={{ fontWeight: 600 }}>
                       {item.author?.name || "Global Awaaz Staff"}
                     </span>
-                    <SocialShareButtons title={item.title} slug={item.slug} size="sm" />
+                    <SocialShareButtons title={item.title} slug={item.slug} image={item.featuredImage} summary={item.summary} size="sm" />
                   </div>
                 </div>
 

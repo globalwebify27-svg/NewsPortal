@@ -185,13 +185,38 @@ export default function Home() {
           {mainHero ? (
             <article className="hero-main-card">
               <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <div className="hero-img-wrap" style={mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : undefined}>
+                <div className="hero-img-wrap" style={{ position: "relative", overflow: "hidden", background: "#0a0f1d", ...(mainHero.imageHeight && mainHero.imageHeight !== "auto" ? { height: mainHero.imageHeight } : {}) }}>
                   {getArticleImage(mainHero, 0) ? (
-                    <img
-                      src={getArticleImage(mainHero, 0)}
-                      alt={mainHero.title}
-                      style={{ width: "100%", height: "100%", objectFit: mainHero.imageFit || "cover" }}
-                    />
+                    <>
+                      <img
+                        src={getArticleImage(mainHero, 0)}
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          filter: "blur(24px) brightness(0.65)",
+                          transform: "scale(1.15)",
+                          pointerEvents: "none",
+                          zIndex: 1
+                        }}
+                      />
+                      <img
+                        src={getArticleImage(mainHero, 0)}
+                        alt={mainHero.title}
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: mainHero.imageFit || "contain",
+                          objectPosition: "center center"
+                        }}
+                      />
+                    </>
                   ) : (
                     <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ color: "#94a3b8", fontSize: "1.2rem", fontWeight: 800, letterSpacing: "0.05em" }}>GLOBAL AWAAZ</span>
@@ -222,7 +247,7 @@ export default function Home() {
                       <span className="bullet">•</span>
                       <span>{lang === "HI" ? "12 मिनट पहले" : "12m ago"}</span>
                     </div>
-                    <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
+                    <SocialShareButtons title={mainHero.title} slug={mainHero.slug} image={mainHero.featuredImage} summary={mainHero.summary} size="md" />
                   </div>
                 </div>
               </Link>
@@ -268,7 +293,7 @@ export default function Home() {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
                       <span className="read-time">{item.readTime || (lang === "HI" ? "4 मिनट पढ़ें" : "4 min read")}</span>
-                      <SocialShareButtons title={item.title} slug={item.slug} size="sm" />
+                      <SocialShareButtons title={item.title} slug={item.slug} image={item.featuredImage} summary={item.summary} size="sm" />
                     </div>
                   </div>
                 </Link>
@@ -291,9 +316,39 @@ export default function Home() {
             <article className="mobile-hero-card">
               {/* Full-width image */}
               <Link href={`/article/${mainHero.slug && mainHero.slug.length > 1 ? mainHero.slug : mainHero.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                <div className="mobile-hero-img-wrap">
+                <div className="mobile-hero-img-wrap" style={{ position: "relative", overflow: "hidden", background: "#0a0f1d" }}>
                   {getArticleImage(mainHero, 0) ? (
-                    <img src={getArticleImage(mainHero, 0)} alt={mainHero.title} className="mobile-hero-img" />
+                    <>
+                      <img
+                        src={getArticleImage(mainHero, 0)}
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          filter: "blur(24px) brightness(0.65)",
+                          transform: "scale(1.15)",
+                          pointerEvents: "none",
+                          zIndex: 1
+                        }}
+                      />
+                      <img
+                        src={getArticleImage(mainHero, 0)}
+                        alt={mainHero.title}
+                        className="mobile-hero-img"
+                        style={{
+                          position: "relative",
+                          zIndex: 2,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: mainHero.imageFit || "contain",
+                          objectPosition: "center center"
+                        }}
+                      />
+                    </>
                   ) : (
                     <div className="mobile-hero-img-placeholder">
                       <span>GLOBAL AWAAZ</span>
@@ -336,7 +391,7 @@ export default function Home() {
                   <Bookmark size={16} />
                   <span>{lang === "HI" ? "सेव करें" : "Save"}</span>
                 </button>
-                <SocialShareButtons title={mainHero.title} slug={mainHero.slug} size="md" />
+                <SocialShareButtons title={mainHero.title} slug={mainHero.slug} image={mainHero.featuredImage} summary={mainHero.summary} size="md" />
               </div>
             </article>
 
@@ -506,7 +561,7 @@ export default function Home() {
                     <p className="story-brief">{stripHtml(item.summary)}</p>
                     <div className="story-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "8px" }}>
                       <span className="author-name">{t("by")} {item.author?.name || "Global Awaaz Admin"}</span>
-                      <SocialShareButtons title={item.title} slug={item.slug} size="sm" />
+                      <SocialShareButtons title={item.title} slug={item.slug} image={item.featuredImage} summary={item.summary} size="sm" />
                     </div>
                   </div>
                 </Link>
@@ -559,7 +614,7 @@ export default function Home() {
               </h3>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
                 <span style={{ fontSize: "0.72rem", color: "var(--color-secondary)", fontWeight: 600 }}>YouTube Video</span>
-                <SocialShareButtons title={video.title} slug={`videos?v=${video.youtubeId}`} size="sm" />
+                <SocialShareButtons title={video.title} slug={`videos?v=${video.youtubeId}`} image={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} size="sm" />
               </div>
             </Link>
           ))}

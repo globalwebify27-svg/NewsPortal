@@ -9,6 +9,8 @@ interface SocialShareProps {
   categorySlug?: string;
   size?: "sm" | "md" | "lg";
   layout?: "row" | "compact";
+  image?: string;
+  summary?: string;
 }
 
 export default function SocialShareButtons({
@@ -17,23 +19,28 @@ export default function SocialShareButtons({
   categorySlug = "news",
   size = "sm",
   layout = "row",
+  image,
+  summary,
 }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
 
   // Construct absolute or path URL
   const getFullUrl = () => {
     if (typeof window !== "undefined") {
+      if (slug.startsWith("http://") || slug.startsWith("https://")) return slug;
       return `${window.location.origin}/article/${slug}`;
     }
     return `https://globalawaaz.com/article/${slug}`;
   };
 
   const shareUrl = getFullUrl();
+  const cleanSummary = summary ? summary.replace(/<[^>]*>?/gm, "").trim() : "";
 
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const text = encodeURIComponent(`${title}\n${shareUrl}`);
+    const textSnippet = cleanSummary ? `\n\n${cleanSummary.substring(0, 140)}${cleanSummary.length > 140 ? '...' : ''}` : "";
+    const text = encodeURIComponent(`*${title}*${textSnippet}\n\n${shareUrl}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
 
@@ -59,7 +66,7 @@ export default function SocialShareButtons({
       try {
         await navigator.share({
           title: title,
-          text: title,
+          text: cleanSummary || title,
           url: shareUrl,
         });
         return;
