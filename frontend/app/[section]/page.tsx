@@ -211,15 +211,21 @@ export default function SectionPage() {
 
       const pool = langFiltered.length > 0 ? langFiltered : combined;
 
-      // 4. Category filter
+      // 4. Category filter matching single or multi-selected categories
       const sectionLower = section.toLowerCase();
       const sectionFiltered = pool.filter((art: Article) => {
         const catName = art.category?.name?.toLowerCase() || "";
         const catSlug = art.category?.slug?.toLowerCase() || "";
-        if (sectionLower === "latest") {
-          return catName === "education" || catSlug === "education" || catName === "top news" || catName === "latest" || true;
+        const multiCats = ((art as any).categories || []).map((c: string) => c.toLowerCase());
+
+        if (sectionLower === "latest" || sectionLower === "top news") {
+          return true;
         }
-        return catSlug === sectionLower || catName === sectionLower;
+
+        const isPrimaryMatch = catSlug === sectionLower || catName === sectionLower;
+        const isMultiMatch = multiCats.some(c => c === sectionLower || c.includes(sectionLower) || sectionLower.includes(c));
+
+        return isPrimaryMatch || isMultiMatch;
       });
 
       setAllSectionArticles(sectionFiltered);

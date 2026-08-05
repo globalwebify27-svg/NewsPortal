@@ -26,6 +26,7 @@ interface AdminArticle {
   body?: string;
   featuredImage?: string;
   category?: { name: string; slug?: string; color?: string; subCategory?: string };
+  categories?: string[];
   subCategory?: string;
   author?: { name: string };
   status: string;
@@ -131,6 +132,7 @@ export default function AdminArticlesPage() {
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
   const [formCategory, setFormCategory] = useState("Education");
+  const [formCategories, setFormCategories] = useState<string[]>(["Top News", "Education"]);
   const [formSubCategory, setFormSubCategory] = useState("General");
   const [formState, setFormState] = useState("Jharkhand");
   const [formAuthor, setFormAuthor] = useState("Global Admin");
@@ -202,6 +204,8 @@ export default function AdminArticlesPage() {
       setEditingArticle(art);
       setFormTitle(art.title);
       setFormCategory(art.category?.name || "Education");
+      const initialCats = art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "Education"];
+      setFormCategories(initialCats);
       setFormSubCategory(art.subCategory || art.category?.subCategory || "General");
       setFormState(art.state || "Jharkhand");
       setFormAuthor(art.author?.name || "Global Admin");
@@ -227,6 +231,7 @@ export default function AdminArticlesPage() {
       setEditingArticle(null);
       setFormTitle("");
       setFormCategory("Education");
+      setFormCategories(["Top News", "Education"]);
       setFormSubCategory("General");
       setFormState("Jharkhand");
       setFormAuthor("Global Admin");
@@ -297,6 +302,7 @@ export default function AdminArticlesPage() {
     const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
+    const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
     const newArt: AdminArticle = {
       id: editingArticle ? editingArticle.id : `art_${Date.now()}`,
       title: formTitle,
@@ -304,7 +310,8 @@ export default function AdminArticlesPage() {
       summary: formSummary,
       body: formContent,
       featuredImage: formImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=60",
-      category: { name: formCategory, slug: formCategory.toLowerCase(), color: getCategoryColor(formCategory), subCategory: formSubCategory },
+      category: { name: activeCat, slug: activeCat.toLowerCase(), color: getCategoryColor(activeCat), subCategory: formSubCategory },
+      categories: formCategories.length > 0 ? formCategories : [activeCat],
       subCategory: formSubCategory,
       author: { name: formAuthor },
       status: formStatus,
@@ -316,7 +323,7 @@ export default function AdminArticlesPage() {
       imageHeight: finalHeight,
       imageFit: formImageFit,
       videoUrl: formVideoUrl,
-      state: formCategory.toLowerCase() === "india" ? (formState || "National") : "National"
+      state: activeCat.toLowerCase() === "india" ? (formState || "National") : "National"
     };
 
     let updatedList: AdminArticle[];
@@ -491,9 +498,13 @@ export default function AdminArticlesPage() {
                     </div>
                   </td>
                   <td>
-                    <span className="category-tag-pill" style={{ background: getCategoryColor(art.category?.name || "World"), color: "#ffffff", border: "none" }}>
-                      {art.category?.name || "General"}
-                    </span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                      {(art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "General"]).map((c) => (
+                        <span key={c} className="category-tag-pill" style={{ background: getCategoryColor(c), color: "#ffffff", border: "none", fontSize: "0.72rem", padding: "2px 8px" }}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td>
                     <span style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "3px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700 }}>
@@ -551,14 +562,100 @@ export default function AdminArticlesPage() {
                 />
               </div>
 
+              {/* MULTI-TAB / MULTI-CATEGORY PUBLISHING SELECTOR */}
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <label style={{ fontSize: "0.86rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>📌</span> Publish Article in Multiple Categories / Nav Tabs ({formCategories.length} Selected)
+                  </label>
+                  <span style={{ fontSize: "0.74rem", color: "#e50914", fontWeight: 700 }}>Click tabs to toggle placement</span>
+                </div>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {["Top News", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Health", "Opinion", "Videos"].map((catName) => {
+                    const isSelected = formCategories.includes(catName);
+                    return (
+                      <button
+                        key={catName}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            if (formCategories.length > 1) {
+                              setFormCategories(formCategories.filter((c) => c !== catName));
+                            }
+                          } else {
+                            setFormCategories([...formCategories, catName]);
+                            setFormCategory(catName);
+                          }
+                        }}
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: "20px",
+                          fontSize: "0.82rem",
+                          fontWeight: isSelected ? 800 : 600,
+                          border: isSelected ? "2px solid #e50914" : "1px solid #cbd5e1",
+                          background: isSelected ? "#e50914" : "#ffffff",
+                          color: isSelected ? "#ffffff" : "#334155",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          transition: "all 0.15s ease",
+                          boxShadow: isSelected ? "0 2px 8px rgba(229,9,20,0.25)" : "none"
+                        }}
+                      >
+                        {isSelected ? <span>✓</span> : <Plus size={12} />}
+                        <span>{catName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* HERO BANNER PLACEMENT CARD */}
+              <div
+                onClick={() => setFormIsHero(!formIsHero)}
+                style={{
+                  background: formIsHero ? "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)" : "#f8fafc",
+                  border: `2px solid ${formIsHero ? "#e50914" : "#cbd5e1"}`,
+                  borderRadius: "12px",
+                  padding: "14px 18px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={formIsHero}
+                    onChange={(e) => setFormIsHero(e.target.checked)}
+                    style={{ width: "20px", height: "20px", accentColor: "#e50914", cursor: "pointer" }}
+                  />
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Sparkles size={16} style={{ color: "#e50914" }} />
+                      <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
+                        🌟 Set as Main Hero Banner (Top Lead Story)
+                      </span>
+                    </div>
+                    <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+                      Check this box to display this article as the primary Hero Card with giant banner image on Home Page & Category headers.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: formCategory.toLowerCase() === "india" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: "12px", transition: "all 0.2s ease" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Category (Nav Tab)</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Primary Category</label>
                   <select
                     value={formCategory}
                     onChange={(e) => {
                       const newCat = e.target.value;
                       setFormCategory(newCat);
+                      if (!formCategories.includes(newCat)) {
+                        setFormCategories([newCat, ...formCategories]);
+                      }
                       const subs = SUB_CATEGORIES_MAP[newCat];
                       if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
                       else setFormSubCategory("General");
