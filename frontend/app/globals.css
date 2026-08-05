@@ -12,10 +12,7 @@
   justify-content: space-between !important;
 }
 
-.site-logo,
-.site-logo span,
-.site-logo-black,
-.site-logo-red {
+.site-logo {
   font-family: "Playfair Display", Georgia, "Times New Roman", serif !important;
   font-size: 2.3rem !important;
   font-weight: 900 !important;
@@ -24,6 +21,16 @@
   white-space: nowrap !important;
   word-break: normal !important;
   overflow-wrap: normal !important;
+}
+
+.site-logo span,
+.site-logo-black,
+.site-logo-red {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
 }
 
 .site-logo-black {
@@ -1266,8 +1273,23 @@
 }
 
 @media (max-width: 480px) {
+  .header-left {
+    flex: 0 0 45px !important;
+    width: 45px !important;
+  }
+
+  .header-right {
+    flex: 0 0 45px !important;
+    width: 45px !important;
+  }
+
   .site-logo {
-    font-size: 1.35rem !important;
+    font-size: 1.02rem !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  .site-tagline-text {
+    font-size: 0.50rem !important;
   }
 
   .btn-signin {
