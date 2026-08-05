@@ -62,7 +62,7 @@ import {
 
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos } from "@/lib/youtube";
-import { INDIAN_STATES, IndianState } from "@/lib/states";
+import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 
 export default function Header() {
   let pathname = "";
@@ -138,16 +138,16 @@ export default function Header() {
     (filterState !== "all" ? 1 : 0);
 
   const handleApplyFilters = () => {
-    const filters = {
-      sort: filterSort,
-      category: filterCategory,
-      format: filterFormat,
-      timeRange: filterTimeRange,
-      state: filterState
-    };
     try {
-      localStorage.setItem("ga_active_filters", JSON.stringify(filters));
-      window.dispatchEvent(new Event("ga_filter_changed"));
+      const filterObj = {
+        sort: filterSort,
+        category: filterCategory,
+        format: filterFormat,
+        timeRange: filterTimeRange,
+        state: filterState
+      };
+      localStorage.setItem("ga_active_filters", JSON.stringify(filterObj));
+      window.dispatchEvent(new Event("ga_filters_changed"));
     } catch (e) {}
     setIsFilterModalOpen(false);
   };
@@ -160,7 +160,7 @@ export default function Header() {
     setFilterStateFilter("all");
     try {
       localStorage.removeItem("ga_active_filters");
-      window.dispatchEvent(new Event("ga_filter_changed"));
+      window.dispatchEvent(new Event("ga_filters_changed"));
     } catch (e) {}
   };
 
@@ -170,17 +170,24 @@ export default function Header() {
   const [customLogoMarginLeft, setCustomLogoMarginLeft] = useState<number>(75);
 
   useEffect(() => {
-    const loadState = () => {
+    const loadState = async () => {
       try {
         const stored = localStorage.getItem("ga_selected_state");
         if (stored) {
           const found = INDIAN_STATES.find(s => s.code === stored || s.slug === stored || s.nameEn.toLowerCase() === stored.toLowerCase());
           if (found) setSelectedState(found);
         } else {
-          // Default website state to Jharkhand
-          const jharkhand = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
-          setSelectedState(jharkhand);
-          localStorage.setItem("ga_selected_state", jharkhand.code);
+          // Auto-detect user's location state via IP Geolocation
+          const detected = await autoDetectUserIndianState();
+          if (detected) {
+            setSelectedState(detected);
+            localStorage.setItem("ga_selected_state", detected.code);
+            window.dispatchEvent(new Event("ga_state_changed"));
+          } else {
+            const defaultSt = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
+            setSelectedState(defaultSt);
+            localStorage.setItem("ga_selected_state", defaultSt.code);
+          }
         }
       } catch (e) {}
     };
@@ -391,7 +398,10 @@ export default function Header() {
             <Link href="/" className="site-logo-wrap" style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "14px" }}>
               {/* Title and Dual-Color Accent Tagline */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span className="site-logo">GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></span>
+                <span className="site-logo">
+                  <span className="site-logo-black">GLOBAL </span>
+                  <span className="site-logo-red">AWAAZ</span>
+                </span>
                 <div className="site-tagline-wrap">
                   <span className="tagline-dash tagline-dash-red"></span>
                   <span className="site-tagline-text">
@@ -564,18 +574,18 @@ export default function Header() {
                   color: "#0f172a",
                   border: "1px solid #cbd5e1",
                   borderRadius: "20px",
-                  padding: "6px 14px",
+                  padding: "4px 9px",
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "4px",
                   fontWeight: 800,
                   boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
                 }}
                 title="Click to select Indian State / राज्य चुनें"
               >
-                <MapPin size={14} style={{ color: "#16a34a" }} />
-                <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.85rem" }}>
+                <MapPin size={13} style={{ color: "#16a34a" }} />
+                <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.8rem" }}>
                   {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
                 </span>
                 <ChevronDown size={14} style={{ color: "#64748b" }} />
@@ -868,7 +878,7 @@ export default function Header() {
         <div className="mobile-drawer-overlay active">
           <div className="mobile-drawer-content">
             <div className="mobile-drawer-header">
-              <Link href="/" className="mobile-drawer-logo">GLOBAL AWAAZ</Link>
+              <Link href="/" className="mobile-drawer-logo" style={{ textDecoration: "none" }}>GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></Link>
               <button className="icon-btn close-drawer-btn" onClick={() => setMobileMenuOpen(false)}>
                 <X size={20} />
               </button>

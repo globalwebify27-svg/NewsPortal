@@ -14,18 +14,24 @@
 
 .site-logo,
 .site-logo span,
-.site-tagline-text,
-.site-tagline-text span {
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  white-space: nowrap !important;
-}
-
-.site-logo {
+.site-logo-black,
+.site-logo-red {
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif !important;
   font-size: 2.3rem !important;
-  letter-spacing: -0.04em !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
   line-height: 1.05 !important;
   white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.site-logo-black {
+  color: #0f172a !important;
+}
+
+.site-logo-red {
+  color: #e50914 !important;
 }
 
 .site-tagline-wrap {
@@ -35,12 +41,19 @@
   margin-top: 3px !important;
 }
 
-.site-tagline-text {
-  font-size: 0.95rem !important;
+.site-tagline-text,
+.site-tagline-text span {
+  font-family: "Inter", "Noto Sans Devanagari", system-ui, -apple-system, sans-serif !important;
+  font-size: 0.92rem !important;
   font-weight: 800 !important;
   color: #1e293b !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.05em !important;
   white-space: nowrap !important;
+}
+
+.site-tagline-text span {
+  font-family: inherit !important;
+  font-weight: 900 !important;
 }
 
 [data-theme="dark"] .site-tagline-text {
@@ -199,13 +212,14 @@
   align-items: center !important;
   justify-content: space-between !important;
   flex: 1 !important;
-  gap: 2px !important;
+  gap: 0px !important;
   list-style: none !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 2px !important;
   white-space: nowrap !important;
   overflow: visible !important;
   position: relative !important;
+  min-width: 0 !important;
 }
 
 .location-pill-wrapper,
@@ -277,17 +291,24 @@
 .pill-nav-link {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 3px !important;
-  padding: 4px 7px !important;
+  gap: 2px !important;
+  padding: 4px 5px !important;
   border-radius: 20px !important;
   color: #cbd5e1 !important;
-  font-size: 0.78rem !important;
+  font-size: 0.74rem !important;
   font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
   text-decoration: none !important;
   position: relative !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   transition: all 0.2s ease !important;
+}
+
+.pill-nav-link svg {
+  width: 13px !important;
+  height: 13px !important;
+  flex-shrink: 0 !important;
 }
 
 .pill-nav-link:hover {
@@ -2436,4 +2457,93 @@
   padding-bottom: 2px !important;
   word-break: break-word !important;
   overflow-wrap: break-word !important;
+}
+
+/* VIDEO PAGE LIGHT THEME (WHITE BACKGROUND MATCHING GLOBAL AWAAZ) */
+.video-page-wrapper {
+  background: #ffffff;
+  color: #0f172a;
+  min-height: 100vh;
+  padding-bottom: 60px;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.video-header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.video-player-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 650px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.video-iframe-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: 350px;
+  background: #000000;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  position: relative;
+}
+
+.video-info-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+}
+
+@media (max-width: 768px) {
+  .video-header-nav {
+    padding: 0 12px !important;
+    gap: 8px !important;
+  }
+  .video-header-brand-sub {
+    display: none !important;
+  }
+  .video-search-wrapper {
+    width: 100% !important;
+  }
+  .video-search-input {
+    width: 100% !important;
+  }
+  .video-player-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .video-iframe-container {
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important;
+    max-height: 250px !important;
+    border-radius: 12px !important;
+  }
+  .video-info-panel {
+    height: auto !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+  .video-page-container {
+    padding: 0 12px !important;
+    margin-top: 14px !important;
+  }
 }

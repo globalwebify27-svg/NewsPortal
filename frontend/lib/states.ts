@@ -37,3 +37,48 @@ export const INDIAN_STATES: IndianState[] = [
   { code: "MZ", nameEn: "Mizoram", nameHi: "मिजोरम", slug: "mizoram" },
   { code: "SK", nameEn: "Sikkim", nameHi: "सिक्किम", slug: "sikkim" },
 ];
+
+/**
+ * Automatically detects the user's Indian state using IP Geolocation services
+ */
+export async function autoDetectUserIndianState(): Promise<IndianState | null> {
+  try {
+    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      const region = (data.region || data.region_code || "").toLowerCase();
+      const city = (data.city || "").toLowerCase();
+
+      if (region || city) {
+        const found = INDIAN_STATES.find((st) => {
+          const name = st.nameEn.toLowerCase();
+          const slugName = st.slug.replace(/-/g, " ");
+          return (
+            region.includes(name) ||
+            name.includes(region) ||
+            region.includes(slugName) ||
+            city.includes(name)
+          );
+        });
+        if (found) return found;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const res2 = await fetch("https://ip-api.com/json/?fields=regionName,city,countryCode", { cache: "no-store" });
+    if (res2.ok) {
+      const data2 = await res2.json();
+      const rName = (data2.regionName || "").toLowerCase();
+      if (rName) {
+        const found2 = INDIAN_STATES.find((st) => {
+          const name = st.nameEn.toLowerCase();
+          return rName.includes(name) || name.includes(rName);
+        });
+        if (found2) return found2;
+      }
+    }
+  } catch (err) {}
+
+  return null;
+}

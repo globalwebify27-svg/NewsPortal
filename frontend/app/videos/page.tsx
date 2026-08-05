@@ -102,64 +102,49 @@ export default function VideosPage() {
   };
 
   return (
-    <div style={{ background: "#0a0a0c", color: "#f4f4f5", minHeight: "100vh", paddingBottom: "60px" }}>
+    <div className="video-page-wrapper">
       {/* Top Header Navigation Banner */}
-      <div style={{ background: "#111115", borderBottom: "1px solid #22222a", padding: "16px 0" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/" style={{ color: "#a1a1aa", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.88rem", fontWeight: 600 }}>
+      <div style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", padding: "12px 0" }}>
+        <div className="video-header-nav">
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <Link href="/" style={{ color: "#475569", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", fontWeight: 600 }}>
               <ArrowLeft size={16} /> Back to Newsroom
             </Link>
-            <span style={{ color: "#333" }}>|</span>
+            <span style={{ color: "#cbd5e1" }}>|</span>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ background: "#e50914", color: "#fff", padding: "4px 10px", borderRadius: "6px", fontWeight: 900, fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                <Youtube size={16} /> GLOBAL AWAAZ TV
+              <div style={{ background: "#e50914", color: "#fff", padding: "4px 10px", borderRadius: "6px", fontWeight: 900, fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "5px" }}>
+                <Youtube size={15} /> GLOBAL AWAAZ TV
               </div>
-              <span style={{ fontSize: "0.85rem", color: "#a1a1aa", fontWeight: 600 }}>YouTube Media Portal</span>
+              <span className="video-header-brand-sub" style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>YouTube Media Portal</span>
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ position: "relative" }}>
-              <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#71717a" }} />
+          <div className="video-search-wrapper">
+            <div style={{ position: "relative", width: "100%" }}>
+              <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
               <input
                 type="text"
                 placeholder="Search videos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ background: "#18181c", border: "1px solid #27272a", borderRadius: "8px", padding: "8px 12px 8px 36px", color: "#fff", fontSize: "0.85rem", outline: "none", width: "200px" }}
+                className="video-search-input"
+                style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 12px 8px 36px", color: "#0f172a", fontSize: "0.85rem", outline: "none", width: "200px" }}
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: "1280px", margin: "24px auto 0", padding: "0 20px" }}>
+      <div className="video-page-container" style={{ maxWidth: "1280px", margin: "24px auto 0", padding: "0 20px" }}>
 
-        {/* Featured Main YouTube Player - 650x350 Left Corner Layout */}
+        {/* Featured Main YouTube Player */}
         {activeVideo ? (
           <div style={{ marginBottom: "40px" }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "24px",
-              alignItems: "stretch"
-            }}>
-              {/* Left Column: Fixed 650x350 Video Player */}
+            <div className="video-player-grid">
+              {/* Left Column: Video Player Container */}
               <div
                 ref={playerRef}
-                style={{
-                  width: "100%",
-                  maxWidth: "650px",
-                  height: "350px",
-                  background: "#000000",
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  border: "2px solid #27272a",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-                  position: "relative",
-                  flexShrink: 0
-                }}
+                className="video-iframe-container"
               >
                 <iframe
                   src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&fs=1&enablejsapi=1`}
@@ -171,38 +156,27 @@ export default function VideosPage() {
               </div>
 
               {/* Right Column: Metadata, Controls & Details Panel */}
-              <div style={{
-                background: "#141418",
-                border: "1px solid #27272a",
-                borderRadius: "16px",
-                padding: "24px",
-                height: "350px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                boxSizing: "border-box",
-                overflowY: "auto"
-              }}>
+              <div className="video-info-panel">
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                    <span style={{ background: "rgba(229,9,20,0.15)", color: "#ff4d4d", border: "1px solid rgba(229,9,20,0.3)", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>
+                    <span style={{ background: "rgba(229,9,20,0.1)", color: "#e50914", border: "1px solid rgba(229,9,20,0.25)", padding: "4px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>
                       {activeVideo.category}
                     </span>
-                    <span style={{ fontSize: "0.8rem", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
                       <Eye size={14} /> {activeVideo.views || "125K views"}
                     </span>
-                    <span style={{ fontSize: "0.8rem", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
                       <Calendar size={14} /> {activeVideo.publishedAt || "Recently Published"}
                     </span>
                   </div>
 
-                  <h1 style={{ margin: "0 0 12px 0", fontSize: "1.45rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.3, fontFamily: "serif" }}>
+                  <h1 style={{ margin: "0 0 12px 0", fontSize: "1.35rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.35, fontFamily: "sans-serif" }}>
                     {activeVideo.title}
                   </h1>
 
                   {activeVideo.description && (
-                    <div style={{ background: "#1c1c22", border: "1px solid #27272a", padding: "12px 14px", borderRadius: "8px", color: "#d4d4d8", fontSize: "0.85rem", lineHeight: 1.5 }}>
-                      <p style={{ margin: 0, fontWeight: 700, color: "#ffffff", marginBottom: "2px" }}>
+                    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "12px 14px", borderRadius: "8px", color: "#334155", fontSize: "0.85rem", lineHeight: 1.5 }}>
+                      <p style={{ margin: 0, fontWeight: 700, color: "#0f172a", marginBottom: "2px" }}>
                         By {activeVideo.author || "Global Awaaz Media"}
                       </p>
                       {activeVideo.description}
@@ -210,27 +184,12 @@ export default function VideosPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #27272a" }}>
-                  <button
-                    onClick={toggleNativeFullScreen}
-                    title="Expand Fullscreen"
-                    style={{ background: "#e50914", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 4px 14px rgba(229,9,20,0.4)" }}
-                  >
-                    <Maximize2 size={16} /> Fullscreen
-                  </button>
-
-                  <button
-                    onClick={() => setLiked(!liked)}
-                    style={{ background: liked ? "#e50914" : "#27272a", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.15s" }}
-                  >
-                    <ThumbsUp size={16} /> {liked ? "Liked" : "Like"}
-                  </button>
-
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #e2e8f0" }}>
                   <button
                     onClick={handleShare}
-                    style={{ background: "#27272a", color: "#fff", border: "1px solid #3f3f46", padding: "10px 16px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flex: 1 }}
                   >
-                    {copied ? <CheckCircle2 size={16} style={{ color: "#36b37e" }} /> : <Share2 size={16} />}
+                    {copied ? <CheckCircle2 size={16} style={{ color: "#16a34a" }} /> : <Share2 size={16} />}
                     {copied ? "Copied!" : "Share"}
                   </button>
 
@@ -238,9 +197,9 @@ export default function VideosPage() {
                     href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ background: "#27272a", color: "#a1a1aa", border: "1px solid #3f3f46", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", boxShadow: "0 4px 14px rgba(229,9,20,0.3)", flex: 1, whiteSpace: "nowrap" }}
                   >
-                    <ExternalLink size={16} /> YouTube
+                    <ExternalLink size={16} /> Open in YouTube
                   </a>
                 </div>
               </div>
@@ -251,10 +210,10 @@ export default function VideosPage() {
         {/* Category Filters Bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "14px" }}>
           <div>
-            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, margin: 0, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, margin: 0, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
               <Tv size={20} style={{ color: "#e50914" }} /> Video Library & Live Broadcasts ({filteredVideos.length})
             </h2>
-            <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#a1a1aa" }}>
+            <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
               Watch world news, business insights, and tech breakthroughs hosted on YouTube
             </p>
           </div>
@@ -270,9 +229,9 @@ export default function VideosPage() {
                   fontSize: "0.8rem",
                   fontWeight: 700,
                   cursor: "pointer",
-                  border: selectedCategory === cat ? "1.5px solid #e50914" : "1px solid #27272a",
-                  background: selectedCategory === cat ? "#e50914" : "#18181c",
-                  color: "#ffffff",
+                  border: selectedCategory === cat ? "1.5px solid #e50914" : "1px solid #cbd5e1",
+                  background: selectedCategory === cat ? "#e50914" : "#ffffff",
+                  color: selectedCategory === cat ? "#ffffff" : "#334155",
                   transition: "all 0.15s"
                 }}
               >
@@ -284,7 +243,7 @@ export default function VideosPage() {
 
         {/* Video Cards Grid */}
         {filteredVideos.length === 0 ? (
-          <div style={{ textOverflow: "ellipsis", padding: "60px 0", textAlign: "center", color: "#71717a" }}>
+          <div style={{ textOverflow: "ellipsis", padding: "60px 0", textAlign: "center", color: "#64748b" }}>
             <p style={{ fontSize: "1.1rem", fontWeight: 600 }}>No YouTube videos found in this category.</p>
           </div>
         ) : (
@@ -296,13 +255,13 @@ export default function VideosPage() {
                   key={item.id}
                   onClick={() => selectVideo(item)}
                   style={{
-                    background: isCurrent ? "#1c1c24" : "#141418",
-                    border: isCurrent ? "2px solid #e50914" : "1px solid #27272a",
+                    background: isCurrent ? "#fef2f2" : "#ffffff",
+                    border: isCurrent ? "2px solid #e50914" : "1px solid #e2e8f0",
                     borderRadius: "12px",
                     overflow: "hidden",
                     cursor: "pointer",
                     transition: "all 0.2s cubic-bezier(0.16,1,0.3,1)",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.3)"
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.05)"
                   }}
                   onMouseEnter={(e) => {
                     if (!isCurrent) {
@@ -313,7 +272,7 @@ export default function VideosPage() {
                   onMouseLeave={(e) => {
                     if (!isCurrent) {
                       e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.borderColor = "#27272a";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
                     }
                   }}
                 >
@@ -326,7 +285,7 @@ export default function VideosPage() {
                     />
 
                     {/* Red Play Overlay */}
-                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ background: "#e50914", width: "44px", height: "44px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", boxShadow: "0 4px 16px rgba(229,9,20,0.6)" }}>
                         <Play size={20} style={{ fill: "#fff", marginLeft: "3px" }} />
                       </div>
@@ -345,10 +304,10 @@ export default function VideosPage() {
 
                   {/* Info */}
                   <div style={{ padding: "14px 16px" }}>
-                    <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#ffffff", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {item.title}
                     </h3>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", fontSize: "0.78rem", color: "#a1a1aa" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", fontSize: "0.78rem", color: "#64748b" }}>
                       <span>{item.author || "Global Awaaz TV"}</span>
                       <span>{item.views || "100K views"}</span>
                     </div>

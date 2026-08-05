@@ -405,8 +405,8 @@ input {
 }
 
 [lang="hi"] {
-  --font-serif: "Noto Serif Devanagari", "Playfair Display", Georgia, serif;
-  --font-sans: "Noto Sans Devanagari", "Inter", system-ui, sans-serif;
+  --font-serif: "Playfair Display", "Noto Serif Devanagari", Georgia, serif;
+  --font-sans: "Inter", "Noto Sans Devanagari", system-ui, sans-serif;
 }
 
 .btn-signin {

@@ -9,7 +9,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
 import { stripHtml } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
-import { INDIAN_STATES, IndianState } from "@/lib/states";
+import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 
 interface Article {
   id: string;
@@ -145,16 +145,23 @@ export default function SectionPage() {
   }, [section]);
 
   useEffect(() => {
-    const loadState = () => {
+    const loadState = async () => {
       try {
         const stored = localStorage.getItem("ga_selected_state");
         if (stored) {
           const found = INDIAN_STATES.find(s => s.code === stored || s.slug === stored || s.nameEn.toLowerCase() === stored.toLowerCase());
           if (found) setSelectedState(found);
         } else {
-          const jharkhand = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
-          setSelectedState(jharkhand);
-          localStorage.setItem("ga_selected_state", jharkhand.code);
+          const detected = await autoDetectUserIndianState();
+          if (detected) {
+            setSelectedState(detected);
+            localStorage.setItem("ga_selected_state", detected.code);
+            window.dispatchEvent(new Event("ga_state_changed"));
+          } else {
+            const jharkhand = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
+            setSelectedState(jharkhand);
+            localStorage.setItem("ga_selected_state", jharkhand.code);
+          }
         }
       } catch (e) {}
     };
