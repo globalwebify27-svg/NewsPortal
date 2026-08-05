@@ -127,7 +127,8 @@ export default function Footer() {
     { name: isHindi ? "वीडियो" : "Videos", href: "/videos" },
     { name: isHindi ? "संपादकीय" : "Editorials", href: "/#editorials" },
     { name: isHindi ? "फोटो गैलरी" : "Photo Gallery", href: "/#gallery" },
-    { name: isHindi ? "ई-पेपर" : "E-Paper", href: "/epaper" }
+    { name: isHindi ? "ई-पेपर" : "E-Paper", href: "/epaper" },
+    { name: isHindi ? "विज्ञापन दें" : "Advertise With Us", href: "/advertise" }
   ];
 
   return (

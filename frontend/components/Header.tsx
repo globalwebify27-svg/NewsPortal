@@ -56,7 +56,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Play
+  Play,
+  Megaphone
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
@@ -347,7 +348,7 @@ export default function Header() {
             <nav className="top-bar-links">
               <Link href="/about">{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link>
               <Link href="/#careers">{lang === "HI" ? "करियर" : "Careers"}</Link>
-              <Link href="/#advertise">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link>
+              <Link href="/advertise">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link>
               <Link href="/#contact">{lang === "HI" ? "संपर्क करें" : "Contact Us"}</Link>
             </nav>
             <span className="top-bar-vdivider">|</span>
@@ -812,6 +813,13 @@ export default function Header() {
                 </Link>
               </li>
               <li>
+                <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`}>
+                  <Megaphone size={15} />
+                  <span>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</span>
+                  {isActive("/advertise") && <span className="active-pill-bar"></span>}
+                </Link>
+              </li>
+              <li>
                 <div
                   className={`filter-pill-btn ${activeFilterCount > 0 ? "active-filter" : ""}`}
                   onClick={() => setIsFilterModalOpen(true)}
@@ -879,6 +887,7 @@ export default function Header() {
               <li><Link href="/opinion" onClick={() => setMobileMenuOpen(false)}>{t("opinion")}</Link></li>
               <li><Link href="/videos" onClick={() => setMobileMenuOpen(false)}>{t("videos")}</Link></li>
               <li><Link href="/about" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link></li>
+              <li><Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link></li>
             </ul>
           </div>
         </div>

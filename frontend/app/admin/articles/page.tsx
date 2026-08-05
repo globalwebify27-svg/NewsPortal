@@ -328,16 +328,23 @@ export default function AdminArticlesPage() {
 
     let updatedList: AdminArticle[];
     if (editingArticle) {
-      updatedList = articles.map((a) => (a.id === newArt.id ? newArt : a));
+      updatedList = articles.map((a) => (a.id === newArt.id ? newArt : (formIsHero ? { ...a, isHero: false } : a)));
     } else {
-      updatedList = [newArt, ...articles];
+      const previousList = formIsHero ? articles.map((a) => ({ ...a, isHero: false })) : articles;
+      updatedList = [newArt, ...previousList];
     }
 
     // 1. Instantly update UI & localStorage (fast, offline-friendly cache)
     setArticles(updatedList);
     saveToLocalStorage(updatedList);
     setIsModalOpen(false);
-    showToast(editingArticle ? `Article "${formTitle}" updated!` : `Article "${formTitle}" published!`);
+    showToast(
+      formIsHero
+        ? `Article "${formTitle}" set as Main Hero Banner (Previous Hero unassigned)!`
+        : editingArticle
+        ? `Article "${formTitle}" updated!`
+        : `Article "${formTitle}" published!`
+    );
 
     // 2. Persist to real database so it survives page refresh
     try {
@@ -401,6 +408,17 @@ export default function AdminArticlesPage() {
     const matchesLang = languageFilter === "ALL" || (languageFilter === "HI" ? art.language === "HI" : art.language !== "HI");
     return matchesSearch && matchesStatus && matchesLang;
   });
+
+  const handleToggleHero = (artId: string) => {
+    const updatedList = articles.map((a) => ({
+      ...a,
+      isHero: a.id === artId ? !a.isHero : false
+    }));
+    setArticles(updatedList);
+    saveToLocalStorage(updatedList);
+    const target = updatedList.find((a) => a.id === artId);
+    showToast(target?.isHero ? `🌟 Set "${target.title}" as Main Hero Banner!` : `Hero status removed from "${target?.title}".`);
+  };
 
   return (
     <div>
@@ -518,6 +536,25 @@ export default function AdminArticlesPage() {
                   </td>
                   <td style={{ textAlign: "right" }}>
                     <div style={{ display: "inline-flex", gap: "6px", justifyContent: "flex-end" }}>
+                      <button
+                        onClick={() => handleToggleHero(art.id)}
+                        title={art.isHero ? "Click to unmark as Hero Banner" : "Set as Main Hero Banner (Top Lead Story)"}
+                        style={{
+                          background: art.isHero ? "#e50914" : "#fff1f2",
+                          color: art.isHero ? "#ffffff" : "#e50914",
+                          border: `1px solid ${art.isHero ? "#e50914" : "#fca5a5"}`,
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          fontSize: "0.76rem",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
+                      </button>
                       <button
                         onClick={() => handleOpenModal(art)}
                         title="Edit Article"
