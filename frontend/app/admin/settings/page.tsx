@@ -104,8 +104,151 @@ export default function AdminSettingsPage() {
     }
   }, []);
 
+  // Sticky Advertisement Bar State
+  const [stickyAdEnabled, setStickyAdEnabled] = useState(true);
+  const [stickyAdBadge, setStickyAdBadge] = useState("SPONSORED");
+  const [stickyAdText, setStickyAdText] = useState("📢 SPECIAL ANNOUNCEMENT: Reach Millions of Readers with Global Awaaz Digital Sponsorships!");
+  const [stickyAdLink, setStickyAdLink] = useState("/advertise");
+  const [stickyAdImage, setStickyAdImage] = useState("");
+  const [stickyAdBg, setStickyAdBg] = useState("linear-gradient(90deg, #1e293b 0%, #0f172a 100%)");
+  const [stickyAdSaving, setStickyAdSaving] = useState(false);
+
+  // Leaderboard Advertisement Banner State
+  const [leaderboardAdEnabled, setLeaderboardAdEnabled] = useState(true);
+  const [leaderboardAdImage, setLeaderboardAdImage] = useState("");
+  const [leaderboardAdTitle, setLeaderboardAdTitle] = useState("GLOBAL AWAAZ DIGITAL MEDIA COVERAGE");
+  const [leaderboardAdSubtitle, setLeaderboardAdSubtitle] = useState("Get real-time news updates across Bihar, Jharkhand & National headlines 24/7");
+  const [leaderboardAdLink, setLeaderboardAdLink] = useState("/advertise");
+  const [leaderboardAdBtnText, setLeaderboardAdBtnText] = useState("Advertise With Us");
+  const [leaderboardAdBadge, setLeaderboardAdBadge] = useState("ADVERTISEMENT");
+  const [leaderboardImageUploading, setLeaderboardImageUploading] = useState(false);
+
+  const loadStickyAdSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/ad-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setStickyAdEnabled(json.data.ad_sticky_enabled !== "false");
+        if (json.data.ad_sticky_badge) setStickyAdBadge(json.data.ad_sticky_badge);
+        if (json.data.ad_sticky_text) setStickyAdText(json.data.ad_sticky_text);
+        if (json.data.ad_sticky_link) setStickyAdLink(json.data.ad_sticky_link);
+        if (json.data.ad_sticky_image) setStickyAdImage(json.data.ad_sticky_image);
+        if (json.data.ad_sticky_bg) setStickyAdBg(json.data.ad_sticky_bg);
+
+        setLeaderboardAdEnabled(json.data.ad_leaderboard_enabled !== "false");
+        if (json.data.ad_leaderboard_image) setLeaderboardAdImage(json.data.ad_leaderboard_image);
+        if (json.data.ad_leaderboard_title) setLeaderboardAdTitle(json.data.ad_leaderboard_title);
+        if (json.data.ad_leaderboard_subtitle) setLeaderboardAdSubtitle(json.data.ad_leaderboard_subtitle);
+        if (json.data.ad_leaderboard_link) setLeaderboardAdLink(json.data.ad_leaderboard_link);
+        if (json.data.ad_leaderboard_btn_text) setLeaderboardAdBtnText(json.data.ad_leaderboard_btn_text);
+        if (json.data.ad_leaderboard_badge) setLeaderboardAdBadge(json.data.ad_leaderboard_badge);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleSaveStickyAd = async () => {
+    setStickyAdSaving(true);
+    try {
+      const settings = [
+        { key: "ad_sticky_enabled", value: String(stickyAdEnabled) },
+        { key: "ad_sticky_badge", value: stickyAdBadge },
+        { key: "ad_sticky_text", value: stickyAdText },
+        { key: "ad_sticky_link", value: stickyAdLink },
+        { key: "ad_sticky_image", value: stickyAdImage },
+        { key: "ad_sticky_bg", value: stickyAdBg },
+        { key: "ad_leaderboard_enabled", value: String(leaderboardAdEnabled) },
+        { key: "ad_leaderboard_image", value: leaderboardAdImage },
+        { key: "ad_leaderboard_title", value: leaderboardAdTitle },
+        { key: "ad_leaderboard_subtitle", value: leaderboardAdSubtitle },
+        { key: "ad_leaderboard_link", value: leaderboardAdLink },
+        { key: "ad_leaderboard_btn_text", value: leaderboardAdBtnText },
+        { key: "ad_leaderboard_badge", value: leaderboardAdBadge },
+      ];
+      await fetch("/api/v1/ad-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      window.dispatchEvent(new Event("ga_sticky_ad_updated"));
+      showToast("✓ All Advertisement settings saved & live globally!");
+    } catch (err: any) {
+      showToast("❌ Failed to save ad settings: " + (err?.message || ""), "error");
+    } finally {
+      setStickyAdSaving(false);
+    }
+  };
+
+  const [adImageUploading, setAdImageUploading] = useState(false);
+
+  const handleStickyAdImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)) {
+      showToast("❌ Invalid file type! Please select JPG, PNG, WEBP, GIF, or SVG banner image.", "error");
+      return;
+    }
+
+    setAdImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+
+      if (!uploadJson.success || !uploadJson.data?.url) {
+        showToast("❌ Upload failed: " + (uploadJson.message || "Unknown error"), "error");
+        return;
+      }
+
+      const uploadedUrl = uploadJson.data.url as string;
+      setStickyAdImage(uploadedUrl);
+      showToast("✓ Banner image uploaded successfully! (JPG/PNG/WEBP)");
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setAdImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleLeaderboardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)) {
+      showToast("❌ Invalid file type! Please select JPG, PNG, WEBP, GIF, or SVG image.", "error");
+      return;
+    }
+
+    setLeaderboardImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+
+      if (!uploadJson.success || !uploadJson.data?.url) {
+        showToast("❌ Upload failed: " + (uploadJson.message || "Unknown error"), "error");
+        return;
+      }
+
+      const uploadedUrl = uploadJson.data.url as string;
+      setLeaderboardAdImage(uploadedUrl);
+      showToast("✓ Leaderboard banner image uploaded! (JPG/PNG/WEBP)");
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setLeaderboardImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
   useEffect(() => {
     loadLogoSettings();
+    loadStickyAdSettings();
 
     try {
       const storedSocial = localStorage.getItem("ga_social_links");
@@ -126,7 +269,7 @@ export default function AdminSettingsPage() {
         }
       }
     } catch (e) {}
-  }, [loadLogoSettings]);
+  }, [loadLogoSettings, loadStickyAdSettings]);
 
   const handleAddCompanyLink = (e: React.FormEvent) => {
     e.preventDefault();
@@ -616,6 +759,404 @@ export default function AdminSettingsPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Sticky Header Advertisement Manager */}
+        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "20px", padding: "28px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                📢 Sticky Advertisement Bar (स्टीकी विज्ञापन बैनर)
+              </h3>
+              <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                Add and manage a high-visibility sticky advertisement banner bar displayed at the top of the Home Page.
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 800, color: stickyAdEnabled ? "#16a34a" : "#dc2626" }}>
+                {stickyAdEnabled ? "ACTIVE (चालू)" : "DISABLED (बंद)"}
+              </label>
+              <button
+                type="button"
+                onClick={() => setStickyAdEnabled(!stickyAdEnabled)}
+                style={{
+                  background: stickyAdEnabled ? "#16a34a" : "#cbd5e1",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  fontWeight: 800,
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                {stickyAdEnabled ? "Toggle Off" : "Toggle On"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "16px", marginBottom: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🏷️ Badge Tag (e.g. SPONSORED / ADVERTISEMENT)</label>
+              <input
+                type="text"
+                value={stickyAdBadge}
+                onChange={(e) => setStickyAdBadge(e.target.value)}
+                placeholder="SPONSORED"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📢 Advertisement Headline Text</label>
+              <input
+                type="text"
+                value={stickyAdText}
+                onChange={(e) => setStickyAdText(e.target.value)}
+                placeholder="Special Offer: Get 50% off Digital Advertising Packages..."
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "18px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🔗 Destination Target Click URL</label>
+              <input
+                type="text"
+                value={stickyAdLink}
+                onChange={(e) => setStickyAdLink(e.target.value)}
+                placeholder="/advertise or https://example.com"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🎨 Background Color / Gradient</label>
+              <input
+                type="text"
+                value={stickyAdBg}
+                onChange={(e) => setStickyAdBg(e.target.value)}
+                placeholder="linear-gradient(90deg, #1e293b 0%, #0f172a 100%)"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          {/* Banner Graphic / Image Upload Section */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", marginBottom: "18px" }}>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#0f172a", marginBottom: "6px" }}>
+              🖼️ Ad Banner Image / Graphic (JPG, PNG, WEBP, GIF, SVG)
+            </label>
+            <p style={{ margin: "0 0 12px 0", fontSize: "0.78rem", color: "#64748b" }}>
+              Upload a custom banner image or graphic to display inside the sticky advertisement bar. Supports all image formats.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{
+                background: "#0f172a",
+                color: "#ffffff",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "0.82rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+              }}>
+                {adImageUploading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={16} />}
+                {adImageUploading ? "Uploading Image..." : "Upload Banner File (JPG/PNG/WEBP)"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                  onChange={handleStickyAdImageUpload}
+                  disabled={adImageUploading}
+                  style={{ display: "none" }}
+                />
+              </label>
+
+              <div style={{ flex: 1, minWidth: "220px" }}>
+                <input
+                  type="text"
+                  value={stickyAdImage}
+                  onChange={(e) => setStickyAdImage(e.target.value)}
+                  placeholder="Or enter image URL (https://... or /uploads/...)"
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                />
+              </div>
+
+              {stickyAdImage && (
+                <button
+                  type="button"
+                  onClick={() => setStickyAdImage("")}
+                  style={{
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    border: "1px solid #fca5a5",
+                    padding: "7px 14px",
+                    borderRadius: "8px",
+                    fontWeight: 700,
+                    fontSize: "0.78rem",
+                    cursor: "pointer"
+                  }}
+                >
+                  Remove Image
+                </button>
+              )}
+            </div>
+
+            {stickyAdImage && (
+              <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px", background: "#ffffff", padding: "8px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <img src={stickyAdImage} alt="Uploaded Banner" style={{ height: "40px", maxWidth: "180px", objectFit: "contain", borderRadius: "4px" }} />
+                <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 700 }}>✓ Active Banner Image Attached</span>
+              </div>
+            )}
+          </div>
+
+          {/* Ad Live Preview */}
+          <div style={{ marginBottom: "18px" }}>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#64748b", marginBottom: "6px", textTransform: "uppercase" }}>
+              Live Ad Bar Preview (लाइव पूर्वावलोकन):
+            </label>
+            <div style={{
+              background: stickyAdBg || "linear-gradient(90deg, #1e293b 0%, #0f172a 100%)",
+              borderRadius: "10px",
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              color: "#ffffff"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
+                <span style={{ background: "#e50914", color: "#fff", fontSize: "0.68rem", fontWeight: 900, padding: "2px 8px", borderRadius: "4px" }}>
+                  {stickyAdBadge || "SPONSORED"}
+                </span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {stickyAdText || "Your Ad Text Here"}
+                </span>
+              </div>
+              <span style={{ background: "#ffffff", color: "#0f172a", fontSize: "0.75rem", fontWeight: 800, padding: "4px 12px", borderRadius: "6px" }}>
+                Explore Now ▶
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={handleSaveStickyAd}
+              disabled={stickyAdSaving}
+              style={{
+                background: "#e50914",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 24px",
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "0.86rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(229, 9, 20, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px"
+              }}
+            >
+              {stickyAdSaving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={16} />}
+              Save Sticky Ad Settings
+            </button>
+          </div>
+        </div>
+
+        {/* Leaderboard Banner Advertisement Manager */}
+        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "20px", padding: "28px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                🖼️ Main Leaderboard Ad Banner (मुख्य लीडरबोर्ड विज्ञापन बैनर)
+              </h3>
+              <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                Upload custom banner images (JPG, PNG, WEBP) or edit headlines for the full-width advertisement banner placed on the Home Page.
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 800, color: leaderboardAdEnabled ? "#16a34a" : "#dc2626" }}>
+                {leaderboardAdEnabled ? "ACTIVE (चालू)" : "DISABLED (बंद)"}
+              </label>
+              <button
+                type="button"
+                onClick={() => setLeaderboardAdEnabled(!leaderboardAdEnabled)}
+                style={{
+                  background: leaderboardAdEnabled ? "#16a34a" : "#cbd5e1",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  fontWeight: 800,
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                {leaderboardAdEnabled ? "Toggle Off" : "Toggle On"}
+              </button>
+            </div>
+          </div>
+
+          {/* Banner Graphic / Image Upload Section */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", marginBottom: "18px" }}>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#0f172a", marginBottom: "6px" }}>
+              🖼️ Upload Leaderboard Banner Graphic Image (JPG, PNG, WEBP, GIF, SVG)
+            </label>
+            <p style={{ margin: "0 0 12px 0", fontSize: "0.78rem", color: "#64748b" }}>
+              Upload a high-resolution banner image (recommended 1200x200 or 728x90) to display as a full-width ad banner graphic.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{
+                background: "#0f172a",
+                color: "#ffffff",
+                padding: "8px 18px",
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "0.82rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+              }}>
+                {leaderboardImageUploading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={16} />}
+                {leaderboardImageUploading ? "Uploading Image..." : "Upload Banner Image File (JPG/PNG/WEBP)"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                  onChange={handleLeaderboardImageUpload}
+                  disabled={leaderboardImageUploading}
+                  style={{ display: "none" }}
+                />
+              </label>
+
+              <div style={{ flex: 1, minWidth: "220px" }}>
+                <input
+                  type="text"
+                  value={leaderboardAdImage}
+                  onChange={(e) => setLeaderboardAdImage(e.target.value)}
+                  placeholder="Or enter image URL (https://... or /uploads/...)"
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                />
+              </div>
+
+              {leaderboardAdImage && (
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardAdImage("")}
+                  style={{
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    border: "1px solid #fca5a5",
+                    padding: "7px 14px",
+                    borderRadius: "8px",
+                    fontWeight: 700,
+                    fontSize: "0.78rem",
+                    cursor: "pointer"
+                  }}
+                >
+                  Remove Image
+                </button>
+              )}
+            </div>
+
+            {leaderboardAdImage && (
+              <div style={{ marginTop: "12px", background: "#ffffff", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <img src={leaderboardAdImage} alt="Leaderboard Ad Preview" style={{ width: "100%", maxHeight: "120px", objectFit: "cover", borderRadius: "6px" }} />
+                <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 700, display: "block", marginTop: "4px" }}>
+                  ✓ Leaderboard Graphic Attached (Will display as full banner graphic on Homepage)
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "16px", marginBottom: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🏷️ Badge Tag (e.g. ADVERTISEMENT)</label>
+              <input
+                type="text"
+                value={leaderboardAdBadge}
+                onChange={(e) => setLeaderboardAdBadge(e.target.value)}
+                placeholder="ADVERTISEMENT"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📢 Headline Title</label>
+              <input
+                type="text"
+                value={leaderboardAdTitle}
+                onChange={(e) => setLeaderboardAdTitle(e.target.value)}
+                placeholder="GLOBAL AWAAZ DIGITAL MEDIA COVERAGE"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "16px", marginBottom: "18px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📝 Subtitle Description</label>
+              <input
+                type="text"
+                value={leaderboardAdSubtitle}
+                onChange={(e) => setLeaderboardAdSubtitle(e.target.value)}
+                placeholder="Get real-time news updates across Bihar, Jharkhand & National headlines..."
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🔘 Button Text</label>
+              <input
+                type="text"
+                value={leaderboardAdBtnText}
+                onChange={(e) => setLeaderboardAdBtnText(e.target.value)}
+                placeholder="Advertise With Us"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🔗 Target Click URL</label>
+              <input
+                type="text"
+                value={leaderboardAdLink}
+                onChange={(e) => setLeaderboardAdLink(e.target.value)}
+                placeholder="/advertise"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={handleSaveStickyAd}
+              disabled={stickyAdSaving}
+              style={{
+                background: "#e50914",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 24px",
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "0.86rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(229, 9, 20, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px"
+              }}
+            >
+              {stickyAdSaving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={16} />}
+              Save All Advertisement Settings
+            </button>
           </div>
         </div>
 

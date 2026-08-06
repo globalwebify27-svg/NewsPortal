@@ -1,10 +1,12 @@
 // =============================================================================
 // Local Media Storage Handler for Next.js App Router
-// Stores all uploaded files locally in public/uploads on project disk
+// Stores all uploaded files locally in public/uploads directory on project disk
 // =============================================================================
 
 import fs from "fs";
 import path from "path";
+
+export const uploadImageToDisk = uploadImageToCloudinary;
 
 export async function uploadImageToCloudinary(
   base64Data: string,
@@ -29,16 +31,22 @@ export async function uploadImageToCloudinary(
       fs.writeFileSync(filepath, buffer);
     }
 
-    const publicUrl = `/uploads/${filename}`;
-
     return {
-      url: publicUrl,
+      url: `/uploads/${filename}`,
       publicId: filename,
       width: 1200,
       height: 800,
     };
   } catch (err: any) {
-    console.error("Local file save error:", err);
-    throw new Error("Failed to save media file to public/uploads directory");
+    console.warn("Local disk write error (read-only filesystem or disk error):", err?.message);
+    if (base64Data.startsWith("data:")) {
+      return {
+        url: base64Data,
+        publicId: `data_${Date.now()}`,
+        width: 1200,
+        height: 800,
+      };
+    }
+    throw new Error(err?.message || "Failed to save media file to public/uploads directory");
   }
 }

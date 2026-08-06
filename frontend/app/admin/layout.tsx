@@ -25,6 +25,7 @@ import {
   ArrowRight,
   BookOpen,
   Newspaper,
+  Megaphone,
   Globe
 } from "lucide-react";
 
@@ -90,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Categories", href: "/admin/categories", icon: FolderTree },
     { name: "Media Library", href: "/admin/media", icon: ImageIcon },
     { name: "Videos Manager", href: "/admin/videos", icon: Video },
+    { name: "Advertisements", href: "/admin/ads", icon: Megaphone, badge: "ADS" },
     { name: "About Us Page", href: "/admin/about", icon: BookOpen, badge: "NEW" },
     { name: "e-Paper Manager", href: "/admin/epaper", icon: Newspaper, badge: "NEW" },
     { name: "SEO Settings", href: "/admin/seo", icon: Globe, badge: "SEO" },

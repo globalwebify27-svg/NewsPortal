@@ -9,7 +9,10 @@ import {
   Edit,
   CheckCircle,
   Youtube,
-  Search
+  Search,
+  Tv,
+  Share2,
+  ExternalLink
 } from "lucide-react";
 import { saveStoredVideos, getStoredVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 
@@ -27,6 +30,13 @@ export default function AdminVideosPage() {
   const [formYtDuration, setFormYtDuration] = useState("01:30");
   const [activeCategoryFilter, setActiveCategoryFilter] = useState("ALL");
 
+  // Live TV & Social Config State
+  const [liveTvTitle, setLiveTvTitle] = useState("GLOBAL AWAAZ NEWS 24/7");
+  const [liveTvSubtitle, setLiveTvSubtitle] = useState("लाइव न्यूज़ बुलेटिन और मुख्य समाचार प्रसारण");
+  const [liveTvStreamUrl, setLiveTvStreamUrl] = useState("");
+  const [googleNewsUrl, setGoogleNewsUrl] = useState("https://news.google.com");
+  const [whatsappUrl, setWhatsappUrl] = useState("https://whatsapp.com");
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
@@ -34,7 +44,31 @@ export default function AdminVideosPage() {
 
   useEffect(() => {
     setVideosList(getStoredVideos());
+    try {
+      const savedConfig = localStorage.getItem("ga_livetv_config");
+      if (savedConfig) {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed.channelTitle) setLiveTvTitle(parsed.channelTitle);
+        if (parsed.subtitle) setLiveTvSubtitle(parsed.subtitle);
+        if (parsed.streamUrl) setLiveTvStreamUrl(parsed.streamUrl);
+        if (parsed.googleNewsUrl) setGoogleNewsUrl(parsed.googleNewsUrl);
+        if (parsed.whatsappUrl) setWhatsappUrl(parsed.whatsappUrl);
+      }
+    } catch (e) {}
   }, []);
+
+  const handleSaveLiveTvConfig = () => {
+    const config = {
+      channelTitle: liveTvTitle.trim() || "GLOBAL AWAAZ NEWS 24/7",
+      subtitle: liveTvSubtitle.trim() || "लाइव न्यूज़ बुलेटिन और मुख्य समाचार प्रसारण",
+      streamUrl: liveTvStreamUrl.trim(),
+      googleNewsUrl: googleNewsUrl.trim() || "https://news.google.com",
+      whatsappUrl: whatsappUrl.trim() || "https://whatsapp.com"
+    };
+    localStorage.setItem("ga_livetv_config", JSON.stringify(config));
+    window.dispatchEvent(new Event("ga_livetv_config_updated"));
+    showToast("✓ Live TV Stream & Social Channel settings saved!");
+  };
 
   const handleOpenVideoModal = (vid?: YouTubeVideoItem) => {
     if (vid) {
@@ -157,6 +191,92 @@ export default function AdminVideosPage() {
           >
             <Plus size={18} /> Add New YouTube Video
           </button>
+        </div>
+
+        {/* Homepage Live 24/7 TV Stream & Social Channels Settings */}
+        <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "16px", padding: "20px", marginTop: "20px" }}>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+            <Tv size={18} style={{ color: "#e50914" }} /> Homepage Live 24/7 TV Stream & Social Follow Channels Settings
+          </h3>
+          <p style={{ margin: "0 0 16px 0", fontSize: "0.82rem", color: "#64748b" }}>
+            Configure live broadcast video URL, channel title, Google News link, and WhatsApp channel link shown on homepage spotlight sidebar.
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                Live TV Channel Title
+              </label>
+              <input
+                type="text"
+                value={liveTvTitle}
+                onChange={(e) => setLiveTvTitle(e.target.value)}
+                placeholder="e.g. GLOBAL AWAAZ NEWS 24/7"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                Live TV Broadcast Subtitle / Ticker
+              </label>
+              <input
+                type="text"
+                value={liveTvSubtitle}
+                onChange={(e) => setLiveTvSubtitle(e.target.value)}
+                placeholder="e.g. लाइव न्यूज़ बुलेटिन और मुख्य समाचार प्रसारण"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+              />
+            </div>
+
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                Live Stream Video URL / YouTube Embed URL (Optional)
+              </label>
+              <input
+                type="text"
+                value={liveTvStreamUrl}
+                onChange={(e) => setLiveTvStreamUrl(e.target.value)}
+                placeholder="e.g. https://www.youtube.com/watch?v=YOUR_VIDEO_ID or https://www.youtube.com/embed/YOUR_VIDEO_ID"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                Google News Channel URL
+              </label>
+              <input
+                type="text"
+                value={googleNewsUrl}
+                onChange={(e) => setGoogleNewsUrl(e.target.value)}
+                placeholder="e.g. https://news.google.com"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                WhatsApp Channel Link
+              </label>
+              <input
+                type="text"
+                value={whatsappUrl}
+                onChange={(e) => setWhatsappUrl(e.target.value)}
+                placeholder="e.g. https://whatsapp.com/channel/..."
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: "14px", display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={handleSaveLiveTvConfig}
+              style={{ background: "#0f172a", color: "#ffffff", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}
+            >
+              Save Live TV & Social Settings ✓
+            </button>
+          </div>
         </div>
 
         {/* Category Filters */}

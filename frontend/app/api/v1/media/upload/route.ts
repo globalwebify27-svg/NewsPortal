@@ -15,27 +15,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "No file provided" }, { status: 400 });
     }
 
-    // 1. Ensure public/uploads directory exists on disk
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // 2. Generate clean unique filename
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     const fileExt = path.extname(file.name) || ".jpg";
     const sanitizeName = path.basename(file.name, fileExt).toLowerCase().replace(/[^a-z0-9]/g, "-");
     const uniqueFilename = `${sanitizeName}_${Date.now()}${fileExt}`;
-    const filePath = path.join(uploadsDir, uniqueFilename);
 
-    // 3. Write file to public/uploads
-    await fs.promises.writeFile(filePath, buffer);
+    let publicUrl = "";
 
-    const publicUrl = `/uploads/${uniqueFilename}`;
+    // 1. Write file to public/uploads folder on disk
+    try {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filePath = path.join(uploadsDir, uniqueFilename);
+      await fs.promises.writeFile(filePath, buffer);
+      publicUrl = `/uploads/${uniqueFilename}`;
+    } catch (fsErr: any) {
+      console.warn("Local disk write fallback (read-only filesystem on serverless):", fsErr?.message);
+      // Fallback to Data URL if filesystem is read-only (EROFS) on serverless environments
+      const base64 = buffer.toString("base64");
+      const mime = file.type || "image/png";
+      publicUrl = `data:${mime};base64,${base64}`;
+    }
 
-    // 4. Save record to database Media table (if DB connected)
+    // 2. Save record to database Media table (if DB connected)
     let savedMedia: any = null;
     try {
       savedMedia = await prisma.media.create({
@@ -69,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Failed to save file to local public/uploads directory",
+        message: error.message || "Failed to save file to public/uploads directory",
       },
       { status: 500 }
     );

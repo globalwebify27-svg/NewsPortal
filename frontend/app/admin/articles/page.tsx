@@ -12,10 +12,12 @@ import {
   Sparkles,
   ArrowUpRight,
   Upload,
-  Image as ImageIcon2
+  Image as ImageIcon2,
+  Zap
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES } from "@/lib/states";
+import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
 
 interface AdminArticle {
@@ -35,11 +37,14 @@ interface AdminArticle {
   publishedAt?: string;
   isPinned?: boolean;
   isHero?: boolean;
+  isSuperfast?: boolean;
   language?: "EN" | "HI";
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
   videoUrl?: string;
   state?: string;
+  district?: string;
+  isTrending?: boolean;
 }
 
 const LOCAL_STORAGE_KEY = "ga_custom_articles";
@@ -123,6 +128,7 @@ export default function AdminArticlesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [languageFilter, setLanguageFilter] = useState("ALL");
+  const [dateFilter, setDateFilter] = useState("");
   const [toastMessage, setToastMessage] = useState("");
 
   // Modal States
@@ -135,6 +141,8 @@ export default function AdminArticlesPage() {
   const [formCategories, setFormCategories] = useState<string[]>(["Top News", "Education"]);
   const [formSubCategory, setFormSubCategory] = useState("General");
   const [formState, setFormState] = useState("Jharkhand");
+  const [formDistrict, setFormDistrict] = useState("Ranchi");
+  const [formIsTrending, setFormIsTrending] = useState(false);
   const [formAuthor, setFormAuthor] = useState("Global Admin");
   const [formStatus, setFormStatus] = useState("PUBLISHED");
   const [formLanguage, setFormLanguage] = useState<"EN" | "HI">("HI");
@@ -143,6 +151,7 @@ export default function AdminArticlesPage() {
   const [formImage, setFormImage] = useState("");
   const [imageFileName, setImageFileName] = useState("");
   const [formIsHero, setFormIsHero] = useState(false);
+  const [formIsSuperfast, setFormIsSuperfast] = useState(false);
   const [formImageHeight, setFormImageHeight] = useState("auto");
   const [formCustomHeight, setFormCustomHeight] = useState("");
   const [formImageFit, setFormImageFit] = useState<"cover" | "contain" | "fill">("cover");
@@ -215,7 +224,11 @@ export default function AdminArticlesPage() {
       setFormContent(art.body || "");
       setFormImage(art.featuredImage || "");
       setImageFileName(art.featuredImage ? "Uploaded Image" : "");
+      setFormState(art.state || "Jharkhand");
+      setFormDistrict(art.district || "Ranchi");
       setFormIsHero(art.isHero || false);
+      setFormIsSuperfast(art.isSuperfast || false);
+      setFormIsTrending(art.isTrending || false);
 
       const h = art.imageHeight || "auto";
       if (["auto", "250px", "350px", "450px", "550px"].includes(h)) {
@@ -241,7 +254,11 @@ export default function AdminArticlesPage() {
       setFormContent("");
       setFormImage("");
       setImageFileName("");
+      setFormState("Jharkhand");
+      setFormDistrict("Ranchi");
       setFormIsHero(false);
+      setFormIsSuperfast(false);
+      setFormIsTrending(false);
       setFormImageHeight("auto");
       setFormCustomHeight("");
       setFormImageFit("cover");
@@ -319,11 +336,14 @@ export default function AdminArticlesPage() {
       readTime: "3 min read",
       publishedAt: editingArticle ? editingArticle.publishedAt : new Date().toISOString(),
       isHero: formIsHero,
+      isSuperfast: formIsSuperfast,
+      isTrending: formIsTrending,
       language: formLanguage,
       imageHeight: finalHeight,
       imageFit: formImageFit,
       videoUrl: formVideoUrl,
-      state: activeCat.toLowerCase() === "india" ? (formState || "National") : "National"
+      state: formState,
+      district: formDistrict || "Jharkhand"
     };
 
     let updatedList: AdminArticle[];
@@ -406,18 +426,40 @@ export default function AdminArticlesPage() {
     const matchesSearch = art.title ? art.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
     const matchesStatus = statusFilter === "ALL" || art.status === statusFilter;
     const matchesLang = languageFilter === "ALL" || (languageFilter === "HI" ? art.language === "HI" : art.language !== "HI");
-    return matchesSearch && matchesStatus && matchesLang;
+    const matchesDate = !dateFilter || (art.publishedAt ? art.publishedAt.slice(0, 10) === dateFilter : false);
+    return matchesSearch && matchesStatus && matchesLang && matchesDate;
   });
 
   const handleToggleHero = (artId: string) => {
     const updatedList = articles.map((a) => ({
       ...a,
-      isHero: a.id === artId ? !a.isHero : false
+      isHero: a.id === artId ? !a.isHero : false,
+      ...(a.id === artId && !a.isHero ? { imageFit: "cover" as const } : {})
     }));
     setArticles(updatedList);
     saveToLocalStorage(updatedList);
     const target = updatedList.find((a) => a.id === artId);
     showToast(target?.isHero ? `🌟 Set "${target.title}" as Main Hero Banner!` : `Hero status removed from "${target?.title}".`);
+  };
+
+  const handleToggleSuperfast = (artId: string) => {
+    const updatedList = articles.map((a) => (
+      a.id === artId ? { ...a, isSuperfast: !a.isSuperfast } : a
+    ));
+    setArticles(updatedList);
+    saveToLocalStorage(updatedList);
+    const target = updatedList.find((a) => a.id === artId);
+    showToast(target?.isSuperfast ? `⚡ Set "${target?.title}" in ⚡ सुपरफ़ास्ट NEWS section!` : `Removed "${target?.title}" from Superfast News.`);
+  };
+
+  const handleToggleTrending = (artId: string) => {
+    const updatedList = articles.map((a) => (
+      a.id === artId ? { ...a, isTrending: !a.isTrending } : a
+    ));
+    setArticles(updatedList);
+    saveToLocalStorage(updatedList);
+    const target = updatedList.find((a) => a.id === artId);
+    showToast(target?.isTrending ? `🔥 Marked "${target?.title}" as Trending / Hot Topic!` : `Unmarked "${target?.title}" from Trending.`);
   };
 
   return (
@@ -445,7 +487,7 @@ export default function AdminArticlesPage() {
           onClick={() => handleOpenModal()}
           style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "11px 22px", borderRadius: "10px", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(229,9,20,0.3)" }}
         >
-          <Plus size={18} /> Compose New Article
+          <Plus size={18} /> Compose New News
         </button>
       </div>
 
@@ -476,6 +518,24 @@ export default function AdminArticlesPage() {
               <option value="DRAFT">Draft</option>
               <option value="ARCHIVED">Archived</option>
             </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="date"
+                title="Filter news date wise"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--color-border)", fontSize: "0.85rem", background: "var(--color-bg, #ffffff)", color: "var(--color-text, #0f172a)" }}
+              />
+              {dateFilter && (
+                <button
+                  onClick={() => setDateFilter("")}
+                  style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 10px", borderRadius: "8px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer" }}
+                  title="Clear date filter"
+                >
+                  ✕ Clear Date
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -507,11 +567,15 @@ export default function AdminArticlesPage() {
                         <img src={art.featuredImage} alt="" style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
                       )}
                       <div>
-                        <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px", lineHeight: "1.3" }}>
+                        <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", lineHeight: "1.3" }}>
                           {art.title}
                           {art.isHero && <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>HERO</span>}
+                          {art.isSuperfast && <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>⚡ SUPERFAST</span>}
+                          {art.isTrending && <span style={{ background: "#ea580c", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>🔥 TRENDING</span>}
                         </div>
-                        <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>by {art.author?.name || "Global Admin"}</span>
+                        <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>
+                          by {art.author?.name || "Global Admin"} • 📅 {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Today"}
+                        </span>
                       </div>
                     </div>
                   </td>
@@ -525,8 +589,9 @@ export default function AdminArticlesPage() {
                     </div>
                   </td>
                   <td>
-                    <span style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "3px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700 }}>
-                      {art.state || "National"}
+                    <span style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "3px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, display: "inline-flex", flexDirection: "column", gap: "2px" }}>
+                      <span>{art.state || "National"}</span>
+                      {art.district && <span style={{ color: "#2563eb", fontWeight: 800 }}>📍 {art.district}</span>}
                     </span>
                   </td>
                   <td>
@@ -554,6 +619,44 @@ export default function AdminArticlesPage() {
                         }}
                       >
                         <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
+                      </button>
+                      <button
+                        onClick={() => handleToggleSuperfast(art.id)}
+                        title={art.isSuperfast ? "Click to remove from Superfast News section" : "Add to ⚡ सुपरफ़ास्ट NEWS section"}
+                        style={{
+                          background: art.isSuperfast ? "#dc2626" : "#fef2f2",
+                          color: art.isSuperfast ? "#ffffff" : "#dc2626",
+                          border: `1px solid ${art.isSuperfast ? "#dc2626" : "#fca5a5"}`,
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          fontSize: "0.76rem",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        <Zap size={13} /> {art.isSuperfast ? "Superfast ⚡" : "+ Superfast"}
+                      </button>
+                      <button
+                        onClick={() => handleToggleTrending(art.id)}
+                        title={art.isTrending ? "Click to remove from Trending / Hot Topics" : "Mark as 🔥 Trending / Hot Topic"}
+                        style={{
+                          background: art.isTrending ? "#ea580c" : "#fff7ed",
+                          color: art.isTrending ? "#ffffff" : "#ea580c",
+                          border: `1px solid ${art.isTrending ? "#ea580c" : "#ffedd5"}`,
+                          padding: "5px 10px",
+                          borderRadius: "6px",
+                          fontSize: "0.76rem",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        🔥 {art.isTrending ? "Trending" : "+ Trending"}
                       </button>
                       <button
                         onClick={() => handleOpenModal(art)}
@@ -748,6 +851,82 @@ export default function AdminArticlesPage() {
                   >
                     <option value="HI">Hindi (हिंदी) Portal</option>
                     <option value="EN">English Portal</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Section Placement Controls */}
+              <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "14px", marginTop: "10px" }}>
+                <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 800, color: "#0f172a", marginBottom: "10px" }}>
+                  📌 Special Homepage Section Assignments / प्लेसमेंट
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#0f172a" }}>
+                    <input
+                      type="checkbox"
+                      checked={formIsHero}
+                      onChange={(e) => setFormIsHero(e.target.checked)}
+                      style={{ width: "16px", height: "16px", accentColor: "#e50914" }}
+                    />
+                    <span>🌟 Main Spotlight Lead Story (Hero Banner)</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#dc2626" }}>
+                    <input
+                      type="checkbox"
+                      checked={formIsSuperfast}
+                      onChange={(e) => setFormIsSuperfast(e.target.checked)}
+                      style={{ width: "16px", height: "16px", accentColor: "#dc2626" }}
+                    />
+                    <span>⚡ Superfast News (सुपरफ़ास्ट NEWS Section)</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#ea580c" }}>
+                    <input
+                      type="checkbox"
+                      checked={formIsTrending}
+                      onChange={(e) => setFormIsTrending(e.target.checked)}
+                      style={{ width: "16px", height: "16px", accentColor: "#ea580c" }}
+                    />
+                    <span>🔥 Trending / Hot Topic (ट्रेंडिंग ख़बर)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* State & City / District Selection */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>State / राज्य</label>
+                  <select
+                    value={formState}
+                    onChange={(e) => {
+                      const newSt = e.target.value;
+                      setFormState(newSt);
+                      const stObj = INDIAN_STATES.find((s) => s.nameEn === newSt);
+                      const dists = getDistrictsForState(stObj?.code || "");
+                      if (dists.length > 0) setFormDistrict(dists[0].nameEn);
+                    }}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
+                  >
+                    <option value="National">National / All India</option>
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st.slug} value={st.nameEn}>
+                        {st.nameEn} ({st.nameHi})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>City / District / शहर / ज़िला</label>
+                  <select
+                    value={formDistrict}
+                    onChange={(e) => setFormDistrict(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
+                  >
+                    {getDistrictsForState(INDIAN_STATES.find((s) => s.nameEn === formState)?.code || "").map((d) => (
+                      <option key={d.id} value={d.nameEn}>
+                        📍 {d.nameEn} ({d.nameHi})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

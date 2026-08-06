@@ -17,6 +17,7 @@ export interface DefaultArticle {
   createdAt?: string;
   isPinned?: boolean;
   isHero?: boolean;
+  isSuperfast?: boolean;
   status?: string;
   views?: number;
   imageHeight?: string;

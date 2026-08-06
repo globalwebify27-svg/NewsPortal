@@ -63,6 +63,7 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos } from "@/lib/youtube";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
+import { autoDetectUserCity } from "@/lib/districts";
 
 export default function Header() {
   let pathname = "";
@@ -79,6 +80,13 @@ export default function Header() {
 
   // Interactive State Selector States
   const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
+  const [detectedLocationText, setDetectedLocationText] = useState({
+    hi: "राँची, झारखंड",
+    en: "Ranchi, Jharkhand"
+  });
+  const [userTemperature, setUserTemperature] = useState("28°C");
+  const [userTimezone, setUserTimezone] = useState("Asia/Kolkata");
+  const [isInternationalLocation, setIsInternationalLocation] = useState(false);
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
   const [stateSearchQuery, setStateSearchQuery] = useState("");
 
@@ -170,33 +178,43 @@ export default function Header() {
   const [customLogoMarginLeft, setCustomLogoMarginLeft] = useState<number>(75);
 
   useEffect(() => {
-    const loadState = async () => {
+    const loadLocation = async () => {
       try {
-        const stored = localStorage.getItem("ga_selected_state");
-        if (stored) {
-          const found = INDIAN_STATES.find(s => s.code === stored || s.slug === stored || s.nameEn.toLowerCase() === stored.toLowerCase());
-          if (found) setSelectedState(found);
+        const isManuallySelected = sessionStorage.getItem("ga_manual_city_selected") === "true";
+        const storedCity = localStorage.getItem("ga_selected_city");
+        const storedStateCode = localStorage.getItem("ga_selected_state");
+
+        if (isManuallySelected && storedCity) {
+          const stObj = INDIAN_STATES.find(s => s.code === storedStateCode || s.nameEn.toLowerCase() === storedStateCode?.toLowerCase());
+          setDetectedLocationText({
+            hi: `${storedCity}, ${stObj?.nameHi || "भारत"}`,
+            en: `${storedCity}, ${stObj?.nameEn || "India"}`
+          });
         } else {
-          // Auto-detect user's location state via IP Geolocation
-          const detected = await autoDetectUserIndianState();
+          // Dynamic Real-time IP / VPN Geolocation Detection
+          const detected = await autoDetectUserCity();
           if (detected) {
-            setSelectedState(detected);
-            localStorage.setItem("ga_selected_state", detected.code);
-            window.dispatchEvent(new Event("ga_state_changed"));
-          } else {
-            const defaultSt = INDIAN_STATES.find(s => s.code === "JH") || INDIAN_STATES[0];
-            setSelectedState(defaultSt);
-            localStorage.setItem("ga_selected_state", defaultSt.code);
+            setDetectedLocationText({
+              hi: detected.displayLocationHi || `${detected.cityHi}, ${detected.stateNameHi}`,
+              en: detected.displayLocationEn || `${detected.city}, ${detected.stateNameEn}`
+            });
+            if (detected.temperature) setUserTemperature(detected.temperature);
+            if (detected.timezone) setUserTimezone(detected.timezone);
+            if (detected.isInternational !== undefined) setIsInternationalLocation(detected.isInternational);
+
+            const stObj = INDIAN_STATES.find(s => s.code === detected.stateCode);
+            if (stObj) setSelectedState(stObj);
           }
         }
       } catch (e) {}
     };
-    loadState();
-    window.addEventListener("storage", loadState);
-    window.addEventListener("ga_state_changed", loadState);
+
+    loadLocation();
+    window.addEventListener("ga_state_changed", loadLocation);
+    window.addEventListener("storage", loadLocation);
     return () => {
-      window.removeEventListener("storage", loadState);
-      window.removeEventListener("ga_state_changed", loadState);
+      window.removeEventListener("ga_state_changed", loadLocation);
+      window.removeEventListener("storage", loadLocation);
     };
   }, []);
 
@@ -320,16 +338,24 @@ export default function Header() {
   };
 
   useEffect(() => {
-    const now = new Date();
-    const locale = lang === "HI" ? "hi-IN" : "en-US";
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    };
-    setCurrentDate(now.toLocaleDateString(locale, options));
-  }, [lang]);
+    try {
+      const now = new Date();
+      // If visitor is accessing from outside India, force English day & date!
+      const locale = isInternationalLocation ? "en-US" : (lang === "HI" ? "hi-IN" : "en-US");
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: userTimezone
+      };
+      setCurrentDate(now.toLocaleDateString(locale, options));
+    } catch (e) {
+      const now = new Date();
+      const locale = isInternationalLocation ? "en-US" : (lang === "HI" ? "hi-IN" : "en-US");
+      setCurrentDate(now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+    }
+  }, [lang, userTimezone, isInternationalLocation]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", "light");
@@ -342,13 +368,13 @@ export default function Header() {
         <div className="container top-bar-inner">
           <div className="top-bar-left">
             <span className="top-bar-date-text">
-              {currentDate || (lang === "HI" ? "शनिवार, 03 मई 2025" : "Saturday, 03 May 2025")}
+              {currentDate || (lang === "HI" ? "गुरुवार, 6 अगस्त 2026" : "Thursday, 6 August 2026")}
             </span>
             <span className="top-bar-vdivider">|</span>
             <div className="top-bar-weather-text">
-              <span>{lang === "HI" ? "राँची, झारखंड" : "Ranchi, Jharkhand"}</span>
+              <span>{lang === "HI" ? detectedLocationText.hi : detectedLocationText.en}</span>
               <Sun size={14} className="top-bar-sun-icon" />
-              <span>28°C</span>
+              <span>{userTemperature}</span>
             </div>
           </div>
           <div className="top-bar-right">

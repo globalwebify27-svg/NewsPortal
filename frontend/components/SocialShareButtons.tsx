@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Share2, Check } from "lucide-react";
+import { Share2, Check, Download } from "lucide-react";
 
 interface SocialShareProps {
   title: string;
@@ -24,10 +24,14 @@ export default function SocialShareButtons({
 }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
 
-  // Construct absolute or path URL
+  // Construct absolute public URL
   const getFullUrl = () => {
     if (typeof window !== "undefined") {
       if (slug.startsWith("http://") || slug.startsWith("https://")) return slug;
+      // If on localhost, use production domain so WhatsApp/Facebook crawlers can reach the page & image
+      if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return `https://globalawaaz.com/article/${slug}`;
+      }
       return `${window.location.origin}/article/${slug}`;
     }
     return `https://globalawaaz.com/article/${slug}`;
@@ -102,6 +106,26 @@ export default function SocialShareButtons({
     } catch (err) {}
   };
 
+  const handleDownloadImage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!image) return;
+    try {
+      const res = await fetch(image);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30)}-image.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      window.open(image, "_blank");
+    }
+  };
+
   const iconSizes = {
     sm: 13,
     md: 15,
@@ -163,6 +187,8 @@ export default function SocialShareButtons({
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
         </svg>
       </button>
+
+
 
       {/* Native / Copy Link */}
       <button
