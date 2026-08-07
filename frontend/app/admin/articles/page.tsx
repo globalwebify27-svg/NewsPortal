@@ -956,9 +956,9 @@ export default function AdminArticlesPage() {
                           </span>
                           <span style={{ fontSize: "0.76rem", color: isUploadingImage ? "#ea580c" : "#16a34a", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
                             {isUploadingImage ? (
-                              <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #ea580c", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading to Cloudinary…</>
+                              <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #ea580c", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading to Hostinger Storage…</>
                             ) : (
-                              <><CheckCircle size={14} /> Uploaded to Cloudinary ✓</>
+                              <><CheckCircle size={14} /> Uploaded to Hostinger Storage ✓</>
                             )}
                           </span>
                         </div>
