@@ -720,8 +720,8 @@ export default function Header() {
                           borderRadius: "6px",
                           fontSize: "0.82rem",
                           fontWeight: selectedState.code === st.code ? 800 : 500,
-                          color: selectedState.code === st.code ? "#ffffff" : "var(--color-text)",
-                          background: selectedState.code === st.code ? "#e50914" : "rgba(0,0,0,0.03)",
+                          color: selectedState.code === st.code ? "#ffffff" : "#e2e8f0",
+                          background: selectedState.code === st.code ? "#e50914" : "rgba(255,255,255,0.06)",
                           textDecoration: "none",
                           transition: "all 0.15s ease"
                         }}

@@ -818,15 +818,21 @@ export default function Home() {
       {/* ===========================
           HYPER-LOCAL CITY & STATE NEWS SECTION
           =========================== */}
-      <section className="mobile-state-section" style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "16px", padding: "18px", marginTop: "20px", marginBottom: "20px" }}>
-        <div className="mobile-section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <MapPin size={20} style={{ color: "#e50914" }} />
-            <h2 className="mobile-section-title" style={{ margin: 0, fontSize: "1.25rem", fontWeight: 900, color: "var(--color-text, #0f172a)" }}>
-              {lang === "HI" ? `📍 आपके शहर की ख़बरें (${userCity} / ${userState.nameHi})` : `📍 Local News (${userCity} / ${userState.nameEn})`}
-            </h2>
+      <section className="mobile-state-section" style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "14px", marginTop: "12px", marginBottom: "16px" }}>
+        <div className="mobile-section-header" style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px", borderBottom: "2px solid #e50914", paddingBottom: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+              <MapPin size={18} style={{ color: "#e50914", flexShrink: 0 }} />
+              <h2 className="mobile-section-title" style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, color: "var(--color-text, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {lang === "HI" ? "आपके शहर की ख़बरें" : "Local City News"}
+              </h2>
+            </div>
+            <span style={{ background: "rgba(229, 9, 20, 0.08)", color: "#e50914", fontSize: "0.74rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", whiteSpace: "nowrap", flexShrink: 0 }}>
+              {userCity} ({lang === "HI" ? userState.nameHi : userState.nameEn})
+            </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", width: "100%" }}>
             {/* City / District Selector */}
             <select
               value={userCity}
@@ -840,14 +846,16 @@ export default function Home() {
                 } catch (err) {}
               }}
               style={{
-                padding: "5px 10px",
+                width: "100%",
+                padding: "6px 8px",
                 borderRadius: "8px",
                 border: "1px solid var(--color-border, #cbd5e1)",
                 background: "var(--color-bg, #ffffff)",
                 color: "var(--color-text, #0f172a)",
-                fontSize: "0.82rem",
+                fontSize: "0.78rem",
                 fontWeight: 700,
-                cursor: "pointer"
+                cursor: "pointer",
+                boxSizing: "border-box"
               }}
             >
               {getDistrictsForState(userState.code).map((d) => (
@@ -876,14 +884,16 @@ export default function Home() {
                 }
               }}
               style={{
-                padding: "5px 10px",
+                width: "100%",
+                padding: "6px 8px",
                 borderRadius: "8px",
                 border: "1px solid var(--color-border, #cbd5e1)",
                 background: "var(--color-bg, #ffffff)",
                 color: "var(--color-text, #0f172a)",
-                fontSize: "0.82rem",
+                fontSize: "0.78rem",
                 fontWeight: 700,
-                cursor: "pointer"
+                cursor: "pointer",
+                boxSizing: "border-box"
               }}
             >
               {INDIAN_STATES.map((st) => (

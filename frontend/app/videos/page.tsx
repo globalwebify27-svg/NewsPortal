@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Youtube,
@@ -23,6 +23,7 @@ import {
 import {
   YouTubeVideoItem,
   getStoredVideos,
+  fetchCentralVideos,
   DEFAULT_VIDEOS
 } from "@/lib/youtube";
 
@@ -34,8 +35,7 @@ export default function VideosPage() {
   const [liked, setLiked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cinemaMode, setCinemaMode] = useState(false);
-
-  const playerRef = React.useRef<HTMLDivElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const toggleNativeFullScreen = () => {
     if (!playerRef.current) return;
@@ -47,11 +47,9 @@ export default function VideosPage() {
   };
 
   useEffect(() => {
-    function loadVideos() {
-      const list = getStoredVideos();
+    function processVideoList(list: YouTubeVideoItem[]) {
       setVideos(list);
 
-      // Check URL query string for ?v=YOUTUBE_ID or ?id=VIDEO_ID
       const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
       const targetV = params?.get("v") || params?.get("id");
 
@@ -64,18 +62,28 @@ export default function VideosPage() {
       }
 
       if (list.length > 0) {
-        setActiveVideo(list[0]);
+        setActiveVideo((prev) => prev || list[0]);
       } else {
         setActiveVideo(null);
       }
     }
 
-    loadVideos();
-    window.addEventListener("storage", loadVideos);
-    window.addEventListener("popstate", loadVideos);
+    // 1. Initial fast local render
+    processVideoList(getStoredVideos());
+
+    // 2. Fetch central DB videos across all devices
+    fetchCentralVideos().then(({ videos: centralList }) => {
+      if (Array.isArray(centralList) && centralList.length > 0) {
+        processVideoList(centralList);
+      }
+    });
+
+    const loadLocal = () => processVideoList(getStoredVideos());
+    window.addEventListener("storage", loadLocal);
+    window.addEventListener("popstate", loadLocal);
     return () => {
-      window.removeEventListener("storage", loadVideos);
-      window.removeEventListener("popstate", loadVideos);
+      window.removeEventListener("storage", loadLocal);
+      window.removeEventListener("popstate", loadLocal);
     };
   }, []);
 

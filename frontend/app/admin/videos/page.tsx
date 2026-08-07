@@ -14,7 +14,7 @@ import {
   Share2,
   ExternalLink
 } from "lucide-react";
-import { saveStoredVideos, getStoredVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
+import { saveStoredVideos, getStoredVideos, fetchCentralVideos, saveCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 
 export default function AdminVideosPage() {
   const [videosList, setVideosList] = useState<YouTubeVideoItem[]>([]);
@@ -43,18 +43,22 @@ export default function AdminVideosPage() {
   };
 
   useEffect(() => {
+    // Initial fast local load
     setVideosList(getStoredVideos());
-    try {
-      const savedConfig = localStorage.getItem("ga_livetv_config");
-      if (savedConfig) {
-        const parsed = JSON.parse(savedConfig);
-        if (parsed.channelTitle) setLiveTvTitle(parsed.channelTitle);
-        if (parsed.subtitle) setLiveTvSubtitle(parsed.subtitle);
-        if (parsed.streamUrl) setLiveTvStreamUrl(parsed.streamUrl);
-        if (parsed.googleNewsUrl) setGoogleNewsUrl(parsed.googleNewsUrl);
-        if (parsed.whatsappUrl) setWhatsappUrl(parsed.whatsappUrl);
+
+    // Central Database load across all machines & devices
+    fetchCentralVideos().then(({ videos, liveTvConfig }) => {
+      if (Array.isArray(videos) && videos.length > 0) {
+        setVideosList(videos);
       }
-    } catch (e) {}
+      if (liveTvConfig) {
+        if (liveTvConfig.channelTitle) setLiveTvTitle(liveTvConfig.channelTitle);
+        if (liveTvConfig.subtitle) setLiveTvSubtitle(liveTvConfig.subtitle);
+        if (liveTvConfig.streamUrl) setLiveTvStreamUrl(liveTvConfig.streamUrl);
+        if (liveTvConfig.googleNewsUrl) setGoogleNewsUrl(liveTvConfig.googleNewsUrl);
+        if (liveTvConfig.whatsappUrl) setWhatsappUrl(liveTvConfig.whatsappUrl);
+      }
+    });
   }, []);
 
   const handleSaveLiveTvConfig = () => {
@@ -66,8 +70,9 @@ export default function AdminVideosPage() {
       whatsappUrl: whatsappUrl.trim() || "https://whatsapp.com"
     };
     localStorage.setItem("ga_livetv_config", JSON.stringify(config));
+    saveCentralVideos(videosList, config);
     window.dispatchEvent(new Event("ga_livetv_config_updated"));
-    showToast("✓ Live TV Stream & Social Channel settings saved!");
+    showToast("✓ Live TV Stream & Social Channel settings saved centrally to database!");
   };
 
   const handleOpenVideoModal = (vid?: YouTubeVideoItem) => {
@@ -140,6 +145,7 @@ export default function AdminVideosPage() {
 
     setVideosList(updated);
     saveStoredVideos(updated);
+    saveCentralVideos(updated);
     setIsVideoModalOpen(false);
   };
 
@@ -148,6 +154,7 @@ export default function AdminVideosPage() {
       const updated = videosList.filter((v) => v.id !== id);
       setVideosList(updated);
       saveStoredVideos(updated);
+      saveCentralVideos(updated);
       showToast("Video deleted successfully.");
     }
   };
