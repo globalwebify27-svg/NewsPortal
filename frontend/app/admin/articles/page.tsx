@@ -16,6 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
+import { getArticleImage } from "@/lib/defaultArticles";
 import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
@@ -564,7 +565,7 @@ export default function AdminArticlesPage() {
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       {art.featuredImage && (
-                        <img src={art.featuredImage} alt="" style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        <img src={getArticleImage(art)} alt="" style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
                       )}
                       <div>
                         <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", lineHeight: "1.3" }}>

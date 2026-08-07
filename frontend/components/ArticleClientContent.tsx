@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Clock, Calendar, Heart, MessageSquare, Send, Loader2, ArrowLeft, BookOpen } from "lucide-react";
 
 import SocialShareButtons from "@/components/SocialShareButtons";
-import { findDefaultArticle, stripHtml } from "@/lib/defaultArticles";
+import { findDefaultArticle, stripHtml, getArticleImage } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { extractYouTubeId } from "@/lib/youtube";
 
@@ -303,7 +303,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
         height: article.imageHeight && article.imageHeight !== "auto" ? article.imageHeight : undefined
       }}>
         <img
-          src={article.featuredImage}
+          src={getArticleImage(article)}
           alt={article.title}
           style={{
             width: "100%",

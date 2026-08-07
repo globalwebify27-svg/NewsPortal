@@ -51,11 +51,24 @@ export function stripHtml(html?: string): string {
 
 /** 
  * Strict Admin Image Resolver.
- * Strictly returns the image URL added by the admin. Returns empty string if no image was provided.
+ * Resolves relative /uploads/ paths to full Hostinger storage URL.
  */
 export function getArticleImage(article: any, index: number = 0): string {
+  let img = "";
   if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 3) {
-    return article.featuredImage.trim();
+    img = article.featuredImage.trim();
+  } else if (article?.image && typeof article.image === "string" && article.image.trim().length > 3) {
+    img = article.image.trim();
   }
-  return "";
+
+  if (!img) return "";
+
+  // Automatically prepend Hostinger storage domain if path is relative /uploads/
+  if (img.startsWith("/uploads/") || img.startsWith("uploads/")) {
+    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://yellowgreen-rook-384455.hostingersite.com/public";
+    const cleanPath = img.startsWith("/") ? img : `/${img}`;
+    return `${hostingerBase}${cleanPath}`;
+  }
+
+  return img;
 }
