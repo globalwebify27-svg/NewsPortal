@@ -61,7 +61,7 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
-import { getStoredVideos } from "@/lib/youtube";
+import { getStoredVideos, fetchCentralVideos } from "@/lib/youtube";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { autoDetectUserCity } from "@/lib/districts";
 
@@ -210,6 +210,7 @@ export default function Header() {
     };
 
     loadLocation();
+    fetchCentralVideos().catch(() => {});
     window.addEventListener("ga_state_changed", loadLocation);
     window.addEventListener("storage", loadLocation);
     return () => {

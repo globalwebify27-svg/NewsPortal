@@ -20,14 +20,19 @@ export const LOCAL_STORAGE_VIDEOS_KEY = "ga_custom_videos";
 export function extractYouTubeId(url: string): string {
   if (!url) return "";
   const trimmed = url.trim();
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = trimmed.match(regExp);
-  if (match && match[2] && match[2].length === 11) {
-    return match[2];
-  }
-  if (trimmed.length === 11 && !trimmed.includes("/")) {
+
+  // Handle 11-character YouTube video ID directly
+  if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes(".")) {
     return trimmed;
   }
+
+  // Regex matching watch, shorts, live, embed, v, youtu.be, m.youtube.com
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/;
+  const match = trimmed.match(regExp);
+  if (match && match[1]) {
+    return match[1];
+  }
+
   return trimmed;
 }
 
@@ -94,6 +99,10 @@ export async function saveCentralVideos(videos: YouTubeVideoItem[], liveTvConfig
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videos, liveTvConfig })
     });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("ga_videos_updated"));
+      window.dispatchEvent(new Event("storage"));
+    }
   } catch (e) {
     console.warn("Failed to save central videos to database:", e);
   }

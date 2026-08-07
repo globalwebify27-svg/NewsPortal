@@ -72,18 +72,26 @@ export default function VideosPage() {
     processVideoList(getStoredVideos());
 
     // 2. Fetch central DB videos across all devices
-    fetchCentralVideos().then(({ videos: centralList }) => {
-      if (Array.isArray(centralList) && centralList.length > 0) {
-        processVideoList(centralList);
-      }
-    });
+    const syncCentral = () => {
+      fetchCentralVideos().then(({ videos: centralList }) => {
+        if (Array.isArray(centralList) && centralList.length > 0) {
+          processVideoList(centralList);
+        }
+      });
+    };
 
-    const loadLocal = () => processVideoList(getStoredVideos());
+    syncCentral();
+    const interval = setInterval(syncCentral, 15000);
+
+    const loadLocal = () => syncCentral();
     window.addEventListener("storage", loadLocal);
     window.addEventListener("popstate", loadLocal);
+    window.addEventListener("ga_videos_updated", loadLocal);
     return () => {
+      clearInterval(interval);
       window.removeEventListener("storage", loadLocal);
       window.removeEventListener("popstate", loadLocal);
+      window.removeEventListener("ga_videos_updated", loadLocal);
     };
   }, []);
 

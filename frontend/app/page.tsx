@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { getStoredVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
+import { getStoredVideos, fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
@@ -136,11 +136,30 @@ export default function Home() {
 
   useEffect(() => {
     const updateVideos = () => {
+      // 1. Immediate local cache load
       setTrendingVideos(getStoredVideos());
+
+      // 2. Fetch central database videos across all devices & computers
+      fetchCentralVideos().then(({ videos, liveTvConfig }) => {
+        if (Array.isArray(videos) && videos.length > 0) {
+          setTrendingVideos(videos);
+        }
+        if (liveTvConfig) {
+          setLiveTvConfig((prev) => ({
+            ...prev,
+            ...liveTvConfig
+          }));
+        }
+      });
     };
+
     updateVideos();
     window.addEventListener("storage", updateVideos);
-    return () => window.removeEventListener("storage", updateVideos);
+    window.addEventListener("ga_videos_updated", updateVideos);
+    return () => {
+      window.removeEventListener("storage", updateVideos);
+      window.removeEventListener("ga_videos_updated", updateVideos);
+    };
   }, []);
 
   useEffect(() => {

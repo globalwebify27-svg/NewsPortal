@@ -94,7 +94,7 @@ export default function AdminVideosPage() {
     setIsVideoModalOpen(true);
   };
 
-  const handleSaveVideo = (e: React.FormEvent) => {
+  const handleSaveVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formYtTitle.trim() || !formYtUrl.trim()) {
       showToast("Title and YouTube URL are required!");
@@ -140,21 +140,21 @@ export default function AdminVideosPage() {
         isLive: false
       };
       updated = [newVid, ...videosList];
-      showToast("✓ New video published to Videos portal!");
+      showToast("✓ New video published centrally to all devices!");
     }
 
     setVideosList(updated);
-    saveStoredVideos(updated);
-    saveCentralVideos(updated);
+    localStorage.setItem("ga_custom_videos", JSON.stringify(updated));
+    await saveCentralVideos(updated);
     setIsVideoModalOpen(false);
   };
 
-  const handleDeleteVideo = (id: string, title: string) => {
+  const handleDeleteVideo = async (id: string, title: string) => {
     if (confirm(`Delete video "${title}"?`)) {
       const updated = videosList.filter((v) => v.id !== id);
       setVideosList(updated);
-      saveStoredVideos(updated);
-      saveCentralVideos(updated);
+      localStorage.setItem("ga_custom_videos", JSON.stringify(updated));
+      await saveCentralVideos(updated);
       showToast("Video deleted successfully.");
     }
   };
