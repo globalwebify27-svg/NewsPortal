@@ -70,8 +70,16 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
 
 export async function getArticleBySlug(slug: string) {
   try {
-    const article = await prisma.article.findUnique({
-      where: { slug },
+    const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
+
+    // 1. Direct slug or ID match
+    let article = await prisma.article.findFirst({
+      where: {
+        OR: [
+          { slug: targetSlug },
+          { id: targetSlug },
+        ],
+      },
       include: {
         category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
         author: { select: { id: true, name: true, avatar: true, bio: true } },
@@ -79,8 +87,30 @@ export async function getArticleBySlug(slug: string) {
       },
     });
 
+    // 2. Fallback: extract unique ID from the end of URL slug (e.g. title-20260807-id123)
+    if (!article) {
+      const parts = targetSlug.split("-");
+      const possibleId = parts[parts.length - 1];
+      if (possibleId && possibleId.length >= 2) {
+        article = await prisma.article.findFirst({
+          where: {
+            OR: [
+              { id: possibleId },
+              { id: { endsWith: possibleId } },
+              { slug: { contains: possibleId } },
+            ],
+          },
+          include: {
+            category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
+            author: { select: { id: true, name: true, avatar: true, bio: true } },
+            tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
+          },
+        });
+      }
+    }
+
     if (article) {
-      prisma.article.update({ where: { slug }, data: { views: { increment: 1 } } }).catch(() => {});
+      prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => {});
     }
 
     return article ? { ...article, isHero: !!article.isFeatured } : null;

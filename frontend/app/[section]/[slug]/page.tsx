@@ -30,9 +30,10 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ section: string; slug: string }> | { section: string; slug: string };
 }): Promise<Metadata> {
   const resolvedParams = await params;
+  const section = resolvedParams?.section || "article";
   const rawParam = resolvedParams?.slug
     ? Array.isArray(resolvedParams.slug)
       ? resolvedParams.slug[0]
@@ -46,7 +47,7 @@ export async function generateMetadata({
       title: "Article Not Found | GLOBAL AWAAZ - LOCAL से GLOBAL तक",
       description: "The requested article was not found on GLOBAL AWAAZ.",
       alternates: {
-        canonical: `https://globalawaaz.com/article/${slug}`,
+        canonical: `https://globalawaaz.com/${section}/${slug}`,
       },
     };
   }
@@ -54,7 +55,8 @@ export async function generateMetadata({
   const title = article.title;
   const description = stripHtml(article.summary || article.body?.substring(0, 160) || "");
   const imageUrl = article.featuredImage || "https://globalawaaz.com/logo.png";
-  const canonicalUrl = `https://globalawaaz.com/article/${slug}`;
+  const catSlug = article.category?.slug ? article.category.slug.toLowerCase() : section;
+  const canonicalUrl = `https://globalawaaz.com/${catSlug}/${slug}`;
 
   return {
     title: `${title} | GLOBAL AWAAZ - LOCAL से GLOBAL तक`,
@@ -90,12 +92,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function ArticlePage({
+export default async function CategoryArticlePage({
   params,
 }: {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ section: string; slug: string }> | { section: string; slug: string };
 }) {
   const resolvedParams = await params;
+  const section = resolvedParams?.section || "article";
   const rawParam = resolvedParams?.slug
     ? Array.isArray(resolvedParams.slug)
       ? resolvedParams.slug[0]
@@ -108,13 +111,15 @@ export default async function ArticlePage({
   let breadcrumbSchema = null;
 
   if (article) {
+    const catSlug = article.category?.slug ? article.category.slug.toLowerCase() : section;
+
     newsArticleSchema = generateNewsArticleSchema({
       title: article.title,
-      slug: slug,
+      slug: `${catSlug}/${slug}`,
       summary: article.summary,
       body: article.body,
       featuredImage: article.featuredImage,
-      category: article.category ? { name: article.category.name, slug: article.category.slug || "news" } : undefined,
+      category: article.category ? { name: article.category.name, slug: catSlug } : undefined,
       author: article.author ? { name: article.author.name } : undefined,
       createdAt: article.createdAt,
       language: article.language as "HI" | "EN",
@@ -122,8 +127,8 @@ export default async function ArticlePage({
 
     breadcrumbSchema = generateBreadcrumbSchema([
       { name: "Home", item: "/" },
-      { name: article.category?.name || "News", item: `/${article.category?.slug || "india"}` },
-      { name: article.title, item: `/article/${slug}` },
+      { name: article.category?.name || section, item: `/${catSlug}` },
+      { name: article.title, item: `/${catSlug}/${slug}` },
     ]);
   }
 

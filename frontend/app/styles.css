@@ -3863,9 +3863,9 @@ input {
 
 .nav-links li .mega-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 2px);
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  transform: translateX(-50%) translateY(-4px);
   min-width: 200px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -3878,6 +3878,16 @@ input {
   z-index: 200;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+
+.nav-links li .mega-dropdown::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: -10px;
+  right: -10px;
+  height: 16px;
+  background: transparent;
 }
 
 [data-theme="dark"] .nav-links li .mega-dropdown {

@@ -9,7 +9,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
 
-import { defaultEnglishArticles, defaultHindiArticles, stripHtml, getArticleImage } from "@/lib/defaultArticles";
+import { defaultEnglishArticles, defaultHindiArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 
 interface Article {
@@ -642,7 +642,7 @@ export default function Home() {
               }
 
               return (
-                <Link href={`/article/${mainHero.slug || mainHero.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link href={getArticleUrl(mainHero)} style={{ textDecoration: "none", color: "inherit" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
                     <span style={{
                       background: isExactCity ? "#e50914" : isSameState ? "#2563eb" : "#0f172a",
@@ -704,7 +704,7 @@ export default function Home() {
 
             {superfastList.map((item, idx) => (
               <article key={item.id} style={{ borderBottom: idx < superfastList.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "10px 0" }}>
-                <Link href={`/article/${item.slug || item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
+                <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                   <div style={{ width: "70px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
                     <img src={getArticleImage(item, idx + 1)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
@@ -809,7 +809,7 @@ export default function Home() {
         <div className="mobile-top-stories-grid">
           {topStories.slice(0, 4).map((item, idx) => (
             <article key={item.id} className="mobile-story-card">
-              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div className="mobile-story-img-wrap">
                   {getArticleImage(item, idx + 2) ? (
                     <img src={getArticleImage(item, idx + 2)} alt={item.title} className="mobile-story-img" />
@@ -927,7 +927,7 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
           {stateArticles.map((item, idx) => (
             <article key={item.id} style={{ background: "var(--color-bg, #f8fafc)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div style={{ position: "relative", height: "150px", overflow: "hidden", background: "#0a0f1d" }}>
                   <img src={getArticleImage(item, idx + 4)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "8px", left: "8px", background: "#e50914", color: "#fff", fontSize: "0.68rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
@@ -968,7 +968,7 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "14px" }}>
           {trendingList.map((item, idx) => (
             <article key={item.id} style={{ background: "#ffffff", border: "1px solid #ffedd5", borderRadius: "10px", padding: "12px", boxShadow: "0 2px 10px rgba(234,88,12,0.06)" }}>
-              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
+              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                 <div style={{ width: "65px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#0a0f1d" }}>
                   <img src={getArticleImage(item, idx + 2)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
@@ -1016,7 +1016,7 @@ export default function Home() {
           >
             {todaysTopStories.map((item, index) => (
               <article key={`${item.id}-${index}`} className="top-story-item">
-                <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+                <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
                     {getArticleImage(item, index + 3) ? (
                       <img src={getArticleImage(item, index + 3)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />

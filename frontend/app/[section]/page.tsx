@@ -7,7 +7,7 @@ import { Clock, Calendar, Loader2 } from "lucide-react";
 
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
-import { stripHtml, getArticleImage } from "@/lib/defaultArticles";
+import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 
@@ -404,7 +404,7 @@ export default function SectionPage() {
                 transition: "transform 0.3s ease, box-shadow 0.3s ease"
               }}
             >
-              <Link href={`/article/${item.slug && item.slug.length > 1 ? item.slug : item.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
 
                 {/* Full-width image */}
                 <div

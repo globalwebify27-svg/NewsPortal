@@ -19,7 +19,7 @@ export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
   {
     path: "/",
     pageName: "Homepage (मुख्य पृष्ठ)",
-    metaTitle: "GLOBAL AWAAZ | ताज़ा हिंदी और अंग्रेज़ी मुख्य समाचार, ब्रेकिंग न्यूज़ व विश्लेषणात्मक रिपोर्ट",
+    metaTitle: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News Updates",
     metaDescription: "ग्लोबल आवाज़ पोर्टल पर पाएं भारत, झारखंड, शिक्षा, व्यापार, तकनीक, खेल, मनोरंजन और विश्व राजनीति की ताज़ा खबरें व विस्तृत संपादकीय विश्लेषण।",
     keywords: "Global Awaaz, Breaking News Hindi, Jharkhand News, Education News, Indian News Portal, World Politics, Technology News, Live News Updates",
     canonicalUrl: "https://globalawaaz.com",

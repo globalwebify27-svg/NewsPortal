@@ -13,13 +13,23 @@ import {
   ArrowUpRight,
   Upload,
   Image as ImageIcon2,
-  Zap
+  Zap,
+  Megaphone
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 import { getArticleImage } from "@/lib/defaultArticles";
 import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
+
+export interface ArticleAdItem {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  link?: string;
+  image?: string;
+  badge?: string;
+}
 
 interface AdminArticle {
   id: string;
@@ -46,6 +56,13 @@ interface AdminArticle {
   state?: string;
   district?: string;
   isTrending?: boolean;
+  // Custom Article-Specific Advertisement
+  adTitle?: string;
+  adSubtitle?: string;
+  adLink?: string;
+  adImage?: string;
+  adBadge?: string;
+  customAds?: ArticleAdItem[];
 }
 
 const LOCAL_STORAGE_KEY = "ga_custom_articles";
@@ -160,6 +177,15 @@ export default function AdminArticlesPage() {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+  // Custom Article-Specific Advertisement States
+  const [formAdTitle, setFormAdTitle] = useState("");
+  const [formAdSubtitle, setFormAdSubtitle] = useState("");
+  const [formAdLink, setFormAdLink] = useState("");
+  const [formAdImage, setFormAdImage] = useState("");
+  const [formAdBadge, setFormAdBadge] = useState("SPONSORED");
+  const [formCustomAds, setFormCustomAds] = useState<ArticleAdItem[]>([]);
+  const [isUploadingAdImage, setIsUploadingAdImage] = useState(false);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
@@ -231,6 +257,27 @@ export default function AdminArticlesPage() {
       setFormIsSuperfast(art.isSuperfast || false);
       setFormIsTrending(art.isTrending || false);
 
+      setFormAdTitle(art.adTitle || "");
+      setFormAdSubtitle(art.adSubtitle || "");
+      setFormAdLink(art.adLink || "");
+      setFormAdImage(art.adImage || "");
+      setFormAdBadge(art.adBadge || "SPONSORED");
+
+      if (art.customAds && Array.isArray(art.customAds) && art.customAds.length > 0) {
+        setFormCustomAds(art.customAds);
+      } else if (art.adImage || art.adTitle) {
+        setFormCustomAds([{
+          id: `ad_${Date.now()}`,
+          title: art.adTitle || "",
+          subtitle: art.adSubtitle || "",
+          link: art.adLink || "",
+          image: art.adImage || "",
+          badge: art.adBadge || "SPONSORED"
+        }]);
+      } else {
+        setFormCustomAds([]);
+      }
+
       const h = art.imageHeight || "auto";
       if (["auto", "250px", "350px", "450px", "550px"].includes(h)) {
         setFormImageHeight(h);
@@ -264,6 +311,13 @@ export default function AdminArticlesPage() {
       setFormCustomHeight("");
       setFormImageFit("cover");
       setFormVideoUrl("");
+
+      setFormAdTitle("");
+      setFormAdSubtitle("");
+      setFormAdLink("");
+      setFormAdImage("");
+      setFormAdBadge("SPONSORED");
+      setFormCustomAds([]);
     }
     setIsModalOpen(true);
   };
@@ -310,6 +364,34 @@ export default function AdminArticlesPage() {
     }
   };
 
+  const handleAdImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    setIsUploadingAdImage(true);
+    showToast("⏳ Converting advertisement photo to WebP format...");
+    const file = await convertImageToWebP(rawFile);
+
+    const reader = new FileReader();
+    reader.onloadend = () => setFormAdImage(reader.result as string);
+    reader.readAsDataURL(file);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/v1/media/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json?.success && json?.data?.url) {
+        setFormAdImage(json.data.url);
+        showToast("✅ Custom Ad Banner uploaded successfully!");
+      }
+    } catch (err) {
+      showToast("⚠️ Ad image saved as local preview.");
+    } finally {
+      setIsUploadingAdImage(false);
+    }
+  };
+
   const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
@@ -344,7 +426,12 @@ export default function AdminArticlesPage() {
       imageFit: formImageFit,
       videoUrl: formVideoUrl,
       state: formState,
-      district: formDistrict || "Jharkhand"
+      district: formDistrict || "Jharkhand",
+      adTitle: formAdTitle,
+      adSubtitle: formAdSubtitle,
+      adLink: formAdLink,
+      adImage: formAdImage,
+      adBadge: formAdBadge
     };
 
     let updatedList: AdminArticle[];
@@ -1024,6 +1111,192 @@ export default function AdminArticlesPage() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* MULTI-ADVERTISEMENT BUILDER FOR THIS ARTICLE */}
+              <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", borderRadius: "14px", padding: "18px", marginTop: "12px", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: "8px" }}>
+                  <label style={{ fontSize: "0.9rem", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Megaphone size={18} style={{ color: "#e50914" }} />
+                    <span>📢 Custom Advertisements for this News (एक या अधिक विज्ञापन जोड़ें — {formCustomAds.length})</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormCustomAds([
+                        ...formCustomAds,
+                        {
+                          id: `ad_${Date.now()}_${formCustomAds.length}`,
+                          title: "",
+                          subtitle: "",
+                          link: "",
+                          image: "",
+                          badge: "SPONSORED"
+                        }
+                      ]);
+                    }}
+                    style={{
+                      background: "#e50914", color: "#ffffff", border: "none",
+                      padding: "6px 14px", borderRadius: "8px", fontWeight: 800,
+                      fontSize: "0.78rem", cursor: "pointer", display: "inline-flex",
+                      alignItems: "center", gap: "6px"
+                    }}
+                  >
+                    <Plus size={14} /> Add Another Ad (+ दूसरा विज्ञापन जोड़ें)
+                  </button>
+                </div>
+
+                <p style={{ margin: "0 0 14px 0", fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.45 }}>
+                  You can add multiple sponsored ad banners specifically for this article. All added ads will stack neatly in the article&apos;s Right Sidebar and inside body paragraphs!
+                </p>
+
+                {formCustomAds.length === 0 ? (
+                  <div style={{ padding: "14px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", textAlign: "center", color: "#94a3b8", fontSize: "0.82rem" }}>
+                    No custom ads added for this story yet. Click <strong>&quot;+ Add Another Ad&quot;</strong> to attach specific sponsor banners!
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {formCustomAds.map((adItem, index) => (
+                      <div key={adItem.id || index} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", padding: "14px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.1)", paddingBottom: "6px" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#f87171" }}>
+                            Ad Slot #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setFormCustomAds(formCustomAds.filter((_, i) => i !== index))}
+                            style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 800, cursor: "pointer" }}
+                          >
+                            🗑️ Delete Ad #{index + 1}
+                          </button>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Title / Sponsor Name</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Prabhat Khabar / Brand Sponsor"
+                              value={adItem.title || ""}
+                              onChange={(e) => {
+                                const updated = [...formCustomAds];
+                                updated[index].title = e.target.value;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Subtitle / Details</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Special offer details..."
+                              value={adItem.subtitle || ""}
+                              onChange={(e) => {
+                                const updated = [...formCustomAds];
+                                updated[index].subtitle = e.target.value;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Target Redirect Link URL</label>
+                            <input
+                              type="text"
+                              placeholder="https://sponsor.com or /advertise"
+                              value={adItem.link || ""}
+                              onChange={(e) => {
+                                const updated = [...formCustomAds];
+                                updated[index].link = e.target.value;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Badge</label>
+                            <select
+                              value={adItem.badge || "SPONSORED"}
+                              onChange={(e) => {
+                                const updated = [...formCustomAds];
+                                updated[index].badge = e.target.value;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
+                            >
+                              <option value="SPONSORED">SPONSORED</option>
+                              <option value="ADVERTISEMENT">ADVERTISEMENT</option>
+                              <option value="PROMOTED">PROMOTED</option>
+                              <option value="EXCLUSIVE">EXCLUSIVE</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "6px" }}>Upload Ad Banner Image</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                            {adItem.image && (
+                              <div style={{ width: "90px", height: "55px", borderRadius: "6px", overflow: "hidden", border: "1px solid #e50914", flexShrink: 0 }}>
+                                <img src={adItem.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </div>
+                            )}
+                            <label style={{ background: "#e50914", color: "#ffffff", padding: "6px 14px", borderRadius: "6px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                              <Upload size={13} /> {adItem.image ? "Change Photo" : "Upload Ad Photo"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={async (e) => {
+                                  const rawFile = e.target.files?.[0];
+                                  if (!rawFile) return;
+                                  showToast("⏳ Converting Ad photo to WebP format...");
+                                  const file = await convertImageToWebP(rawFile);
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    const updated = [...formCustomAds];
+                                    updated[index].image = reader.result as string;
+                                    setFormCustomAds(updated);
+                                  };
+                                  reader.readAsDataURL(file);
+
+                                  try {
+                                    const fd = new FormData();
+                                    fd.append("file", file);
+                                    const res = await fetch("/api/v1/media/upload", { method: "POST", body: fd });
+                                    const json = await res.json();
+                                    if (json?.success && json?.data?.url) {
+                                      const updated = [...formCustomAds];
+                                      updated[index].image = json.data.url;
+                                      setFormCustomAds(updated);
+                                      showToast("✅ Ad Banner uploaded successfully!");
+                                    }
+                                  } catch (err) {}
+                                }}
+                                style={{ display: "none" }}
+                              />
+                            </label>
+                            {adItem.image && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...formCustomAds];
+                                  updated[index].image = "";
+                                  setFormCustomAds(updated);
+                                }}
+                                style={{ background: "rgba(255,255,255,0.1)", color: "#f87171", border: "none", padding: "6px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                              >
+                                Remove Photo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
