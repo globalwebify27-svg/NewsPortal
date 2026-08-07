@@ -549,136 +549,141 @@ export default function AdminArticlesPage() {
             No articles match your criteria.
           </div>
         ) : (
-          <table className="admin-data-table">
-            <thead>
-              <tr>
-                <th style={{ width: "42%", textAlign: "left" }}>Article Title</th>
-                <th style={{ width: "14%", textAlign: "left" }}>Category</th>
-                <th style={{ width: "14%", textAlign: "left" }}>State</th>
-                <th style={{ width: "14%", textAlign: "left" }}>Status</th>
-                <th style={{ width: "16%", textAlign: "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredArticles.map((art) => (
-                <tr key={art.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      {art.featuredImage && (
-                        <img src={getArticleImage(art)} alt="" style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
-                      )}
-                      <div>
-                        <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", lineHeight: "1.3" }}>
-                          {art.title}
-                          {art.isHero && <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>HERO</span>}
-                          {art.isSuperfast && <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>⚡ SUPERFAST</span>}
-                          {art.isTrending && <span style={{ background: "#ea580c", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>🔥 TRENDING</span>}
-                        </div>
-                        <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>
-                          by {art.author?.name || "Global Admin"} • 📅 {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Today"}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                      {(art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "General"]).map((c) => (
-                        <span key={c} className="category-tag-pill" style={{ background: getCategoryColor(c), color: "#ffffff", border: "none", fontSize: "0.72rem", padding: "2px 8px" }}>
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "3px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, display: "inline-flex", flexDirection: "column", gap: "2px" }}>
-                      <span>{art.state || "National"}</span>
-                      {art.district && <span style={{ color: "#2563eb", fontWeight: 800 }}>📍 {art.district}</span>}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={art.status === "PUBLISHED" ? "status-published-pill" : "category-tag-pill"}>
-                      ● {art.status}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-flex", gap: "6px", justifyContent: "flex-end" }}>
-                      <button
-                        onClick={() => handleToggleHero(art.id)}
-                        title={art.isHero ? "Click to unmark as Hero Banner" : "Set as Main Hero Banner (Top Lead Story)"}
-                        style={{
-                          background: art.isHero ? "#e50914" : "#fff1f2",
-                          color: art.isHero ? "#ffffff" : "#e50914",
-                          border: `1px solid ${art.isHero ? "#e50914" : "#fca5a5"}`,
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          fontSize: "0.76rem",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}
-                      >
-                        <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
-                      </button>
-                      <button
-                        onClick={() => handleToggleSuperfast(art.id)}
-                        title={art.isSuperfast ? "Click to remove from Superfast News section" : "Add to ⚡ सुपरफ़ास्ट NEWS section"}
-                        style={{
-                          background: art.isSuperfast ? "#dc2626" : "#fef2f2",
-                          color: art.isSuperfast ? "#ffffff" : "#dc2626",
-                          border: `1px solid ${art.isSuperfast ? "#dc2626" : "#fca5a5"}`,
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          fontSize: "0.76rem",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}
-                      >
-                        <Zap size={13} /> {art.isSuperfast ? "Superfast ⚡" : "+ Superfast"}
-                      </button>
-                      <button
-                        onClick={() => handleToggleTrending(art.id)}
-                        title={art.isTrending ? "Click to remove from Trending / Hot Topics" : "Mark as 🔥 Trending / Hot Topic"}
-                        style={{
-                          background: art.isTrending ? "#ea580c" : "#fff7ed",
-                          color: art.isTrending ? "#ffffff" : "#ea580c",
-                          border: `1px solid ${art.isTrending ? "#ea580c" : "#ffedd5"}`,
-                          padding: "5px 10px",
-                          borderRadius: "6px",
-                          fontSize: "0.76rem",
-                          fontWeight: 800,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}
-                      >
-                        🔥 {art.isTrending ? "Trending" : "+ Trending"}
-                      </button>
-                      <button
-                        onClick={() => handleOpenModal(art)}
-                        title="Edit Article"
-                        style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "5px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
-                      >
-                        <Edit size={13} /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteArticle(art.id, art.slug, art.title)}
-                        title="Delete Article"
-                        style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5", padding: "5px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
-                      >
-                        <Trash2 size={13} /> Delete
-                      </button>
-                    </div>
-                  </td>
+          <div style={{ width: "100%", overflowX: "auto", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#ffffff" }}>
+            <table className="admin-data-table" style={{ minWidth: "980px", width: "100%" }}>
+              <thead>
+                <tr>
+                  <th style={{ width: "30%", textAlign: "left" }}>Article Title</th>
+                  <th style={{ width: "10%", textAlign: "left" }}>Category</th>
+                  <th style={{ width: "10%", textAlign: "left" }}>State</th>
+                  <th style={{ width: "10%", textAlign: "left" }}>Status</th>
+                  <th style={{ width: "40%", textAlign: "right" }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredArticles.map((art) => (
+                  <tr key={art.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        {art.featuredImage && (
+                          <img src={getArticleImage(art)} alt="" style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", lineHeight: "1.3" }}>
+                            {art.title}
+                            {art.isHero && <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>HERO</span>}
+                            {art.isSuperfast && <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>⚡ SUPERFAST</span>}
+                            {art.isTrending && <span style={{ background: "#ea580c", color: "#fff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800 }}>🔥 TRENDING</span>}
+                          </div>
+                          <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>
+                            by {art.author?.name || "Global Admin"} • 📅 {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Today"}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        {(art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "General"]).map((c) => (
+                          <span key={c} className="category-tag-pill" style={{ background: getCategoryColor(c), color: "#ffffff", border: "none", fontSize: "0.72rem", padding: "2px 8px" }}>
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1", padding: "3px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, display: "inline-flex", flexDirection: "column", gap: "2px" }}>
+                        <span>{art.state || "National"}</span>
+                        {art.district && <span style={{ color: "#2563eb", fontWeight: 800 }}>📍 {art.district}</span>}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={art.status === "PUBLISHED" ? "status-published-pill" : "category-tag-pill"}>
+                        ● {art.status}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "6px", justifyContent: "flex-end", flexWrap: "nowrap" }}>
+                        {/* Prominent Edit & Delete Buttons First */}
+                        <button
+                          onClick={() => handleOpenModal(art)}
+                          title="Edit Article"
+                          style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <Edit size={13} /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteArticle(art.id, art.slug, art.title)}
+                          title="Delete Article"
+                          style={{ background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 6px rgba(220,38,38,0.25)" }}
+                        >
+                          <Trash2 size={13} /> Delete
+                        </button>
+
+                        {/* Feature Toggles */}
+                        <button
+                          onClick={() => handleToggleHero(art.id)}
+                          title={art.isHero ? "Click to unmark as Hero Banner" : "Set as Main Hero Banner (Top Lead Story)"}
+                          style={{
+                            background: art.isHero ? "#e50914" : "#fff1f2",
+                            color: art.isHero ? "#ffffff" : "#e50914",
+                            border: `1px solid ${art.isHero ? "#e50914" : "#fca5a5"}`,
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.76rem",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
+                        </button>
+                        <button
+                          onClick={() => handleToggleSuperfast(art.id)}
+                          title={art.isSuperfast ? "Click to remove from Superfast News section" : "Add to ⚡ सुपरफ़ास्ट NEWS section"}
+                          style={{
+                            background: art.isSuperfast ? "#dc2626" : "#fef2f2",
+                            color: art.isSuperfast ? "#ffffff" : "#dc2626",
+                            border: `1px solid ${art.isSuperfast ? "#dc2626" : "#fca5a5"}`,
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.76rem",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          <Zap size={13} /> {art.isSuperfast ? "Superfast ⚡" : "+ Superfast"}
+                        </button>
+                        <button
+                          onClick={() => handleToggleTrending(art.id)}
+                          title={art.isTrending ? "Click to remove from Trending / Hot Topics" : "Mark as 🔥 Trending / Hot Topic"}
+                          style={{
+                            background: art.isTrending ? "#ea580c" : "#fff7ed",
+                            color: art.isTrending ? "#ffffff" : "#ea580c",
+                            border: `1px solid ${art.isTrending ? "#ea580c" : "#ffedd5"}`,
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            fontSize: "0.76rem",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          🔥 {art.isTrending ? "Trending" : "+ Trending"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

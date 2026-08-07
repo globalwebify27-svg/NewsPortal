@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
 
     let publicUrl = "";
 
-    // OPTION A: Hostinger Remote PHP Upload Bridge (when HOSTINGER_UPLOAD_URL is configured)
-    const hostingerUploadUrl = process.env.HOSTINGER_UPLOAD_URL;
+    // OPTION A: Hostinger Remote PHP Upload Bridge
+    const hostingerUploadUrl = process.env.HOSTINGER_UPLOAD_URL || "https://yellowgreen-rook-384455.hostingersite.com/upload.php";
     const hostingerSecret = process.env.HOSTINGER_MEDIA_SECRET || "GlobalAwaazMediaSecret2026";
 
     if (hostingerUploadUrl) {

@@ -33,7 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
   const [adminUser, setAdminUser] = useState<string>("Global2409");
 
   // Login form state — empty by default
@@ -44,13 +45,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
-    if (isAuth) {
+    try {
+      const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
       const user = localStorage.getItem("ga_admin_user");
       if (user) setAdminUser(user);
-      setIsAuthenticated(true);
-    } else {
+      setIsAuthenticated(isAuth);
+    } catch (err) {
       setIsAuthenticated(false);
+    } finally {
+      setIsCheckingSession(false);
     }
   }, []);
 
@@ -108,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   // Loading state
-  if (isAuthenticated === null) {
+  if (isCheckingSession) {
     return (
       <div style={{ minHeight: "85vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", background: "#090d16", color: "#ffffff" }}>
         <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "linear-gradient(135deg, #e50914, #991b1b)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 30px rgba(229,9,20,0.5)" }}>
