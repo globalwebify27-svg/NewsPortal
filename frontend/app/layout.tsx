@@ -9,7 +9,7 @@ import { generateNewsOrganizationSchema, generateWebSiteSchema } from "@/lib/sch
 const isNoIndex = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://globalawaaz.com"),
+  metadataBase: new URL("https://www.globalawaaz.com"),
   title: {
     default: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News",
     template: "%s | GLOBAL AWAAZ - LOCAL से GLOBAL तक",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     "Hindi News Channel",
     "Digital e-Paper",
   ],
-  authors: [{ name: "GLOBAL AWAAZ Editorial Team", url: "https://globalawaaz.com/about" }],
+  authors: [{ name: "GLOBAL AWAAZ Editorial Team", url: "https://www.globalawaaz.com/about" }],
   creator: "GLOBAL AWAAZ Media Network",
   publisher: "GLOBAL AWAAZ Media Network",
   formatDetection: {
@@ -37,38 +37,26 @@ export const metadata: Metadata = {
     telephone: false,
   },
   alternates: {
-    canonical: "./",
+    canonical: "https://www.globalawaaz.com/",
     languages: {
-      "hi-IN": "/",
-      "en-IN": "/",
+      "hi-IN": "https://www.globalawaaz.com/",
+      "en-IN": "https://www.globalawaaz.com/",
     },
   },
-  robots: isNoIndex
-    ? {
-        index: false,
-        follow: false,
-        nocache: true,
-        googleBot: {
-          index: false,
-          follow: false,
-        },
-      }
-    : {
-        index: true,
-        follow: true,
-        googleBot: {
-          index: true,
-          follow: true,
-          "max-image-preview": "large",
-          "max-snippet": -1,
-          "max-video-preview": -1,
-        },
-      },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
   openGraph: {
     title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News",
     description:
       "देश-दुनिया और आपके अपने क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।",
-    url: "https://globalawaaz.com",
+    url: "https://www.globalawaaz.com",
     siteName: "GLOBAL AWAAZ",
     locale: "hi_IN",
     type: "website",

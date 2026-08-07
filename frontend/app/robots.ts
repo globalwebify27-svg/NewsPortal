@@ -5,50 +5,16 @@ import { MetadataRoute } from "next";
  * URL: https://globalawaaz.com/robots.txt
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://globalawaaz.com";
-  const disableIndexing = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
-
-  if (disableIndexing) {
-    return {
-      rules: [
-        {
-          userAgent: "*",
-          disallow: "/",
-        },
-      ],
-      sitemap: `${baseUrl}/sitemap.xml`,
-      host: baseUrl,
-    };
-  }
+  const baseUrl = "https://www.globalawaaz.com";
 
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        disallow: [
-          "/admin/",
-          "/admin/*",
-          "/api/",
-          "/login",
-          "/upload.php",
-          "/*.json",
-        ],
-      },
-      {
-        userAgent: "Googlebot-News",
-        allow: "/",
-        disallow: ["/admin/", "/api/"],
-      },
-      {
-        userAgent: "Mediapartners-Google",
-        allow: "/",
+        disallow: "/",
       },
     ],
-    sitemap: [
-      `${baseUrl}/sitemap.xml`,
-      `${baseUrl}/news-sitemap.xml`,
-    ],
+    sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,
   };
 }

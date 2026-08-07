@@ -41,26 +41,45 @@ export async function generateMetadata({
   const slug = decodeURIComponent(rawParam).trim().toLowerCase();
   const article = await getArticleData(slug);
 
+  const canonicalUrl = `https://www.globalawaaz.com/article/${slug}`;
+
   if (!article) {
     return {
       title: "Article Not Found | GLOBAL AWAAZ - LOCAL से GLOBAL तक",
       description: "The requested article was not found on GLOBAL AWAAZ.",
       alternates: {
-        canonical: `https://globalawaaz.com/article/${slug}`,
+        canonical: canonicalUrl,
+      },
+      robots: {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: {
+          index: false,
+          follow: false,
+        },
       },
     };
   }
 
   const title = article.title;
   const description = stripHtml(article.summary || article.body?.substring(0, 160) || "");
-  const imageUrl = article.featuredImage || "https://globalawaaz.com/logo.png";
-  const canonicalUrl = `https://globalawaaz.com/article/${slug}`;
+  const imageUrl = article.featuredImage || "https://www.globalawaaz.com/logo.png";
 
   return {
     title: `${title} | GLOBAL AWAAZ - LOCAL से GLOBAL तक`,
     description: description,
     alternates: {
       canonical: canonicalUrl,
+    },
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+      googleBot: {
+        index: false,
+        follow: false,
+      },
     },
     openGraph: {
       title: `${title} | GLOBAL AWAAZ`,
