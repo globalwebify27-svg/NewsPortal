@@ -44,9 +44,8 @@ $targetFilePath = $uploadDir . $filename;
 // Move file to public/uploads/
 if (move_uploaded_file($file['tmp_name'], $targetFilePath)) {
     // Generate public HTTP URL
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
     $host = $_SERVER['HTTP_HOST'];
-    $publicUrl = "$protocol://$host/public/uploads/$filename";
+    $publicUrl = "https://$host/public/uploads/$filename";
 
     http_response_code(200);
     echo json_encode([

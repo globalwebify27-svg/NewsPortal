@@ -63,6 +63,13 @@ export function getArticleImage(article: any, index: number = 0): string {
 
   if (!img) return "";
 
+  // Auto-correct missing colon after protocol (e.g. https// -> https://)
+  if (img.startsWith("https//")) {
+    img = img.replace("https//", "https://");
+  } else if (img.startsWith("http//")) {
+    img = img.replace("http//", "http://");
+  }
+
   // If full HTTP/HTTPS URL or Data URL, return as-is
   if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) {
     return img;
