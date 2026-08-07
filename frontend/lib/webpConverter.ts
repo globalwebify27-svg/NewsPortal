@@ -33,6 +33,10 @@ export async function convertImageToWebP(file: File, quality: number = 0.85): Pr
           return;
         }
 
+        // Fill white background to prevent black alpha canvas bug
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         // Draw image onto canvas
         ctx.drawImage(img, 0, 0);
 

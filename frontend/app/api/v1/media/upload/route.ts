@@ -46,10 +46,14 @@ export async function POST(request: NextRequest) {
           const resJson = await response.json();
           if (resJson.success && resJson.url) {
             publicUrl = resJson.url;
+          } else {
+            console.warn("Hostinger bridge returned non-success:", resJson);
           }
+        } else {
+          console.warn(`Hostinger bridge HTTP ${response.status}: ${await response.text()}`);
         }
       } catch (remoteErr: any) {
-        console.warn("Hostinger Remote Bridge upload failed, trying local fallback:", remoteErr?.message);
+        console.error("Hostinger Remote Bridge upload error:", remoteErr);
       }
     }
 

@@ -51,7 +51,7 @@ export function stripHtml(html?: string): string {
 
 /** 
  * Strict Admin Image Resolver.
- * Resolves relative /uploads/ paths to full Hostinger storage URL.
+ * Resolves relative /uploads/ paths to full Hostinger storage URL in production and local paths in dev mode.
  */
 export function getArticleImage(article: any, index: number = 0): string {
   let img = "";
@@ -63,10 +63,24 @@ export function getArticleImage(article: any, index: number = 0): string {
 
   if (!img) return "";
 
-  // Automatically prepend Hostinger storage domain if path is relative /uploads/
+  // If full HTTP/HTTPS URL or Data URL, return as-is
+  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) {
+    return img;
+  }
+
+  // Handle relative /uploads/ paths
   if (img.startsWith("/uploads/") || img.startsWith("uploads/")) {
-    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://yellowgreen-rook-384455.hostingersite.com/public";
     const cleanPath = img.startsWith("/") ? img : `/${img}`;
+    
+    // In browser environment, check if we are on localhost vs live production site
+    if (typeof window !== "undefined") {
+      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLocalhost) {
+        return cleanPath; // Load directly from local dev server /public/uploads/
+      }
+    }
+
+    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://yellowgreen-rook-384455.hostingersite.com/public";
     return `${hostingerBase}${cleanPath}`;
   }
 
