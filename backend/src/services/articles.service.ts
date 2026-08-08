@@ -76,8 +76,13 @@ export class ArticlesService {
       return cached;
     }
 
-    const article = await prisma.article.findUnique({
-      where: { slug },
+    let article = await prisma.article.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { id: slug },
+        ],
+      },
       include: {
         category: true,
         author: { select: { id: true, name: true, avatar: true, bio: true, twitterHandle: true } },
@@ -86,6 +91,29 @@ export class ArticlesService {
         _count: { select: { comments: true, likes: true, bookmarks: true } },
       },
     });
+
+    if (!article) {
+      const parts = slug.split("-");
+      const possibleId = parts[parts.length - 1];
+      if (possibleId && possibleId.length >= 2) {
+        article = await prisma.article.findFirst({
+          where: {
+            OR: [
+              { id: possibleId },
+              { id: { endsWith: possibleId } },
+              { slug: { contains: possibleId } },
+            ],
+          },
+          include: {
+            category: true,
+            author: { select: { id: true, name: true, avatar: true, bio: true, twitterHandle: true } },
+            tags: { include: { tag: true } },
+            poll: { include: { options: true } },
+            _count: { select: { comments: true, likes: true, bookmarks: true } },
+          },
+        });
+      }
+    }
 
     if (!article || article.status !== ArticleStatus.PUBLISHED) {
       throw new NotFoundError("Article not found or not published.");
