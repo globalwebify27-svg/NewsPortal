@@ -128,8 +128,8 @@ export default function SocialShareButtons({
 
   const iconSizes = {
     sm: 13,
-    md: 15,
-    lg: 18,
+    md: 16,
+    lg: 20,
   };
 
   const currentIconSize = iconSizes[size];

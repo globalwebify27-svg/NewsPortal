@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import RichTextEditor from "@/components/RichTextEditor";
 import {
   FileText,
@@ -17,7 +17,7 @@ import {
   Megaphone
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
-import { getArticleImage, formatArticleSlug } from "@/lib/defaultArticles";
+import { getArticleImage, formatArticleSlug, translateHindiToEnglishSlug } from "@/lib/defaultArticles";
 import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
@@ -30,6 +30,7 @@ export interface ArticleAdItem {
   link?: string;
   image?: string;
   badge?: string;
+  placement?: "both" | "right" | "left" | "body";
 }
 
 interface AdminArticle {
@@ -115,6 +116,7 @@ export default function AdminArticlesPage() {
   const [formAdBadge, setFormAdBadge] = useState("SPONSORED");
   const [formCustomAds, setFormCustomAds] = useState<ArticleAdItem[]>([]);
   const [isUploadingAdImage, setIsUploadingAdImage] = useState(false);
+  const slugTranslateTimer = useRef<any>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -154,9 +156,35 @@ export default function AdminArticlesPage() {
       }
 
       const custom = getStoredArticles();
-      const customIds = new Set(custom.map((c) => c.id));
+      let updatedCustom = false;
+      const customMigrated = await Promise.all(
+        custom.map(async (art) => {
+          if (art.title && /[\u0900-\u097F]/.test(art.title) && (art.slug?.includes("in-entry-no") || art.slug?.includes("still-team-india"))) {
+            const cleanBase = await translateHindiToEnglishSlug(art.title);
+            if (cleanBase) {
+              const rawDate = art.publishedAt || new Date().toISOString();
+              const d = new Date(rawDate);
+              const dd = String(d.getDate()).padStart(2, "0");
+              const mm = String(d.getMonth() + 1).padStart(2, "0");
+              const yy = String(d.getFullYear()).slice(-2);
+              const dateStr = `${dd}-${mm}-${yy}`;
+              const cleanId = (art.id || Math.random().toString(36).substring(2, 8)).replace(/[^a-zA-Z0-9]/g, "").slice(-8);
+              updatedCustom = true;
+              return { ...art, slug: `${cleanBase}-${dateStr}-${cleanId}` };
+            }
+          }
+          return art;
+        })
+      );
+
+      if (updatedCustom) {
+        saveToLocalStorage(customMigrated);
+      }
+
+      const activeCustom = updatedCustom ? customMigrated : custom;
+      const customIds = new Set(activeCustom.map((c) => c.id));
       const backendFiltered = combined.filter((b) => !customIds.has(b.id));
-      const finalArticles = [...custom, ...backendFiltered];
+      const finalArticles = [...activeCustom, ...backendFiltered];
 
       setArticles(finalArticles);
       setLoading(false);
@@ -176,9 +204,9 @@ export default function AdminArticlesPage() {
       setFormCategories(initialCats);
       setFormSubCategory(art.subCategory || art.category?.subCategory || "General");
       setFormState(art.state || "Jharkhand");
-      setFormAuthor(art.author?.name || "Global Admin");
-      setFormStatus(art.status);
-      setFormLanguage(art.language || "HI");
+      setFormDistrict(art.district || "Ranchi");
+      setFormAuthor(art.author?.name || "Global Awaaz Bureau");
+      setFormStatus(art.status || "PUBLISHED");
       setFormSummary(art.summary || "");
       setFormContent(art.body || "");
       setFormImage(art.featuredImage || "");
@@ -334,9 +362,11 @@ export default function AdminArticlesPage() {
     }
 
     const autoSlug = formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
-    const finalSlug = (formSlug.trim() && isSlugCustomized)
-      ? formSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-      : autoSlug;
+    const finalSlug = editingArticle?.slug
+      ? (isSlugCustomized && formSlug.trim() ? formSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : editingArticle.slug)
+      : (formSlug.trim() && isSlugCustomized
+        ? formSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : autoSlug);
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
     const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
@@ -368,7 +398,8 @@ export default function AdminArticlesPage() {
       adSubtitle: formAdSubtitle,
       adLink: formAdLink,
       adImage: formAdImage,
-      adBadge: formAdBadge
+      adBadge: formAdBadge,
+      customAds: formCustomAds
     };
 
     let updatedList: AdminArticle[];
@@ -730,7 +761,21 @@ export default function AdminArticlesPage() {
                     const newTitle = e.target.value;
                     setFormTitle(newTitle);
                     if (!isSlugCustomized) {
-                      setFormSlug(formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() }));
+                      const instantSlug = formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
+                      setFormSlug(instantSlug);
+
+                      if (slugTranslateTimer.current) clearTimeout(slugTranslateTimer.current);
+                      slugTranslateTimer.current = setTimeout(async () => {
+                        if (/[\u0900-\u097F]/.test(newTitle)) {
+                          const englishBase = await translateHindiToEnglishSlug(newTitle);
+                          if (englishBase) {
+                            const parts = instantSlug.split("-");
+                            const dateStr = parts.slice(-4, -1).join("-") || "08-08-26";
+                            const idStr = parts.slice(-1)[0] || "001";
+                            setFormSlug(`${englishBase}-${dateStr}-${idStr}`);
+                          }
+                        }
+                      }, 500);
                     }
                   }}
                   style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.95rem", fontWeight: 600 }}
@@ -738,43 +783,7 @@ export default function AdminArticlesPage() {
                 />
               </div>
 
-              {/* LIVE ENGLISH TRANSLATED URL SLUG PREVIEW & EDITOR */}
-              <div style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "14px 16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>🌐</span> Translated English SEO URL Slug (हिंदी शीर्षक का अंग्रेजी URL)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const auto = formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
-                      setFormSlug(auto);
-                      setIsSlugCustomized(false);
-                    }}
-                    style={{ background: "#e2e8f0", border: "none", color: "#2563eb", padding: "4px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer" }}
-                  >
-                    🔄 Auto-Translate Headline
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 700, whiteSpace: "nowrap" }}>
-                    /{formCategory.toLowerCase().trim()}/
-                  </span>
-                  <input
-                    type="text"
-                    value={formSlug || formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() })}
-                    onChange={(e) => {
-                      setFormSlug(e.target.value);
-                      setIsSlugCustomized(true);
-                    }}
-                    placeholder="translated-english-news-url-slug"
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: 600, fontFamily: "monospace", color: "#0f172a", background: "#ffffff" }}
-                  />
-                </div>
-                <p style={{ margin: "6px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
-                  💡 Hindi headlines are automatically converted to clean English keywords for SEO URLs. You can customize the URL above if needed.
-                </p>
-              </div>
+
 
               {/* MULTI-TAB / MULTI-CATEGORY PUBLISHING SELECTOR */}
               <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px" }}>
@@ -1163,7 +1172,7 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <p style={{ margin: "0 0 14px 0", fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.45 }}>
-                  You can add multiple sponsored ad banners specifically for this article. All added ads will stack neatly in the article&apos;s Right Sidebar and inside body paragraphs!
+                  You can add multiple sponsored ad banners specifically for this article. Select placement to display ads on Both Sides (Left &amp; Right), Right Sidebar, Left Column, or inside Article Body!
                 </p>
 
                 {formCustomAds.length === 0 ? (
@@ -1218,7 +1227,7 @@ export default function AdminArticlesPage() {
                           </div>
                         </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.9fr 1fr", gap: "10px", marginBottom: "10px" }}>
                           <div>
                             <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Target Redirect Link URL</label>
                             <input
@@ -1248,6 +1257,23 @@ export default function AdminArticlesPage() {
                               <option value="ADVERTISEMENT">ADVERTISEMENT</option>
                               <option value="PROMOTED">PROMOTED</option>
                               <option value="EXCLUSIVE">EXCLUSIVE</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Placement / Position (विज्ञापन स्थान)</label>
+                            <select
+                              value={adItem.placement || "both"}
+                              onChange={(e) => {
+                                const updated = [...formCustomAds];
+                                (updated[index] as any).placement = e.target.value;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem", fontWeight: 700 }}
+                            >
+                              <option value="both">↔️ Both Sides (Left & Right / दोनों तरफ)</option>
+                              <option value="right">👉 Right Sidebar Only (दायां कॉलम)</option>
+                              <option value="left">👈 Left Column Only (बायां कॉलम)</option>
+                              <option value="body">📄 Inside Body Paragraphs (लेख के बीच में)</option>
                             </select>
                           </div>
                         </div>

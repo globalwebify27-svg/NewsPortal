@@ -5,213 +5,104 @@
 import slugify from "slugify";
 import { prisma } from "../config/database";
 
-// ─── Convert / Translate Devanagari Hindi Title into Clean English Slug Words ──────
+// ─── Dictionary for Hindi-to-English Clean Keyword Fallback ──────────────────
+const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
+  // Nations, Leaders & Geography
+  "दुनिया": "world", "विश्व": "world", "देश": "country", "विदेश": "foreign",
+  "भारत": "india", "चीन": "china", "अमेरिका": "us", "रूस": "russia",
+  "यूक्रेन": "ukraine", "इजराइल": "israel", "हमास": "hamas", "पाकिस्तान": "pakistan",
+  "पुतिन": "putin", "ट्रंप": "trump", "ऋषि": "rishi", "सुनक": "sunak",
+  "मोदी": "modi", "नरेंद्र": "narendra", "राहुल": "rahul", "गांधी": "gandhi",
+  "अमित": "amit", "शाह": "shah", "केजरीवाल": "kejriwal", "झारखंड": "jharkhand",
+  "बिहार": "bihar", "दिल्ली": "delhi", "रांची": "ranchi", "पटना": "patna",
+  "उत्तर": "north", "प्रदेश": "state", "राजस्थान": "rajasthan", "महाराष्ट्र": "maharashtra",
+
+  // Government, Law & Politics
+  "नेताओं": "leaders", "नेता": "leader", "राष्ट्रपति": "president",
+  "प्रधानमंत्री": "prime-minister", "मुख्यमंत्री": "chief-minister",
+  "मंत्री": "minister", "मंत्रालय": "ministry", "सरकार": "government",
+  "विपक्ष": "opposition", "कांग्रेस": "congress", "भाजपा": "bjp",
+  "सुप्रीम": "supreme", "कोर्ट": "court", "लोकसभा": "lok-sabha",
+  "राज्यसभा": "rajya-sabha", "संसद": "parliament", "फैसला": "verdict",
+  "कानून": "law", "पुलिस": "police", "क्राइम": "crime", "जांच": "probe",
+  "सीबीआई": "cbi", "चुनाव": "election", "मतदान": "voting",
+
+  // Economy, Finance & Business
+  "शेयर": "share", "बाजार": "market", "अर्थव्यवस्था": "economy",
+  "रुपया": "rupee", "डॉलर": "dollar", "बैंक": "bank", "महंगाई": "inflation",
+  "बजट": "budget", "टैक्स": "tax", "सोना": "gold", "चांदी": "silver",
+  "तेल": "oil", "उद्योग": "industry", "व्यापार": "trade", "निवेश": "investment",
+
+  // Energy, Tech & Space
+  "ऊर्जा": "energy", "स्वच्छ": "clean", "मिशन": "mission", "गति": "momentum",
+  "टेक": "tech", "एआई": "ai", "गूगल": "google", "ऐप्पल": "apple",
+  "इसरो": "isro", "नासा": "nasa", "अंतरिक्ष": "space", "रोवर": "rover",
+  "मंगल": "mars", "चांद": "moon", "उपग्रह": "satellite", "स्वास्थ्य": "health",
+  "सीमा": "limits", "मील": "milestones", "पत्थर": "milestone", "सफलता": "success",
+
+  // Consumer, Utilities & Daily Life
+  "उपभोक्ताओं": "consumers", "उपभोक्ता": "consumer", "ग्राहकों": "customers",
+  "ग्राहक": "customer", "बढ़": "increase", "बढ़ने": "increase", "बढ़ती": "rising",
+  "सकती": "may", "सकता": "may", "सकते": "may", "परेशानी": "trouble",
+  "समस्या": "issues", "तारीख": "date", "तिथि": "deadline", "खाता": "account",
+  "खाते": "accounts", "कार्ड": "card", "पैन": "pan", "आधार": "aadhaar",
+  "केवाईसी": "kyc", "सिलेंडर": "cylinder", "गैस": "gas", "कीमत": "price",
+  "कीमतें": "prices", "दाम": "rate", "रेट": "rates", "योजना": "scheme",
+  "सब्सिडी": "subsidy", "बदलाव": "change", "नियम": "rule", "नियमों": "rules",
+
+  // Sports & Entertainment
+  "क्रिकेट": "cricket", "मैच": "match", "टीम": "team", "कप्तान": "captain",
+  "जीत": "win", "हार": "loss", "फाइनल": "final", "विश्वकप": "worldcup",
+  "आईपीएल": "ipl", "फिल्म": "movie", "सिनेमा": "cinema", "बॉलीवुड": "bollywood",
+  "अभिनेता": "actor", "अभिनेत्री": "actress", "स्टार": "star",
+
+  // News Headlines & Descriptors
+  "सबसे": "top", "बड़ी": "big", "बड़ा": "big", "खबर": "news", "समाचार": "news",
+  "ताजा": "latest", "अपडेट": "update", "लिस्ट": "list", "सूची": "list",
+  "सामने": "out", "आई": "out", "आया": "out", "शामिल": "included", "नंबर": "number",
+  "जारी": "released", "घोषणा": "announced", "दावा": "claim", "हमला": "attack",
+  "हादसा": "accident", "मौत": "death", "अलर्ट": "alert", "मौसम": "weather",
+  "बारिश": "rain", "धमाका": "blast", "राहत": "relief",
+
+  // Additional Sports, Numbers & News Keywords
+  "६००": "600", "६": "6", "ज्यादा": "more", "अधिक": "more", "कम": "less",
+  "विकेट": "wickets", "फिर": "still", "इंडिया": "india", "एंट्री": "entry",
+  "नहीं": "no", "कब": "when", "होंगे": "will-be", "होगा": "will-be",
+  "मेहरबान": "kind", "धर्मेंद्रसिंह": "dharmendrasinh", "जडेजा": "jadeja",
+  "सेलेक्टर्स": "selectors", "चयनकर्ता": "selectors", "खिलाड़ी": "player",
+  "खिलाड़ियों": "players", "रन": "runs", "शतक": "century", "अर्धशतक": "fifty",
+  "गेंदबाज": "bowler", "बल्लेबाज": "batsman",
+
+  // Prepositions & Stop Words (omitted for clean English slugs)
+  "के": "", "का": "", "की": "", "को": "", "से": "", "में": "in", "मे": "in",
+  "पर": "", "ने": "", "और": "and", "या": "or", "भी": "", "तक": "by",
+  "हुआ": "", "हुई": "", "है": "", "हैं": "", "था": "", "थी": "", "थे": ""
+};
+
+const CONSONANT_MAP: Record<string, string> = {
+  "क": "ka", "ख": "kha", "ग": "ga", "घ": "gha", "ङ": "nga",
+  "च": "cha", "छ": "cha", "ज": "ja", "झ": "jha", "ञ": "nya",
+  "ट": "ta", "ठ": "tha", "ड": "da", "ढ": "dha", "ण": "na",
+  "त": "ta", "थ": "tha", "द": "da", "ध": "dha", "न": "na",
+  "प": "pa", "फ": "fa", "ब": "ba", "भ": "bha", "म": "ma",
+  "य": "ya", "र": "ra", "ल": "la", "व": "va",
+  "श": "sha", "ष": "sha", "स": "sa", "ह": "ha",
+  "क्ष": "xa", "त्र": "tra", "ज्ञ": "gya", "ड़": "da", "ढ़": "dha"
+};
+
+const MATRA_MAP: Record<string, string> = {
+  "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "ri",
+  "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n", "्": ""
+};
+
+const VOWEL_MAP: Record<string, string> = {
+  "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "r",
+  "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an"
+};
+
+// ─── Convert Devanagari Hindi Text into Clean English Keywords ────────────────
 export function transliterateDevanagari(text: string): string {
   if (!text) return "";
-
-  const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
-    "दुनिया": "world",
-    "विश्व": "world",
-    "देश": "country",
-    "विदेश": "foreign",
-    "भारत": "india",
-    "चीन": "china",
-    "अमेरिका": "us",
-    "रूस": "russia",
-    "यूक्रेन": "ukraine",
-    "इजराइल": "israel",
-    "हमास": "hamas",
-    "पाकिस्तान": "pakistan",
-    "पुतिन": "putin",
-    "ट्रंप": "trump",
-    "ऋषि": "rishi",
-    "सुनक": "sunak",
-    "मोदी": "modi",
-    "नरेंद्र": "narendra",
-    "राहुल": "rahul",
-    "गांधी": "gandhi",
-    "अमित": "amit",
-    "शाह": "shah",
-    "केजरीवाल": "kejriwal",
-    "झारखंड": "jharkhand",
-    "बिहार": "bihar",
-    "दिल्ली": "delhi",
-    "रांची": "ranchi",
-    "पटना": "patna",
-
-    // Consumer, Utilities & LPG Services
-    "उपभोक्ताओं": "consumers",
-    "उपभोक्ता": "consumer",
-    "ग्राहकों": "customers",
-    "ग्राहक": "customer",
-    "बढ़": "increase",
-    "बढ़ने": "increase",
-    "बढ़ती": "rising",
-    "सकती": "may",
-    "सकता": "may",
-    "सकते": "may",
-    "परेशानी": "trouble",
-    "समस्या": "issues",
-    "तारीख": "date",
-    "तिथि": "deadline",
-    "करा": "complete",
-    "लें": "do",
-    "करवाएं": "complete",
-    "कराएं": "complete",
-    "करें": "do",
-    "रखें": "keep",
-    "खाता": "account",
-    "खाते": "accounts",
-    "कार्ड": "card",
-    "पैन": "pan",
-    "आधार": "aadhaar",
-    "केवाईसी": "kyc",
-    "सिलेंडर": "cylinder",
-    "गैस": "gas",
-    "कीमत": "price",
-    "कीमतें": "prices",
-    "दाम": "rate",
-    "रेट": "rates",
-    "योजना": "scheme",
-    "सब्सिडी": "subsidy",
-
-    "अमीर": "richest",
-    "गरीब": "poor",
-    "नेताओं": "leaders",
-    "नेता": "leader",
-    "राष्ट्रपति": "president",
-    "प्रधानमंत्री": "prime-minister",
-    "मुख्यमंत्री": "chief-minister",
-    "मंत्री": "minister",
-    "मंत्रालय": "ministry",
-    "सरकार": "government",
-    "विपक्ष": "opposition",
-    "कांग्रेस": "congress",
-    "भाजपा": "bjp",
-    "सुप्रीम": "supreme",
-    "कोर्ट": "court",
-    "लोकसभा": "lok-sabha",
-    "राज्यसभा": "rajya-sabha",
-    "संसद": "parliament",
-    "फैसला": "verdict",
-    "कानून": "law",
-    "पुलिस": "police",
-    "क्राइम": "crime",
-    "जांच": "probe",
-    "सीबीआई": "cbi",
-
-    "इस": "this",
-    "वर्ष": "year",
-    "साल": "year",
-    "दौरे": "trips",
-    "दौरा": "visit",
-    "यात्रा": "visit",
-    "यात्राओं": "trips",
-    "खर्च": "expenditure",
-    "लागत": "cost",
-    "द्वारा": "by",
-    "दिया": "provided",
-    "गया": "",
-    "जानकारी": "details",
-    "विवरण": "details",
-    "बयान": "statement",
-    "रिपोर्ट": "report",
-    "निर्देश": "order",
-    "आदेश": "instructions",
-    "लागू": "effective",
-    "अंतिम": "last",
-    "जरूरी": "mandatory",
-
-    "शेयर": "share",
-    "बाजार": "market",
-    "अर्थव्यवस्था": "economy",
-    "रुपया": "rupee",
-    "डॉलर": "dollar",
-    "बैंक": "bank",
-    "महंगाई": "inflation",
-    "बजट": "budget",
-    "टैक्स": "tax",
-    "सोना": "gold",
-    "चांदी": "silver",
-    "तेल": "oil",
-    "टेक": "tech",
-    "एआई": "ai",
-    "गूगल": "google",
-    "ऐप्पल": "apple",
-    "इसरो": "isro",
-    "नासा": "nasa",
-    "अंतरिक्ष": "space",
-    "रोवर": "rover",
-    "मंगल": "mars",
-    "चांद": "moon",
-
-    "क्रिकेट": "cricket",
-    "मैच": "match",
-    "टीम": "team",
-    "कप्तान": "captain",
-    "जीत": "win",
-    "हार": "loss",
-    "फाइनल": "final",
-    "विश्वकप": "worldcup",
-    "आईपीएल": "ipl",
-    "फिल्म": "movie",
-    "सिनेमा": "cinema",
-    "बॉलीवुड": "bollywood",
-    "अभिनेता": "actor",
-    "अभिनेत्री": "actress",
-    "स्टार": "star",
-
-    "सबसे": "most",
-    "बड़ी": "big",
-    "बड़ा": "big",
-    "खबर": "news",
-    "समाचार": "news",
-    "ताजा": "latest",
-    "अपडेट": "update",
-    "लिस्ट": "list",
-    "सूची": "list",
-    "सामने": "out",
-    "आई": "out",
-    "आया": "out",
-    "शामिल": "included",
-    "नंबर": "number",
-    "बदलाव": "change",
-    "जारी": "released",
-    "घोषणा": "announced",
-    "दावा": "claim",
-    "हमला": "attack",
-    "हादसा": "accident",
-    "मौत": "death",
-    "अलर्ट": "alert",
-    "मौसम": "weather",
-    "बारिश": "rain",
-
-    // Grammatical prepositions / stop words cleared for clean URLs
-    "के": "", "का": "", "की": "", "को": "", "से": "", "में": "in", "मे": "in", "पर": "", "ने": "",
-    "और": "and", "या": "or", "भी": "", "तक": "by", "हुआ": "", "हुई": "", "होगा": "",
-    "है": "", "हैं": "", "था": "", "थी": "", "थे": ""
-  };
-
-  const CONSONANT_MAP: Record<string, string> = {
-    "क": "ka", "ख": "kha", "ग": "ga", "घ": "gha", "ङ": "nga",
-    "च": "cha", "छ": "cha", "ज": "ja", "झ": "jha", "ञ": "nya",
-    "ट": "ta", "ठ": "tha", "ड": "da", "ढ": "dha", "ण": "na",
-    "त": "ta", "थ": "tha", "द": "da", "ध": "dha", "न": "na",
-    "प": "pa", "फ": "fa", "ब": "ba", "भ": "bha", "म": "ma",
-    "य": "ya", "र": "ra", "ल": "la", "व": "va",
-    "श": "sha", "ष": "sha", "स": "sa", "ह": "ha",
-    "क्ष": "xa", "त्र": "tra", "ज्ञ": "gya", "ड़": "da", "ढ़": "dha"
-  };
-
-  const MATRA_MAP: Record<string, string> = {
-    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "ri",
-    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n", "्": ""
-  };
-
-  const VOWEL_MAP: Record<string, string> = {
-    "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "r",
-    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an"
-  };
 
   const cleanStr = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
   const words = cleanStr.split(/\s+/);
@@ -221,7 +112,10 @@ export function transliterateDevanagari(text: string): string {
     if (hindiCharsOnly && HINDI_TO_ENGLISH_MAP[hindiCharsOnly] !== undefined) {
       return HINDI_TO_ENGLISH_MAP[hindiCharsOnly];
     }
-
+    if (/^[a-zA-Z0-9]+$/.test(w)) {
+      return w.toLowerCase();
+    }
+    // Phonetic transliteration fallback for unmapped proper nouns / names
     let res = "";
     for (let i = 0; i < w.length; i++) {
       const char = w[i];
@@ -251,10 +145,64 @@ export function transliterateDevanagari(text: string): string {
   return translatedWords.filter(Boolean).join(" ");
 }
 
-// ─── Generate Unique Article Slug ─────────────────────────────────────────────
+// ─── Translate Hindi Headline to Proper English Text ──────────────────────────
+export async function translateHindiToEnglish(text: string): Promise<string> {
+  if (!text || !text.trim()) return "";
+  const hasHindi = /[\u0900-\u097F]/.test(text);
+  if (!hasHindi) {
+    return text;
+  }
+
+  // 1. Try Google Translate free API (natural English sentence grammar)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const cleanText = text.replace(/[\n\r]+/g, " ").trim();
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=hi&tl=en&dt=t&q=${encodeURIComponent(cleanText)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = (await res.json()) as any;
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        const fullTranslation = data[0].map((item: any) => (Array.isArray(item) ? item[0] : "")).join("").trim();
+        if (fullTranslation && !/[\u0900-\u097F]/.test(fullTranslation)) {
+          return fullTranslation;
+        }
+      }
+    }
+  } catch {}
+
+  // 2. Fallback: MyMemory API
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const cleanText = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=hi|en`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const json = (await res.json()) as any;
+      const translated = json?.responseData?.translatedText;
+      if (translated && typeof translated === "string" && !/[\u0900-\u097F]/.test(translated)) {
+        return translated.trim();
+      }
+    }
+  } catch {}
+
+  // 3. Fallback: Dictionary word mapping & phonetics
+  return transliterateDevanagari(text);
+}
+
+// ─── Generate Unique Article Slug in Proper English ───────────────────────────
 export async function createUniqueArticleSlug(title: string, customId?: string, createdAt?: Date): Promise<string> {
-  const englishTitle = transliterateDevanagari(title);
-  const baseSlug = slugify(englishTitle || title, {
+  const englishText = await translateHindiToEnglish(title);
+  const cleanEnglish = englishText || transliterateDevanagari(title) || "news";
+
+  const baseSlug = slugify(cleanEnglish, {
     lower: true,
     strict: true,
     trim: true,
@@ -295,10 +243,10 @@ export function createSlug(text: string): string {
 // ─── Calculate Reading Time ───────────────────────────────────────────────────
 export function calculateReadTime(text: string): string {
   if (!text) return "1 min read";
-  // Remove HTML tags
   const plainText = text.replace(/<[^>]*>/g, "");
   const words = plainText.trim().split(/\s+/).length;
   const wordsPerMinute = 200;
   const minutes = Math.ceil(words / wordsPerMinute);
   return `${minutes} min read`;
 }
+

@@ -514,8 +514,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.1);
   background: var(--color-bg-alt, #f8f9fa);
@@ -523,6 +523,17 @@
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
+}
+
+.social-share-buttons.md .share-btn {
+  width: 34px;
+  height: 34px;
+}
+
+.social-share-buttons.lg .share-btn {
+  width: 42px;
+  height: 42px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .share-btn {

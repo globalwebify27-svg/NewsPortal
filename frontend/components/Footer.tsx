@@ -227,10 +227,10 @@ export default function Footer() {
           {/* COLUMN 1: COMPANY */}
           <div className="footer-link-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h4 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
                 <User size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "कंपनी" : "Company"}
-              </h4>
+              </h3>
               <div style={{ position: "absolute", bottom: "-1.5px", left: 0, width: "45px", height: "1.5px", background: "#e50914" }} />
             </div>
 
@@ -261,10 +261,10 @@ export default function Footer() {
           {/* COLUMN 2: QUICK LINKS */}
           <div className="footer-link-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h4 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
                 <Link2 size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "त्वरित लिंक" : "Quick Links"}
-              </h4>
+              </h3>
               <div style={{ position: "absolute", bottom: "-1.5px", left: 0, width: "45px", height: "1.5px", background: "#e50914" }} />
             </div>
 
@@ -295,10 +295,10 @@ export default function Footer() {
           {/* COLUMN 3: CATEGORIES (USES ACTUAL TABS) */}
           <div className="footer-cat-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h4 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
                 <LayoutGrid size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "श्रेणियां" : "Categories"}
-              </h4>
+              </h3>
               <div style={{ position: "absolute", bottom: "-1.5px", left: 0, width: "45px", height: "1.5px", background: "#e50914" }} />
             </div>
 
@@ -329,10 +329,10 @@ export default function Footer() {
           {/* COLUMN 4: NEWSLETTER */}
           <div className="footer-newsletter-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h4 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
                 <Mail size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "न्यूज़लेटर" : "Newsletter"}
-              </h4>
+              </h3>
               <div style={{ position: "absolute", bottom: "-1.5px", left: 0, width: "45px", height: "1.5px", background: "#e50914" }} />
             </div>
 

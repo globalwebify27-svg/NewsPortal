@@ -173,7 +173,8 @@ export class ArticlesService {
    * Create a new article
    */
   static async createArticle(userId: string, data: any) {
-    const slug = await createUniqueArticleSlug(data.title);
+    const titleToSlug = data.titleEn || data.englishTitle || data.title;
+    const slug = await createUniqueArticleSlug(titleToSlug);
     const readTime = calculateReadTime(data.body);
 
     const { tagIds, ...articleData } = data;
