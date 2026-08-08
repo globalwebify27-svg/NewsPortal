@@ -66,6 +66,42 @@ export function transliterateDevanagari(text: string): string {
     "रांची": "ranchi",
     "पटना": "patna",
 
+    // Consumer, Utilities & LPG Services
+    "उपभोक्ताओं": "consumers",
+    "उपभोक्ता": "consumer",
+    "ग्राहकों": "customers",
+    "ग्राहक": "customer",
+    "बढ़": "increase",
+    "बढ़ने": "increase",
+    "बढ़ती": "rising",
+    "सकती": "may",
+    "सकता": "may",
+    "सकते": "may",
+    "परेशानी": "trouble",
+    "समस्या": "issues",
+    "तारीख": "date",
+    "तिथि": "deadline",
+    "करा": "complete",
+    "लें": "do",
+    "करवाएं": "complete",
+    "कराएं": "complete",
+    "करें": "do",
+    "रखें": "keep",
+    "खाता": "account",
+    "खाते": "accounts",
+    "कार्ड": "card",
+    "पैन": "pan",
+    "आधार": "aadhaar",
+    "केवाईसी": "kyc",
+    "सिलेंडर": "cylinder",
+    "गैस": "gas",
+    "कीमत": "price",
+    "कीमतें": "prices",
+    "दाम": "rate",
+    "रेट": "rates",
+    "योजना": "scheme",
+    "सब्सिडी": "subsidy",
+
     "अमीर": "richest",
     "गरीब": "poor",
     "नेताओं": "leaders",
@@ -107,6 +143,11 @@ export function transliterateDevanagari(text: string): string {
     "विवरण": "details",
     "बयान": "statement",
     "रिपोर्ट": "report",
+    "निर्देश": "order",
+    "आदेश": "instructions",
+    "लागू": "effective",
+    "अंतिम": "last",
+    "जरूरी": "mandatory",
 
     "शेयर": "share",
     "बाजार": "market",
@@ -174,23 +215,29 @@ export function transliterateDevanagari(text: string): string {
 
     // Grammatical prepositions / stop words cleared for clean URLs
     "के": "", "का": "", "की": "", "को": "", "से": "", "में": "in", "मे": "in", "पर": "", "ने": "",
-    "और": "and", "या": "or", "भी": "", "तक": "", "हुआ": "", "हुई": "", "होगा": "",
+    "और": "and", "या": "or", "भी": "", "तक": "by", "हुआ": "", "हुई": "", "होगा": "",
     "है": "", "हैं": "", "था": "", "थी": "", "थे": ""
   };
 
-  const DEVANAGARI_CHAR_MAP: Record<string, string> = {
+  const CONSONANT_MAP: Record<string, string> = {
+    "क": "ka", "ख": "kha", "ग": "ga", "घ": "gha", "ङ": "nga",
+    "च": "cha", "छ": "cha", "ज": "ja", "झ": "jha", "ञ": "nya",
+    "ट": "ta", "ठ": "tha", "ड": "da", "ढ": "dha", "ण": "na",
+    "त": "ta", "थ": "tha", "द": "da", "ध": "dha", "न": "na",
+    "प": "pa", "फ": "fa", "ब": "ba", "भ": "bha", "म": "ma",
+    "य": "ya", "र": "ra", "ल": "la", "व": "va",
+    "श": "sha", "ष": "sha", "स": "sa", "ह": "ha",
+    "क्ष": "xa", "त्र": "tra", "ज्ञ": "gya", "ड़": "da", "ढ़": "dha"
+  };
+
+  const MATRA_MAP: Record<string, string> = {
+    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "ri",
+    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n", "्": ""
+  };
+
+  const VOWEL_MAP: Record<string, string> = {
     "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "r",
-    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an",
-    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "r",
-    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n",
-    "क": "k", "ख": "kh", "ग": "g", "घ": "gh",
-    "च": "ch", "छ": "ch", "ज": "j", "झ": "jh",
-    "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
-    "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
-    "प": "p", "फ": "f", "ब": "b", "भ": "bh", "म": "m",
-    "य": "y", "र": "r", "ल": "l", "व": "v",
-    "श": "sh", "ष": "sh", "स": "s", "ह": "h",
-    "क्ष": "x", "त्र": "tr", "ज्ञ": "gy", "ड़": "d", "ढ़": "dh"
+    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an"
   };
 
   const cleanStr = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
@@ -202,16 +249,30 @@ export function transliterateDevanagari(text: string): string {
       return HINDI_TO_ENGLISH_MAP[hindiCharsOnly];
     }
 
-    let result = "";
+    let res = "";
     for (let i = 0; i < w.length; i++) {
       const char = w[i];
-      if (DEVANAGARI_CHAR_MAP[char] !== undefined) {
-        result += DEVANAGARI_CHAR_MAP[char];
+      const nextChar = w[i + 1];
+
+      if (VOWEL_MAP[char]) {
+        res += VOWEL_MAP[char];
+      } else if (CONSONANT_MAP[char]) {
+        const base = CONSONANT_MAP[char];
+        if (nextChar && MATRA_MAP[nextChar] !== undefined) {
+          res += base.slice(0, -1) + MATRA_MAP[nextChar];
+          i++;
+        } else if (i === w.length - 1) {
+          res += base.slice(0, -1);
+        } else {
+          res += base;
+        }
+      } else if (MATRA_MAP[char] !== undefined) {
+        res += MATRA_MAP[char];
       } else {
-        result += char;
+        res += char;
       }
     }
-    return result;
+    return res;
   });
 
   return translatedWords.filter(Boolean).join(" ");
