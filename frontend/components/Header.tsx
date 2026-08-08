@@ -63,7 +63,8 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos, fetchCentralVideos } from "@/lib/youtube";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
-import { autoDetectUserCity } from "@/lib/districts";
+import { autoDetectUserCity, getDistrictsForState } from "@/lib/districts";
+import { getSubCategories } from "@/lib/subCategories";
 
 export default function Header() {
   let pathname = "";
@@ -74,15 +75,15 @@ export default function Header() {
     pathname = "";
   }
 
-  const { lang, toggleLang, t } = useLanguage();
+  const { lang, setLang, toggleLang, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
 
   // Interactive State Selector States
   const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
   const [detectedLocationText, setDetectedLocationText] = useState({
-    hi: "राँची, झारखंड",
-    en: "Ranchi, Jharkhand"
+    hi: "भारत",
+    en: "India"
   });
   const [userTemperature, setUserTemperature] = useState("28°C");
   const [userTimezone, setUserTimezone] = useState("Asia/Kolkata");
@@ -105,24 +106,17 @@ export default function Header() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("ga_active_filters");
-      if (saved && pathname !== "/") {
-        const parsed = JSON.parse(saved);
+      const savedFilters = localStorage.getItem("ga_active_filters");
+      if (savedFilters) {
+        const parsed = JSON.parse(savedFilters);
         if (parsed.sort) setFilterSort(parsed.sort);
         if (parsed.category) setFilterCategory(parsed.category);
         if (parsed.format) setFilterFormat(parsed.format);
         if (parsed.timeRange) setFilterTimeRange(parsed.timeRange);
         if (parsed.state) setFilterStateFilter(parsed.state);
-      } else if (pathname === "/") {
-        // Reset any residual filters when opening/refreshing Top News (Homepage)
-        setFilterSort("latest");
-        setFilterCategory("all");
-        setFilterFormat("all");
-        setFilterTimeRange("all");
-        setFilterStateFilter("all");
       }
     } catch (e) {}
-  }, [pathname]);
+  }, []);
 
   const pillNavRef = React.useRef<HTMLDivElement>(null);
 
@@ -146,15 +140,15 @@ export default function Header() {
     (filterState !== "all" ? 1 : 0);
 
   const handleApplyFilters = () => {
+    const filtersObj = {
+      sort: filterSort,
+      category: filterCategory,
+      format: filterFormat,
+      timeRange: filterTimeRange,
+      state: filterState
+    };
     try {
-      const filterObj = {
-        sort: filterSort,
-        category: filterCategory,
-        format: filterFormat,
-        timeRange: filterTimeRange,
-        state: filterState
-      };
-      localStorage.setItem("ga_active_filters", JSON.stringify(filterObj));
+      localStorage.setItem("ga_active_filters", JSON.stringify(filtersObj));
       window.dispatchEvent(new Event("ga_filters_changed"));
     } catch (e) {}
     setIsFilterModalOpen(false);
@@ -178,50 +172,74 @@ export default function Header() {
   const [customLogoMarginLeft, setCustomLogoMarginLeft] = useState<number>(75);
 
   useEffect(() => {
-    const loadLocation = async () => {
+    // 1. Physical Geo-Location Tracker for Top Utility Bar (Weather & Geo Date)
+    const loadGeoLocation = async () => {
       try {
-        const isManuallySelected = sessionStorage.getItem("ga_manual_city_selected") === "true";
-        const storedCity = localStorage.getItem("ga_selected_city");
-        const storedStateCode = localStorage.getItem("ga_selected_state");
+        const detected = await autoDetectUserCity();
+        if (detected) {
+          const isIntl = Boolean(detected.isInternational);
+          setIsInternationalLocation(isIntl);
 
-        if (isManuallySelected && storedCity) {
-          const stObj = INDIAN_STATES.find(s => s.code === storedStateCode || s.nameEn.toLowerCase() === storedStateCode?.toLowerCase());
           setDetectedLocationText({
-            hi: `${storedCity}, ${stObj?.nameHi || "भारत"}`,
-            en: `${storedCity}, ${stObj?.nameEn || "India"}`
+            hi: isIntl
+              ? detected.displayLocationEn || `${detected.city}, ${detected.countryName || "International"}`
+              : (detected.displayLocationHi || `${detected.cityHi}, ${detected.stateNameHi}`),
+            en: detected.displayLocationEn || `${detected.city}, ${detected.countryName || detected.stateNameEn}`
           });
-        } else {
-          // Dynamic Real-time IP / VPN Geolocation Detection
-          const detected = await autoDetectUserCity();
-          if (detected) {
-            setDetectedLocationText({
-              hi: detected.displayLocationHi || `${detected.cityHi}, ${detected.stateNameHi}`,
-              en: detected.displayLocationEn || `${detected.city}, ${detected.stateNameEn}`
-            });
-            if (detected.temperature) setUserTemperature(detected.temperature);
-            if (detected.timezone) setUserTimezone(detected.timezone);
-            if (detected.isInternational !== undefined) setIsInternationalLocation(detected.isInternational);
 
-            const stObj = INDIAN_STATES.find(s => s.code === detected.stateCode);
-            if (stObj) setSelectedState(stObj);
+          if (detected.temperature) setUserTemperature(detected.temperature);
+          if (detected.timezone) setUserTimezone(detected.timezone);
+
+          if (isIntl) {
+            const explicitLang = localStorage.getItem("ga_language_manual");
+            if (!explicitLang && setLang) {
+              setLang("EN");
+            }
           }
         }
       } catch (e) {}
     };
 
-    loadLocation();
+    // 2. Active News State Filter Tracker for Header State Pill & Modal
+    const loadStateFilter = () => {
+      try {
+        const storedStateCode = localStorage.getItem("ga_selected_state");
+        if (storedStateCode) {
+          const stObj = INDIAN_STATES.find(
+            (s) =>
+              s.code === storedStateCode ||
+              s.slug === storedStateCode ||
+              s.nameEn.toLowerCase() === storedStateCode.toLowerCase()
+          );
+          if (stObj) {
+            setSelectedState(stObj);
+          }
+        }
+      } catch (e) {}
+    };
+
+    loadGeoLocation();
+    loadStateFilter();
     fetchCentralVideos().catch(() => {});
-    window.addEventListener("ga_state_changed", loadLocation);
-    window.addEventListener("storage", loadLocation);
+
+    window.addEventListener("ga_state_changed", loadStateFilter);
+    window.addEventListener("storage", loadStateFilter);
     return () => {
-      window.removeEventListener("ga_state_changed", loadLocation);
-      window.removeEventListener("storage", loadLocation);
+      window.removeEventListener("ga_state_changed", loadStateFilter);
+      window.removeEventListener("storage", loadStateFilter);
     };
   }, []);
 
   const handleSelectState = (st: IndianState) => {
     setSelectedState(st);
     localStorage.setItem("ga_selected_state", st.code);
+    sessionStorage.setItem("ga_manual_state_selected", "true");
+    const dists = getDistrictsForState(st.code);
+    if (dists && dists.length > 0) {
+      const defaultCity = dists[0].nameEn.split("/")[0].trim();
+      localStorage.setItem("ga_selected_city", defaultCity);
+      sessionStorage.setItem("ga_manual_city_selected", "true");
+    }
     window.dispatchEvent(new Event("ga_state_changed"));
     setIsStateModalOpen(false);
   };
@@ -369,11 +387,11 @@ export default function Header() {
         <div className="container top-bar-inner">
           <div className="top-bar-left">
             <span className="top-bar-date-text">
-              {currentDate || (lang === "HI" ? "गुरुवार, 6 अगस्त 2026" : "Thursday, 6 August 2026")}
+              {currentDate || (isInternationalLocation || lang === "EN" ? "Thursday, 6 August 2026" : "गुरुवार, 6 अगस्त 2026")}
             </span>
             <span className="top-bar-vdivider">|</span>
             <div className="top-bar-weather-text">
-              <span>{lang === "HI" ? detectedLocationText.hi : detectedLocationText.en}</span>
+              <span>{isInternationalLocation || lang === "EN" ? detectedLocationText.en : detectedLocationText.hi}</span>
               <Sun size={14} className="top-bar-sun-icon" />
               <span>{userTemperature}</span>
             </div>
@@ -664,16 +682,24 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/latest" className={`nav-link pill-nav-link ${isActive("/latest") ? "active" : ""}`}>
+                <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`}>
                   <Zap size={15} />
-                  <span>{t("latest")}</span>
-                  {isActive("/latest") && <span className="active-pill-bar"></span>}
+                  <span>{lang === "HI" ? "शिक्षा" : "Education"}</span>
+                  {isActive("/education") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/latest"><BookOpen size={14} />{lang === "HI" ? "शिक्षा समाचार" : "Education News"}</Link>
-                  <Link href="/latest"><Star size={14} />{lang === "HI" ? "बोर्ड परीक्षा 10वीं/12वीं" : "Board Exams"}</Link>
-                  <Link href="/latest"><Trophy size={14} />{lang === "HI" ? "प्रतियोगी परीक्षाएं" : "Competitive Exams"}</Link>
-                  <Link href="/latest"><Building2 size={14} />{lang === "HI" ? "कॉलेज और प्रवेश" : "College & Admissions"}</Link>
+                  {getSubCategories("education").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/education?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <BookOpen size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -683,16 +709,30 @@ export default function Header() {
                   {isActive("/world") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/world"><Globe size={14} />{t("world")}</Link>
-                  <Link href="/world"><Landmark size={14} />{t("politics")}</Link>
-                  <Link href="/world"><Shield size={14} />{t("defence")}</Link>
-                  <Link href="/world"><Handshake size={14} />{t("diplomacy")}</Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/world" className="see-all-dropdown"><ArrowRight size={14} />{t("seeAll")} {t("world")}</Link>
+                  {getSubCategories("world").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/world?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Globe size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
-                <Link href="/india" className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}>
+                <Link
+                  href="/india?state=all"
+                  className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
+                  onClick={() => {
+                    setSelectedState({ code: "ALL", nameEn: "All India", nameHi: "भारत समाचार", slug: "all" });
+                    localStorage.setItem("ga_selected_state", "ALL");
+                    window.dispatchEvent(new Event("ga_state_changed"));
+                  }}
+                >
                   <MapPin size={15} />
                   <span>{t("india")}</span>
                   {isActive("/india") && <span className="active-pill-bar"></span>}
@@ -741,13 +781,18 @@ export default function Header() {
                   {isActive("/business") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/business"><TrendingUp size={14} />{t("markets")}</Link>
-                  <Link href="/business"><Building size={14} />{t("companies")}</Link>
-                  <Link href="/business"><Coins size={14} />{t("finance")}</Link>
-                  <Link href="/business"><BarChart2 size={14} />{t("economy")}</Link>
-                  <Link href="/business"><Bitcoin size={14} />{t("crypto")}</Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/business" className="see-all-dropdown"><ArrowRight size={14} />{t("seeAll")} {t("business")}</Link>
+                  {getSubCategories("business").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/business?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <TrendingUp size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -757,13 +802,18 @@ export default function Header() {
                   {isActive("/technology") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/technology"><Cpu size={14} />{t("aiMl")}</Link>
-                  <Link href="/technology"><Smartphone size={14} />{t("gadgets")}</Link>
-                  <Link href="/technology"><Cloud size={14} />{t("cloudSoftware")}</Link>
-                  <Link href="/technology"><Rocket size={14} />{t("spaceTech")}</Link>
-                  <Link href="/technology"><ShieldCheck size={14} />{t("cybersecurity")}</Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/technology" className="see-all-dropdown"><ArrowRight size={14} />{t("seeAll")} {t("technology")}</Link>
+                  {getSubCategories("technology").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/technology?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Cpu size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -773,12 +823,18 @@ export default function Header() {
                   {isActive("/sports") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/sports"><Trophy size={14} />{t("cricket")}</Link>
-                  <Link href="/sports"><CircleDot size={14} />{t("football")}</Link>
-                  <Link href="/sports"><Flag size={14} />{t("formula1")}</Link>
-                  <Link href="/sports"><Medal size={14} />{t("olympics")}</Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/sports" className="see-all-dropdown"><ArrowRight size={14} />{t("seeAll")} {t("sports")}</Link>
+                  {getSubCategories("sports").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/sports?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Trophy size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -788,10 +844,18 @@ export default function Header() {
                   {isActive("/entertainment") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/entertainment"><Film size={14} />{lang === "HI" ? "सिनेमा और बॉलीवुड" : "Cinema & Movies"}</Link>
-                  <Link href="/entertainment"><Tv2 size={14} />{lang === "HI" ? "ओटीटी और वेब सीरीज" : "OTT & Web Series"}</Link>
-                  <Link href="/entertainment"><Music size={14} />{lang === "HI" ? "म्यूजिक और गाने" : "Music & Hits"}</Link>
-                  <Link href="/entertainment"><Star size={14} />{lang === "HI" ? "सेलेब्रिटी अपडेट्स" : "Celebrity Gossips"}</Link>
+                  {getSubCategories("entertainment").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/entertainment?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Film size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -801,9 +865,18 @@ export default function Header() {
                   {isActive("/science") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/science"><Rocket size={14} />{lang === "HI" ? "अंतरिक्ष अनुसंधान" : "Space Exploration"}</Link>
-                  <Link href="/science"><Atom size={14} />{lang === "HI" ? "नवाचार और खोजें" : "Innovations"}</Link>
-                  <Link href="/science"><CloudSun size={14} />{lang === "HI" ? "पर्यावरण व जलवायु" : "Environment"}</Link>
+                  {getSubCategories("science").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/science?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Atom size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -813,9 +886,18 @@ export default function Header() {
                   {isActive("/health") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/health"><HeartPulse size={14} />{lang === "HI" ? "स्वास्थ्य व लाइफस्टाइल" : "Health & Fitness"}</Link>
-                  <Link href="/health"><ShieldCheck size={14} />{lang === "HI" ? "आहार और पोषण" : "Nutrition & Wellness"}</Link>
-                  <Link href="/health"><Atom size={14} />{lang === "HI" ? "चिकित्सा अनुसंधान" : "Medical Advances"}</Link>
+                  {getSubCategories("health").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/health?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <HeartPulse size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -825,9 +907,18 @@ export default function Header() {
                   {isActive("/opinion") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/opinion"><MessageSquare size={14} />{lang === "HI" ? "दैनिक संपादकीय" : "Daily Editorials"}</Link>
-                  <Link href="/opinion"><Users size={14} />{lang === "HI" ? "विशेषज्ञ दृष्टिकोण" : "Expert Columns"}</Link>
-                  <Link href="/opinion"><BookOpen size={14} />{lang === "HI" ? "विशेष विश्लेषणात्मक रिपोर्ट" : "Special Reports"}</Link>
+                  {getSubCategories("opinion").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/opinion?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <MessageSquare size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -837,9 +928,18 @@ export default function Header() {
                   {isActive("/videos") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/videos"><Tv size={14} />{lang === "HI" ? "ट्रेंडिंग वीडियो" : "Trending Videos"}</Link>
-                  <Link href="/videos"><Play size={14} />{lang === "HI" ? "ग्राउंड रिपोर्ट" : "Ground Reports"}</Link>
-                  <Link href="/videos"><Film size={14} />{lang === "HI" ? "विशेष वृत्तचित्र" : "Documentaries"}</Link>
+                  {getSubCategories("videos").map((sub) => (
+                    <Link
+                      key={sub.en}
+                      href={`/videos?sub=${encodeURIComponent(sub.en)}`}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
+                      }}
+                    >
+                      <Tv size={14} />
+                      {lang === "HI" ? sub.hi : sub.en}
+                    </Link>
+                  ))}
                 </div>
               </li>
               <li>
@@ -856,19 +956,7 @@ export default function Header() {
                   {isActive("/advertise") && <span className="active-pill-bar"></span>}
                 </Link>
               </li>
-              <li>
-                <div
-                  className={`filter-pill-btn ${activeFilterCount > 0 ? "active-filter" : ""}`}
-                  onClick={() => setIsFilterModalOpen(true)}
-                  style={{ cursor: "pointer", position: "relative" }}
-                >
-                  <Filter size={13} />
-                  <span>{lang === "HI" ? "फ़िल्टर" : "Filter"}</span>
-                  {activeFilterCount > 0 && (
-                    <span className="filter-badge">{activeFilterCount}</span>
-                  )}
-                </div>
-              </li>
+
             </ul>
           </div>
         </div>

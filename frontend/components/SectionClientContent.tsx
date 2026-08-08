@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Clock, Calendar, Loader2 } from "lucide-react";
 
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -10,6 +10,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
+import { getDistrictsForState } from "@/lib/districts";
+import { getSubCategories } from "@/lib/subCategories";
 
 interface Article {
   id: string;
@@ -28,76 +30,12 @@ interface Article {
   imageHeight?: string;
   imageFit?: "cover" | "contain" | "fill";
   state?: string;
+  district?: string;
 }
 
-const SECTION_SUB_CATEGORIES: Record<string, { en: string; hi: string }[]> = {
-  education: [
-    { en: "Education News", hi: "शिक्षा समाचार" },
-    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
-    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
-    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" },
-    { en: "Career Guidance", hi: "करियर मार्गदर्शन" }
-  ],
-  latest: [
-    { en: "Education News", hi: "शिक्षा समाचार" },
-    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
-    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
-    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" }
-  ],
-  world: [
-    { en: "International Affairs", hi: "अंतरराष्ट्रीय मामले" },
-    { en: "World Politics", hi: "वैश्विक राजनीति" },
-    { en: "Defence & Security", hi: "रक्षा व सुरक्षा" },
-    { en: "Diplomacy", hi: "कूटनीति व संबंध" },
-    { en: "Global Economy", hi: "ग्लोबल अर्थव्यवस्था" }
-  ],
-  business: [
-    { en: "Stock Markets", hi: "शेयर बाज़ार" },
-    { en: "Companies & Startups", hi: "कंपनियां व स्टार्ट-अप" },
-    { en: "Personal Finance & Tax", hi: "पर्सनल फाइनेंस" },
-    { en: "Economy", hi: "अर्थव्यवस्था" },
-    { en: "Crypto & Banking", hi: "क्रिप्टो व बैंकिंग" }
-  ],
-  technology: [
-    { en: "AI & Machine Learning", hi: "एआई और मशीन लर्निंग" },
-    { en: "Smartphones & Gadgets", hi: "स्मार्टफोन और गैजेट्स" },
-    { en: "Cloud & Software", hi: "सॉफ्टवेयर और ऐप्स" },
-    { en: "Space Tech", hi: "अंतरिक्ष तकनीक" },
-    { en: "Cybersecurity", hi: "साइबर सुरक्षा" }
-  ],
-  sports: [
-    { en: "Cricket", hi: "क्रिकेट" },
-    { en: "Football", hi: "फुटबॉल" },
-    { en: "Formula 1", hi: "फॉर्मूला 1" },
-    { en: "Olympics & Athletics", hi: "ओलंपिक व अन्य खेल" }
-  ],
-  entertainment: [
-    { en: "Cinema & Movies", hi: "सिनेमा और फिल्में" },
-    { en: "OTT & Web Series", hi: "ओटीटी और वेब सीरीज" },
-    { en: "Music & Songs", hi: "म्यूजिक और गाने" },
-    { en: "Celebrities", hi: "सेलेब्रिटी अपडेट्स" }
-  ],
-  science: [
-    { en: "Space Exploration", hi: "अंतरिक्ष अनुसंधान" },
-    { en: "Innovations & Discoveries", hi: "नवाचार व खोजें" },
-    { en: "Environment & Climate", hi: "पर्यावरण व जलवायु" }
-  ],
-  health: [
-    { en: "Fitness & Yoga", hi: "फिटनेस और योग" },
-    { en: "Nutrition & Diet", hi: "आहार और पोषण" },
-    { en: "Medical Breakthroughs", hi: "चिकित्सा शोध" }
-  ],
-  opinion: [
-    { en: "Daily Editorials", hi: "दैनिक संपादकीय" },
-    { en: "Expert Columns", hi: "विशेषज्ञ दृष्टिकोण" },
-    { en: "Special Reports", hi: "विशेष विश्लेषणात्मक रिपोर्ट" }
-  ],
-  videos: [
-    { en: "Trending Video Clips", hi: "ट्रेंडिंग वीडियो" },
-    { en: "Ground Reports", hi: "ग्राउंड रिपोर्ट" },
-    { en: "Documentaries", hi: "वृत्तचित्र" }
-  ]
-};
+const MAIN_INDIAN_STATES = INDIAN_STATES.filter(s =>
+  ["JH", "BR", "UP", "DL", "WB", "MH", "RJ", "MP", "PB", "HR", "CG", "UK"].includes(s.code)
+);
 
 function formatCardDate(dateStr?: string) {
   if (!dateStr) return "22 July 2026";
@@ -126,62 +64,194 @@ export default function SectionClientContent() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSubCat, setActiveSubCat] = useState<string>("ALL");
+  const [activeDistrict, setActiveDistrict] = useState<string>("ALL");
   const [selectedState, setSelectedState] = useState<string>("");
 
+  const searchParams = useSearchParams();
+  const subParam = searchParams?.get("sub");
+  const stateParam = searchParams?.get("state");
+
   useEffect(() => {
-    if (section === "state" || section === "states") {
-      autoDetectUserIndianState().then((detected) => {
-        if (detected?.code) setSelectedState(detected.code);
-      });
+    if (subParam) {
+      setActiveSubCat(subParam);
     }
+  }, [subParam]);
+
+  useEffect(() => {
+    if (stateParam) {
+      if (stateParam.toLowerCase() === "all" || stateParam.toLowerCase() === "national") {
+        setSelectedState("ALL");
+      } else {
+        const st = INDIAN_STATES.find(s => s.slug.toLowerCase() === stateParam.toLowerCase() || s.code.toLowerCase() === stateParam.toLowerCase() || s.nameEn.toLowerCase() === stateParam.toLowerCase());
+        if (st) setSelectedState(st.code);
+      }
+    }
+  }, [stateParam]);
+
+  useEffect(() => {
+    setActiveDistrict("ALL");
+  }, [selectedState]);
+
+  useEffect(() => {
+    const handleSubCatChange = (e: Event) => {
+      const customEv = e as CustomEvent;
+      if (customEv.detail) {
+        setActiveSubCat(customEv.detail);
+      }
+    };
+    window.addEventListener("ga_subcat_changed", handleSubCatChange);
+    return () => window.removeEventListener("ga_subcat_changed", handleSubCatChange);
+  }, []);
+
+  useEffect(() => {
+    const syncState = () => {
+      const stored = localStorage.getItem("ga_selected_state");
+      if (stored) {
+        setSelectedState(stored);
+      } else if (section === "state" || section === "states") {
+        autoDetectUserIndianState().then((detected) => {
+          if (detected?.code) setSelectedState(detected.code);
+        });
+      }
+    };
+    syncState();
+    window.addEventListener("ga_state_changed", syncState);
+    return () => window.removeEventListener("ga_state_changed", syncState);
   }, [section]);
 
   useEffect(() => {
     async function fetchSectionArticles() {
       setLoading(true);
+      let combined: Article[] = [];
+
       try {
-        let fetchUrl = `${API_ENDPOINTS.articles}?category=${section}&limit=30`;
+        let fetchUrl = `${API_ENDPOINTS.articles}?category=${section}&limit=50`;
         if (section === "state" || section === "states") {
           const stParam = selectedState || "JH";
-          fetchUrl = `${API_ENDPOINTS.articles}?state=${stParam}&limit=30`;
+          fetchUrl = `${API_ENDPOINTS.articles}?state=${stParam}&limit=50`;
         }
 
         const res = await fetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
           const list = data?.data?.articles || data?.articles || data?.data || [];
-          if (Array.isArray(list) && list.length > 0) {
-            setArticles(list);
-            setLoading(false);
-            return;
+          if (Array.isArray(list)) {
+            combined = list;
           }
         }
       } catch (err) {
         console.warn("API fetch error for section:", section, err);
       }
 
-      setArticles([]);
+      // Merge custom admin articles from localStorage
+      try {
+        const customRaw = localStorage.getItem("ga_custom_articles");
+        if (customRaw) {
+          const customList: Article[] = JSON.parse(customRaw);
+          const matchedCustom = customList.filter((a) => {
+            const catName = (a.category?.name || (a.category as any) || "").toLowerCase().trim();
+            const secLower = section.toLowerCase().trim();
+            if (secLower === "latest" || secLower === "top news") return true;
+            return catName.includes(secLower) || secLower.includes(catName);
+          });
+          const customIds = new Set(matchedCustom.map((c) => c.id));
+          const filteredBackend = combined.filter((b) => !customIds.has(b.id));
+          combined = [...matchedCustom, ...filteredBackend];
+        }
+      } catch (e) {}
+
+      setArticles(combined);
       setLoading(false);
     }
 
     fetchSectionArticles();
+    window.addEventListener("ga_articles_updated", fetchSectionArticles);
+    return () => window.removeEventListener("ga_articles_updated", fetchSectionArticles);
   }, [section, selectedState]);
 
-  const availableSubCats = SECTION_SUB_CATEGORIES[section] || [];
+  const availableSubCats = getSubCategories(section);
+  const selectedStateObj = INDIAN_STATES.find(s => s.code === selectedState);
+  const stateDistricts = selectedStateObj ? getDistrictsForState(selectedStateObj.code) : [];
 
   const filteredArticles = articles.filter((item) => {
+    // 1. Sub-category filter
     if (activeSubCat !== "ALL") {
       const itemSub = (item.subCategory || item.category?.subCategory || "").toLowerCase().trim();
-      const targetSub = activeSubCat.toLowerCase().trim();
-      if (!itemSub.includes(targetSub) && !targetSub.includes(itemSub)) {
+      if (!itemSub || itemSub === "general") {
         return false;
       }
+
+      const targetSub = activeSubCat.toLowerCase().trim();
+      const subItem = availableSubCats.find(
+        (s) => s.en.toLowerCase() === targetSub || s.hi.toLowerCase() === targetSub
+      );
+
+      if (subItem) {
+        const enLower = subItem.en.toLowerCase().trim();
+        const hiLower = subItem.hi.toLowerCase().trim();
+        const isMatch =
+          itemSub === enLower ||
+          itemSub === hiLower ||
+          itemSub.includes(enLower) ||
+          enLower.includes(itemSub) ||
+          itemSub.includes(hiLower) ||
+          hiLower.includes(itemSub);
+
+        if (!isMatch) return false;
+      } else {
+        if (!itemSub.includes(targetSub) && !targetSub.includes(itemSub)) {
+          return false;
+        }
+      }
     }
+
+    // 2. District filter
+    if (activeDistrict !== "ALL" && stateDistricts.length > 0) {
+      const itemDist = (item.district || "").toLowerCase().trim();
+      const targetDist = activeDistrict.toLowerCase().trim();
+      const distObj = stateDistricts.find(d => d.nameEn.toLowerCase() === targetDist);
+
+      const enName = distObj ? distObj.nameEn.toLowerCase() : targetDist;
+      const hiName = distObj ? distObj.nameHi.toLowerCase() : "";
+
+      const distMatches =
+        itemDist === enName ||
+        itemDist === hiName ||
+        itemDist.includes(enName) ||
+        enName.includes(itemDist) ||
+        (hiName && itemDist.includes(hiName)) ||
+        (hiName && hiName.includes(itemDist)) ||
+        item.title.toLowerCase().includes(enName) ||
+        (hiName && item.title.toLowerCase().includes(hiName)) ||
+        (item.summary && item.summary.toLowerCase().includes(enName)) ||
+        (hiName && item.summary && item.summary.toLowerCase().includes(hiName));
+
+      if (!distMatches) return false;
+    }
+
     return true;
   });
 
-  const sectionDisplayName = (section === "state" || section === "states")
-    ? (INDIAN_STATES.find(s => s.code === selectedState)?.[lang === "HI" ? "nameHi" : "nameEn"] || "राज्य समाचार")
+  const stateMatchedArticles = (selectedState && selectedState !== "ALL" && (section === "india" || section === "state" || section === "states"))
+    ? filteredArticles.filter((item) => {
+        const stLower = (item.state || "national").toLowerCase().trim();
+        if (stLower === "national" || stLower === "all india" || stLower === "all") return true;
+        if (selectedStateObj) {
+          const nameEn = selectedStateObj.nameEn.toLowerCase();
+          const code = selectedStateObj.code.toLowerCase();
+          const slug = selectedStateObj.slug.toLowerCase();
+          return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
+        }
+        return false;
+      })
+    : filteredArticles;
+
+  const displayArticles = stateMatchedArticles;
+
+  const sectionDisplayName = (section === "state" || section === "states" || section === "india")
+    ? (!selectedState || selectedState === "ALL"
+        ? (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)")
+        : (selectedStateObj ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`) : "भारत समाचार"))
     : (section.charAt(0).toUpperCase() + section.slice(1));
 
   return (
@@ -192,7 +262,119 @@ export default function SectionClientContent() {
         </h1>
       </header>
 
-      {availableSubCats.length > 0 && (
+      {/* PROFESSIONAL COMPACT DROPDOWN FILTER CONTROL BAR */}
+      {(section === "india" || section === "state" || section === "states") && (
+        <div
+          style={{
+            marginBottom: "18px",
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            padding: "12px 14px",
+            borderRadius: "12px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "10px",
+            alignItems: "center",
+            boxSizing: "border-box",
+            maxWidth: "100%",
+            width: "100%",
+            overflow: "hidden"
+          }}
+        >
+          {/* STATE DROPDOWN */}
+          <div style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+              <span>🇮🇳</span>
+              <span>{lang === "HI" ? "राज्य चुनें (Select State)" : "Select State"}</span>
+            </label>
+            <select
+              value={selectedState || "ALL"}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedState(val);
+                localStorage.setItem("ga_selected_state", val);
+                window.dispatchEvent(new Event("ga_state_changed"));
+              }}
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                background: "#ffffff",
+                color: "#0f172a",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                outline: "none",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                overflow: "hidden"
+              }}
+            >
+              <option value="ALL">🇮🇳 {lang === "HI" ? "पूरे भारत की खबरें (All India News)" : "All India News"}</option>
+              {INDIAN_STATES.map((st) => (
+                <option key={st.code} value={st.code}>
+                  📍 {lang === "HI" ? st.nameHi : st.nameEn}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* CITY / DISTRICT DROPDOWN */}
+          <div style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", fontWeight: 800, color: (selectedState && selectedState !== "ALL") ? "#e50914" : "#64748b", marginBottom: "4px" }}>
+              <span>📍</span>
+              <span>
+                {(selectedStateObj && selectedState !== "ALL")
+                  ? (lang === "HI" ? `${selectedStateObj.nameHi} के ज़िले (Select District)` : `Districts of ${selectedStateObj.nameEn}`)
+                  : (lang === "HI" ? "शहर / ज़िला चुनें (Select District)" : "Select City / District")}
+              </span>
+            </label>
+            <select
+              value={activeDistrict}
+              onChange={(e) => setActiveDistrict(e.target.value)}
+              disabled={!selectedState || selectedState === "ALL"}
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                background: (!selectedState || selectedState === "ALL") ? "#f1f5f9" : "#ffffff",
+                color: (!selectedState || selectedState === "ALL") ? "#94a3b8" : "#0f172a",
+                cursor: (!selectedState || selectedState === "ALL") ? "not-allowed" : "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                outline: "none",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                overflow: "hidden"
+              }}
+            >
+              {(!selectedState || selectedState === "ALL") ? (
+                <option value="ALL">📍 {lang === "HI" ? "सभी शहर और ज़िले (All Cities & Districts)" : "All Cities & Districts"}</option>
+              ) : (
+                <>
+                  <option value="ALL">📍 {lang === "HI" ? `सभी ज़िले (${selectedStateObj?.nameHi || "All Districts"})` : `All Districts in ${selectedStateObj?.nameEn}`}</option>
+                  {stateDistricts.map((d) => (
+                    <option key={d.id} value={d.nameEn}>
+                      📍 {lang === "HI" ? d.nameHi : d.nameEn}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {availableSubCats.length > 0 && !(selectedStateObj && (section === "india" || section === "state" || section === "states")) && (
         <div className="sub-category-pills" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px" }}>
           <button
             onClick={() => setActiveSubCat("ALL")}
@@ -230,14 +412,22 @@ export default function SectionClientContent() {
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
           <Loader2 className="animate-spin" size={32} />
         </div>
-      ) : filteredArticles.length === 0 ? (
-        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--color-secondary)" }}>
-          {lang === "HI" ? "इस श्रेणी में कोई समाचार उपलब्ध नहीं है।" : "No news available in this category."}
+      ) : displayArticles.length === 0 ? (
+        <div style={{ padding: "50px 20px", textAlign: "center", color: "var(--color-secondary)", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", margin: "20px 0" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "8px" }}>📍</div>
+          <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+            {activeDistrict !== "ALL"
+              ? (lang === "HI" ? `"${activeDistrict}" ज़िले में कोई समाचार उपलब्ध नहीं है।` : `No news available in "${activeDistrict}" district.`)
+              : (lang === "HI" ? "इस श्रेणी में कोई समाचार उपलब्ध नहीं है।" : "No news available in this category.")}
+          </div>
+          <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
+            {lang === "HI" ? "कृपया दूसरा ज़िला या 'सभी ज़िले' चुनें।" : "Please select another district or 'All Districts'."}
+          </div>
         </div>
       ) : (
-        <div className="articles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
-          {filteredArticles.map((item) => (
-            <article key={item.id || item.slug} style={{ border: "1px solid var(--color-border)", borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div className="articles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: "20px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+          {displayArticles.map((item) => (
+            <article key={item.id || item.slug} style={{ border: "1px solid var(--color-border)", borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
               <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 {getArticleImage(item) && (
                   <img

@@ -88,6 +88,8 @@ export interface DetectedLocation {
   longitude?: number;
   timezone?: string;
   temperature?: string;
+  countryCode?: string;
+  countryName?: string;
   isInternational?: boolean;
 }
 
@@ -118,7 +120,8 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
         const cityStr = (data.city || "").trim();
         const regionStr = (data.region || "").trim();
         const countryCode = (data.country_code || "").toUpperCase();
-        const isInternational = countryCode !== "IN";
+        const countryName = (data.country || "").trim();
+        const isInternational = Boolean(countryCode && countryCode !== "IN");
         const lat = data.latitude;
         const lon = data.longitude;
         const tz = data.timezone?.id || "Asia/Kolkata";
@@ -142,34 +145,39 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
 
         if (matchedCity && !isInternational) {
           const stObj = INDIAN_STATES.find((s) => s.code === matchedCity.stateCode) || matchedState;
+          const cityNameEn = matchedCity.nameEn.split("/")[0].trim();
+          const cityNameHi = matchedCity.nameHi.split("/")[0].trim();
           return {
-            city: matchedCity.nameEn.split("/")[0].trim(),
-            cityHi: matchedCity.nameHi.split("/")[0].trim(),
+            city: cityNameEn,
+            cityHi: cityNameHi,
             stateCode: matchedCity.stateCode,
             stateNameEn: stObj?.nameEn || regionStr || "Jharkhand",
             stateNameHi: stObj?.nameHi || regionStr || "झारखंड",
-            displayLocationEn: `${cityStr}, ${regionStr}`,
-            displayLocationHi: `${cityStr}, ${regionStr}`,
+            displayLocationEn: `${cityNameEn}, ${stObj?.nameEn || regionStr}`,
+            displayLocationHi: `${cityNameHi}, ${stObj?.nameHi || regionStr}`,
             latitude: lat,
             longitude: lon,
             timezone: tz,
             temperature: tempStr,
+            countryCode: "IN",
             isInternational: false
           };
         } else if (cityStr) {
-          // International or non-Indian IP (e.g., Amsterdam, London, New York)
+          const displayCountry = countryName || regionStr || "International";
           return {
-            city: "Ranchi", // Default news filter fallback for international visitors
-            cityHi: "राँची",
+            city: cityStr,
+            cityHi: cityStr,
             stateCode: matchedState?.code || "JH",
-            stateNameEn: matchedState?.nameEn || "Jharkhand",
-            stateNameHi: matchedState?.nameHi || "झारखंड",
-            displayLocationEn: `${cityStr}, ${regionStr}`,
-            displayLocationHi: `${cityStr}, ${regionStr}`,
+            stateNameEn: displayCountry,
+            stateNameHi: displayCountry,
+            displayLocationEn: `${cityStr}, ${displayCountry}`,
+            displayLocationHi: `${cityStr}, ${displayCountry}`,
             latitude: lat,
             longitude: lon,
             timezone: tz,
             temperature: tempStr,
+            countryCode: countryCode,
+            countryName: displayCountry,
             isInternational: isInternational
           };
         }
@@ -184,6 +192,9 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
       const data2 = await res2.json();
       const cityStr = (data2.city || "").trim();
       const regionStr = (data2.region || data2.region_code || "").trim();
+      const countryCode = (data2.country_code || "").toUpperCase();
+      const countryName = (data2.country_name || "").trim();
+      const isInternational = Boolean(countryCode && countryCode !== "IN");
 
       const matchedCity = INDIAN_DISTRICTS.find((d) => {
         const lowerCity = cityStr.toLowerCase();
@@ -191,21 +202,34 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
         return lowerCity.includes(d.id) || enLower.includes(lowerCity) || lowerCity.includes(enLower.split(" ")[0].toLowerCase());
       });
 
-      if (matchedCity) {
+      if (matchedCity && !isInternational) {
+        const cityNameEn = matchedCity.nameEn.split("/")[0].trim();
+        const cityNameHi = matchedCity.nameHi.split("/")[0].trim();
+        const stObj = INDIAN_STATES.find((s) => s.code === matchedCity.stateCode);
         return {
-          city: matchedCity.nameEn.split("/")[0].trim(),
-          cityHi: matchedCity.nameHi.split("/")[0].trim(),
+          city: cityNameEn,
+          cityHi: cityNameHi,
           stateCode: matchedCity.stateCode,
-          stateNameEn: matchedCity.stateCode === "JH" ? "Jharkhand" : matchedCity.stateCode === "BR" ? "Bihar" : matchedCity.stateCode === "UP" ? "Uttar Pradesh" : "India",
-          stateNameHi: matchedCity.stateCode === "JH" ? "झारखंड" : matchedCity.stateCode === "BR" ? "बिहार" : matchedCity.stateCode === "UP" ? "उत्तर प्रदेश" : "भारत"
+          stateNameEn: stObj?.nameEn || "Jharkhand",
+          stateNameHi: stObj?.nameHi || "झारखंड",
+          displayLocationEn: `${cityNameEn}, ${stObj?.nameEn || regionStr}`,
+          displayLocationHi: `${cityNameHi}, ${stObj?.nameHi || regionStr}`,
+          countryCode: "IN",
+          isInternational: false
         };
       } else if (cityStr) {
+        const displayCountry = countryName || regionStr || "International";
         return {
           city: cityStr,
           cityHi: cityStr,
           stateCode: "JH",
-          stateNameEn: regionStr || "Jharkhand",
-          stateNameHi: regionStr || "झारखंड"
+          stateNameEn: displayCountry,
+          stateNameHi: displayCountry,
+          displayLocationEn: `${cityStr}, ${displayCountry}`,
+          displayLocationHi: `${cityStr}, ${displayCountry}`,
+          countryCode: countryCode,
+          countryName: displayCountry,
+          isInternational: isInternational
         };
       }
     }
@@ -213,11 +237,14 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
 
   // Provider 3: ip-api.com
   try {
-    const res3 = await fetch("https://ip-api.com/json/?fields=city,regionName", { cache: "no-store" });
+    const res3 = await fetch("https://ip-api.com/json/?fields=city,regionName,countryCode,country", { cache: "no-store" });
     if (res3.ok) {
       const data3 = await res3.json();
       const cName = (data3.city || "").trim();
       const rName = (data3.regionName || "").trim();
+      const countryCode = (data3.countryCode || "").toUpperCase();
+      const countryName = (data3.country || "").trim();
+      const isInternational = Boolean(countryCode && countryCode !== "IN");
 
       const matchedCity3 = INDIAN_DISTRICTS.find((d) => {
         const lowerC = cName.toLowerCase();
@@ -225,21 +252,34 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
         return lowerC.includes(d.id) || enLower.includes(lowerC) || lowerC.includes(enLower.split(" ")[0].toLowerCase());
       });
 
-      if (matchedCity3) {
+      if (matchedCity3 && !isInternational) {
+        const cityNameEn = matchedCity3.nameEn.split("/")[0].trim();
+        const cityNameHi = matchedCity3.nameHi.split("/")[0].trim();
+        const stObj = INDIAN_STATES.find((s) => s.code === matchedCity3.stateCode);
         return {
-          city: matchedCity3.nameEn.split("/")[0].trim(),
-          cityHi: matchedCity3.nameHi.split("/")[0].trim(),
+          city: cityNameEn,
+          cityHi: cityNameHi,
           stateCode: matchedCity3.stateCode,
-          stateNameEn: matchedCity3.stateCode === "JH" ? "Jharkhand" : matchedCity3.stateCode === "BR" ? "Bihar" : matchedCity3.stateCode === "UP" ? "Uttar Pradesh" : "India",
-          stateNameHi: matchedCity3.stateCode === "JH" ? "झारखंड" : matchedCity3.stateCode === "BR" ? "बिहार" : matchedCity3.stateCode === "UP" ? "उत्तर प्रदेश" : "भारत"
+          stateNameEn: stObj?.nameEn || "Jharkhand",
+          stateNameHi: stObj?.nameHi || "झारखंड",
+          displayLocationEn: `${cityNameEn}, ${stObj?.nameEn || rName}`,
+          displayLocationHi: `${cityNameHi}, ${stObj?.nameHi || rName}`,
+          countryCode: "IN",
+          isInternational: false
         };
       } else if (cName) {
+        const displayCountry = countryName || rName || "International";
         return {
           city: cName,
           cityHi: cName,
           stateCode: "JH",
-          stateNameEn: rName || "Jharkhand",
-          stateNameHi: rName || "झारखंड"
+          stateNameEn: displayCountry,
+          stateNameHi: displayCountry,
+          displayLocationEn: `${cName}, ${displayCountry}`,
+          displayLocationHi: `${cName}, ${displayCountry}`,
+          countryCode: countryCode,
+          countryName: displayCountry,
+          isInternational: isInternational
         };
       }
     }
@@ -251,6 +291,10 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
     cityHi: "राँची",
     stateCode: "JH",
     stateNameEn: "Jharkhand",
-    stateNameHi: "झारखंड"
+    stateNameHi: "झारखंड",
+    displayLocationEn: "Ranchi, Jharkhand",
+    displayLocationHi: "राँची, झारखंड",
+    countryCode: "IN",
+    isInternational: false
   };
 }

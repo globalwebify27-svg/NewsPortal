@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin } from "lucide-react";
+import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { getStoredVideos, fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -19,7 +19,8 @@ interface Article {
   summary: string;
   body: string;
   featuredImage: string;
-  category?: { name: string; slug: string; color: string };
+  category?: { name: string; slug: string; color: string; subCategory?: string };
+  subCategory?: string;
   author?: { name: string };
   readTime: string;
   isPinned?: boolean;
@@ -33,6 +34,7 @@ interface Article {
   videoUrl?: string;
   district?: string;
   isTrending?: boolean;
+  createdAt?: string;
 }
 
 export default function Home() {
@@ -188,10 +190,18 @@ export default function Home() {
   }, []);
 
   const handleSelectState = (stCode: string) => {
-    const match = INDIAN_STATES.find((s) => s.code === stCode || s.slug === stCode);
+    const match = INDIAN_STATES.find((s) => s.code === stCode || s.slug === stCode || s.nameEn.toLowerCase() === stCode.toLowerCase());
     if (match) {
       setUserState(match);
       localStorage.setItem("ga_selected_state", match.code);
+      sessionStorage.setItem("ga_manual_state_selected", "true");
+      const dists = getDistrictsForState(match.code);
+      if (dists && dists.length > 0) {
+        const defaultCity = dists[0].nameEn.split("/")[0].trim();
+        setUserCity(defaultCity);
+        localStorage.setItem("ga_selected_city", defaultCity);
+        sessionStorage.setItem("ga_manual_city_selected", "true");
+      }
       window.dispatchEvent(new Event("ga_state_changed"));
     }
   };
@@ -255,20 +265,34 @@ export default function Home() {
 
     const syncLocation = async () => {
       try {
-        const isManuallySelected = sessionStorage.getItem("ga_manual_city_selected") === "true";
         const storedState = localStorage.getItem("ga_selected_state");
         const storedCity = localStorage.getItem("ga_selected_city");
-        if (isManuallySelected && storedCity && storedState) {
-          const found = INDIAN_STATES.find(s => s.code === storedState || s.nameEn.toLowerCase() === storedState.toLowerCase());
-          if (found) setUserState(found);
-          setUserCity(storedCity);
-        } else {
-          // Dynamic IP / VPN Geolocation Detection
-          const detected = await autoDetectUserCity();
-          if (detected) {
-            setUserCity(detected.city);
-            const stObj = INDIAN_STATES.find((s) => s.code === detected.stateCode);
-            if (stObj) setUserState(stObj);
+        if (storedState) {
+          const found = INDIAN_STATES.find(
+            s => s.code === storedState || s.slug === storedState || s.nameEn.toLowerCase() === storedState.toLowerCase()
+          );
+          if (found) {
+            setUserState(found);
+            if (storedCity) {
+              setUserCity(storedCity);
+            } else {
+              const dists = getDistrictsForState(found.code);
+              if (dists && dists.length > 0) {
+                setUserCity(dists[0].nameEn.split("/")[0].trim());
+              }
+            }
+            return;
+          }
+        }
+
+        // Dynamic IP / VPN Geolocation Detection (Only if no state stored)
+        const detected = await autoDetectUserCity();
+        if (detected) {
+          setUserCity(detected.city);
+          const stObj = INDIAN_STATES.find((s) => s.code === detected.stateCode);
+          if (stObj) {
+            setUserState(stObj);
+            localStorage.setItem("ga_selected_state", stObj.code);
           }
         }
       } catch (e) {}
@@ -283,6 +307,36 @@ export default function Home() {
       window.removeEventListener("ga_epaper_updated", fetchArticles);
       window.removeEventListener("ga_livetv_config_updated", loadLiveConfig);
       window.removeEventListener("ga_state_changed", syncLocation);
+    };
+  }, []);
+
+  const [activeFilters, setActiveFilters] = useState<{
+    sort?: string;
+    category?: string;
+    format?: string;
+    timeRange?: string;
+    state?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadFilters = () => {
+      try {
+        const saved = localStorage.getItem("ga_active_filters");
+        if (saved) {
+          setActiveFilters(JSON.parse(saved));
+        } else {
+          setActiveFilters(null);
+        }
+      } catch (e) {
+        setActiveFilters(null);
+      }
+    };
+    loadFilters();
+    window.addEventListener("ga_filters_changed", loadFilters);
+    window.addEventListener("storage", loadFilters);
+    return () => {
+      window.removeEventListener("ga_filters_changed", loadFilters);
+      window.removeEventListener("storage", loadFilters);
     };
   }, []);
 
@@ -307,35 +361,93 @@ export default function Home() {
   };
 
   // Show articles that match the current language OR have no language set (admin default)
-  // This ensures admin-added articles always appear regardless of language toggle
   const langFiltered = articles.filter((a) => {
     if (!a.language) return true; // No language set → always show
-    if (lang === "HI") return a.language === "HI" || a.language === "EN"; // In Hindi mode, show all
-    return a.language === "EN" || a.language === "HI"; // In English mode, show all
+    if (lang === "HI") return a.language === "HI" || a.language === "EN";
+    return a.language === "EN" || a.language === "HI";
+  });
+  const baseArticles = langFiltered.length > 0 ? langFiltered : articles;
+
+  // Apply active filters (if user applied filters via Filter Modal)
+  let filteredList = baseArticles.filter((a) => {
+    if (!activeFilters) return true;
+
+    // Filter by Category
+    if (activeFilters.category && activeFilters.category !== "all") {
+      const catSlug = (a.category?.slug || a.category?.name || "").toLowerCase().trim();
+      const subCat = (a.subCategory || a.category?.subCategory || "").toLowerCase().trim();
+      const targetCat = activeFilters.category.toLowerCase().trim();
+      if (!catSlug.includes(targetCat) && !subCat.includes(targetCat) && !targetCat.includes(catSlug)) {
+        return false;
+      }
+    }
+
+    // Filter by Format
+    if (activeFilters.format && activeFilters.format !== "all") {
+      if (activeFilters.format === "videos" && !a.videoUrl && a.category?.slug !== "videos") return false;
+      if (activeFilters.format === "epaper" && a.category?.slug !== "epaper") return false;
+      if (activeFilters.format === "articles" && (a.videoUrl || a.category?.slug === "videos")) return false;
+    }
+
+    // Filter by Time Range
+    if (activeFilters.timeRange && activeFilters.timeRange !== "all") {
+      const createdAt = a.createdAt ? new Date(a.createdAt).getTime() : Date.now();
+      const now = Date.now();
+      if (activeFilters.timeRange === "24h" && now - createdAt > 24 * 3600 * 1000) return false;
+      if (activeFilters.timeRange === "7d" && now - createdAt > 7 * 24 * 3600 * 1000) return false;
+      if (activeFilters.timeRange === "30d" && now - createdAt > 30 * 24 * 3600 * 1000) return false;
+    }
+
+    // Filter by State (from Filter Modal)
+    if (activeFilters.state && activeFilters.state !== "all") {
+      if (!a.state) return false;
+      const stLower = a.state.toLowerCase().trim();
+      const targetState = activeFilters.state.toLowerCase().trim().replace(/-/g, " ");
+      const matchedSt = INDIAN_STATES.find(
+        (s) => s.slug === activeFilters.state || s.code.toLowerCase() === activeFilters.state.toLowerCase()
+      );
+      const matchName = matchedSt ? matchedSt.nameEn.toLowerCase() : targetState;
+      const matchCode = matchedSt ? matchedSt.code.toLowerCase() : targetState;
+      if (!stLower.includes(matchName) && !stLower.includes(matchCode) && !stLower.includes(targetState)) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
-  const activeArticles = langFiltered.length > 0 ? langFiltered : articles;
-  const displayList = activeArticles;
+  // Apply Sorting
+  if (activeFilters?.sort === "popular") {
+    filteredList = [...filteredList].sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
+  } else if (activeFilters?.sort === "editors") {
+    filteredList = [...filteredList].sort((a, b) => (b.isHero ? 1 : 0) - (a.isHero ? 1 : 0));
+  }
 
+  const activeArticles = filteredList.length > 0 ? filteredList : baseArticles;
+
+  // Geo-Location & Selected State Prioritization
   const userCityLower = userCity.toLowerCase().trim();
   const userStateLower = userState.nameEn.toLowerCase().trim();
+  const userStateCodeLower = userState.code.toLowerCase().trim();
+  const userStateSlugLower = userState.slug.toLowerCase().trim();
 
-  // 1. HIGHEST PRIORITY: Geo-Location City News (e.g., Ranchi news for Ranchi visitors)
-  const cityHero = displayList.find((a) => {
-    if (!a.district) return false;
-    const dLower = a.district.toLowerCase().trim();
-    return dLower.includes(userCityLower) || userCityLower.includes(dLower);
-  });
-
-  // 2. SECOND PRIORITY: Geo-Location State News (e.g., Jharkhand news for Jharkhand visitors)
-  const stateHero = displayList.find((a) => {
+  // Articles matching current Geo-Location or Selected State
+  const geoMatchedList = activeArticles.filter((a) => {
+    if (a.district && (a.district.toLowerCase().includes(userCityLower) || userCityLower.includes(a.district.toLowerCase()))) return true;
     if (!a.state) return false;
-    const sLower = a.state.toLowerCase().trim();
-    return sLower === userStateLower || userStateLower.includes(sLower);
+    const stLower = a.state.toLowerCase().trim();
+    return stLower === userStateLower || stLower === userStateCodeLower || stLower === userStateSlugLower || userStateLower.includes(stLower);
   });
 
-  // 3. THIRD PRIORITY: Admin Set Hero Article
-  const explicitHero = articles.find((a) => a.isHero && a.status !== "DRAFT") || displayList.find((a) => a.isHero);
+  const nonGeoMatchedList = activeArticles.filter((a) => !geoMatchedList.includes(a));
+
+  // Prioritize Geo-Location / Selected State articles at the top of the feed
+  const displayList = geoMatchedList.length > 0 ? [...geoMatchedList, ...nonGeoMatchedList] : activeArticles;
+
+  // Hero Selection: Geo/Selected State Hero -> Admin Hero -> First Available Article
+  const cityHero = geoMatchedList.find((a) => a.district && (a.district.toLowerCase().includes(userCityLower) || userCityLower.includes(a.district.toLowerCase())));
+  const stateHero = geoMatchedList.find((a) => a.state);
+  const explicitHero = activeArticles.find((a) => a.isHero && a.status !== "DRAFT") || activeArticles.find((a) => a.isHero);
 
   const mainHero = cityHero || stateHero || explicitHero || displayList[0];
   const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
@@ -346,19 +458,8 @@ export default function Home() {
     ? superfastArticles.slice(0, 5)
     : displayList.filter((a) => a.id !== mainHero?.id).slice(0, 5);
   
-  const locationNews = displayList.filter((a) => {
-    if (a.district && a.district.toLowerCase().includes(userCity.toLowerCase())) return true;
-    if (!a.state) return false;
-    const stLower = a.state.toLowerCase();
-    const nameEnLower = userState.nameEn.toLowerCase();
-    const codeLower = userState.code.toLowerCase();
-    const slugLower = userState.slug.toLowerCase();
-    return stLower === nameEnLower || stLower === codeLower || stLower === slugLower;
-  });
-
-  const stateArticles = locationNews.length > 0
-    ? locationNews.slice(0, 6)
-    : displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
+  const locationNews = geoMatchedList.length > 0 ? geoMatchedList : displayList.filter((a) => a.id !== mainHero?.id);
+  const stateArticles = locationNews.slice(0, 6);
 
   const trendingArticles = displayList.filter((a) => a.isTrending);
   const trendingList = trendingArticles.length > 0
@@ -617,6 +718,62 @@ export default function Home() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Active Filter Notification Bar */}
+        {activeFilters && (activeFilters.category !== "all" || activeFilters.state !== "all" || activeFilters.sort !== "latest" || activeFilters.format !== "all" || activeFilters.timeRange !== "all") && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#fef2f2",
+            border: "1px solid #fca5a5",
+            borderRadius: "10px",
+            padding: "8px 14px",
+            marginBottom: "16px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", fontSize: "0.85rem", fontWeight: 700, color: "#991b1b" }}>
+              <Sliders size={15} style={{ color: "#e50914" }} />
+              <span>{lang === "HI" ? "सक्रिय फ़िल्टर (Active Filter):" : "Active Filter Applied:"}</span>
+              {activeFilters.category && activeFilters.category !== "all" && (
+                <span style={{ background: "#e50914", color: "#fff", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800 }}>
+                  📂 {activeFilters.category.toUpperCase()}
+                </span>
+              )}
+              {activeFilters.state && activeFilters.state !== "all" && (
+                <span style={{ background: "#2563eb", color: "#fff", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800 }}>
+                  📍 {activeFilters.state.toUpperCase()}
+                </span>
+              )}
+              {activeFilters.sort && activeFilters.sort !== "latest" && (
+                <span style={{ background: "#0f172a", color: "#fff", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800 }}>
+                  ⭐ {activeFilters.sort.toUpperCase()}
+                </span>
+              )}
+              {activeFilters.format && activeFilters.format !== "all" && (
+                <span style={{ background: "#16a34a", color: "#fff", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800 }}>
+                  📰 {activeFilters.format.toUpperCase()}
+                </span>
+              )}
+              {activeFilters.timeRange && activeFilters.timeRange !== "all" && (
+                <span style={{ background: "#d97706", color: "#fff", padding: "2px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800 }}>
+                  ⏱️ {activeFilters.timeRange.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                try {
+                  localStorage.removeItem("ga_active_filters");
+                  window.dispatchEvent(new Event("ga_filters_changed"));
+                } catch (e) {}
+              }}
+              style={{ background: "transparent", border: "none", color: "#e50914", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+            >
+              <RotateCcw size={13} />
+              {lang === "HI" ? "फ़िल्टर हटाएं" : "Clear Filter"}
+            </button>
           </div>
         )}
 

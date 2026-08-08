@@ -21,6 +21,7 @@ import { getArticleImage } from "@/lib/defaultArticles";
 import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
+import { getSubCategories } from "@/lib/subCategories";
 
 export interface ArticleAdItem {
   id: string;
@@ -66,79 +67,6 @@ interface AdminArticle {
 }
 
 const LOCAL_STORAGE_KEY = "ga_custom_articles";
-
-const SUB_CATEGORIES_MAP: Record<string, { en: string; hi: string }[]> = {
-  "Top News": [
-    { en: "Lead Headlines", hi: "मुख्य समाचार" },
-    { en: "Live Updates", hi: "लाइव समाचार" },
-    { en: "Editor's Pick", hi: "संपादकीय चयन" }
-  ],
-  "Education": [
-    { en: "Education News", hi: "शिक्षा समाचार" },
-    { en: "Board Exams (10th/12th)", hi: "बोर्ड परीक्षा (10वीं/12वीं)" },
-    { en: "Competitive Exams (UPSC/JEE/NEET)", hi: "प्रतियोगी परीक्षाएं" },
-    { en: "College & Admissions", hi: "कॉलेज और प्रवेश" },
-    { en: "Career Guidance", hi: "करियर मार्गदर्शन" }
-  ],
-  "World": [
-    { en: "International Affairs", hi: "अंतरराष्ट्रीय मामले" },
-    { en: "World Politics", hi: "वैश्विक राजनीति" },
-    { en: "Defence & Security", hi: "रक्षा व सुरक्षा" },
-    { en: "Diplomacy", hi: "कूटनीति व संबंध" },
-    { en: "Global Economy", hi: "ग्लोबल अर्थव्यवस्था" }
-  ],
-  "India": [
-    { en: "National News", hi: "राष्ट्रीय समाचार" },
-    { en: "State Spotlight", hi: "राज्य मुख्य समाचार" },
-    { en: "Governance & Society", hi: "शासन व समाज" }
-  ],
-  "Business": [
-    { en: "Stock Markets", hi: "शेयर बाज़ार" },
-    { en: "Companies & Startups", hi: "कंपनियां व स्टार्ट-अप" },
-    { en: "Personal Finance & Tax", hi: "पर्सनल फाइनेंस" },
-    { en: "Economy", hi: "अर्थव्यवस्था" },
-    { en: "Crypto & Banking", hi: "क्रिप्टो व बैंकिंग" }
-  ],
-  "Technology": [
-    { en: "AI & Machine Learning", hi: "एआई और मशीन लर्निंग" },
-    { en: "Smartphones & Gadgets", hi: "स्मार्टफोन और गैजेट्स" },
-    { en: "Cloud & Software", hi: "सॉफ्टवेयर और ऐप्स" },
-    { en: "Space Tech", hi: "अंतरिक्ष तकनीक" },
-    { en: "Cybersecurity", hi: "साइबर सुरक्षा" }
-  ],
-  "Sports": [
-    { en: "Cricket", hi: "क्रिकेट" },
-    { en: "Football", hi: "फुटबॉल" },
-    { en: "Formula 1", hi: "फॉर्मूला 1" },
-    { en: "Olympics & Athletics", hi: "ओलंपिक व अन्य खेल" }
-  ],
-  "Entertainment": [
-    { en: "Cinema & Movies", hi: "सिनेमा और फिल्में" },
-    { en: "OTT & Web Series", hi: "ओटीटी और वेब सीरीज" },
-    { en: "Music & Songs", hi: "म्यूजिक और गाने" },
-    { en: "Celebrity Gossips", hi: "सेलेब्रिटी अपडेट्स" }
-  ],
-  "Science": [
-    { en: "Space Exploration", hi: "अंतरिक्ष अनुसंधान" },
-    { en: "Innovations & Discoveries", hi: "नवाचार व खोजें" },
-    { en: "Environment & Climate", hi: "पर्यावरण व जलवायु" }
-  ],
-  "Health": [
-    { en: "Fitness & Yoga", hi: "फिटनेस और योग" },
-    { en: "Nutrition & Diet", hi: "आहार और पोषण" },
-    { en: "Medical Breakthroughs", hi: "चिकित्सा शोध" }
-  ],
-  "Opinion": [
-    { en: "Daily Editorials", hi: "दैनिक संपादकीय" },
-    { en: "Expert Columns", hi: "विशेषज्ञ दृष्टिकोण" },
-    { en: "Special Reports", hi: "विशेष विश्लेषणात्मक रिपोर्ट" }
-  ],
-  "Videos": [
-    { en: "Trending Video Clips", hi: "ट्रेंडिंग वीडियो" },
-    { en: "Ground Reports", hi: "ग्राउंड रिपोर्ट" },
-    { en: "Documentaries", hi: "वृत्तचित्र" }
-  ]
-};
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
@@ -251,8 +179,8 @@ export default function AdminArticlesPage() {
       setFormContent(art.body || "");
       setFormImage(art.featuredImage || "");
       setImageFileName(art.featuredImage ? "Uploaded Image" : "");
-      setFormState(art.state || "Jharkhand");
-      setFormDistrict(art.district || "Ranchi");
+      setFormState(art.state || "National");
+      setFormDistrict(art.district || "All");
       setFormIsHero(art.isHero || false);
       setFormIsSuperfast(art.isSuperfast || false);
       setFormIsTrending(art.isTrending || false);
@@ -302,8 +230,8 @@ export default function AdminArticlesPage() {
       setFormContent("");
       setFormImage("");
       setImageFileName("");
-      setFormState("Jharkhand");
-      setFormDistrict("Ranchi");
+      setFormState("National");
+      setFormDistrict("All");
       setFormIsHero(false);
       setFormIsSuperfast(false);
       setFormIsTrending(false);
@@ -426,7 +354,7 @@ export default function AdminArticlesPage() {
       imageFit: formImageFit,
       videoUrl: formVideoUrl,
       state: formState,
-      district: formDistrict || "Jharkhand",
+      district: (formState === "National" || formState === "National / All India") ? "All" : (formDistrict || "All"),
       adTitle: formAdTitle,
       adSubtitle: formAdSubtitle,
       adLink: formAdLink,
@@ -880,7 +808,7 @@ export default function AdminArticlesPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: formCategory.toLowerCase() === "india" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: "12px", transition: "all 0.2s ease" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Primary Category</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Primary Category / मुख्य श्रेणी</label>
                   <select
                     value={formCategory}
                     onChange={(e) => {
@@ -889,29 +817,42 @@ export default function AdminArticlesPage() {
                       if (!formCategories.includes(newCat)) {
                         setFormCategories([newCat, ...formCategories]);
                       }
-                      const subs = SUB_CATEGORIES_MAP[newCat];
+                      const subs = getSubCategories(newCat);
                       if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
                       else setFormSubCategory("General");
                     }}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
-                    {["Top News", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Health", "Opinion", "Videos"].map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    {[
+                      { en: "Education", hi: "शिक्षा" },
+                      { en: "World", hi: "विदेश" },
+                      { en: "India", hi: "भारत" },
+                      { en: "Business", hi: "व्यापार" },
+                      { en: "Technology", hi: "तकनीक" },
+                      { en: "Sports", hi: "खेल" },
+                      { en: "Entertainment", hi: "मनोरंजन" },
+                      { en: "Science", hi: "विज्ञान" },
+                      { en: "Health", hi: "स्वास्थ्य" },
+                      { en: "Opinion", hi: "विचार" },
+                      { en: "Videos", hi: "वीडियो" },
+                      { en: "Top News", hi: "टॉप न्यूज़" }
+                    ].map((c) => (
+                      <option key={c.en} value={c.en}>{c.hi} ({c.en})</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Sub-Category / Topic</label>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Sub-Category / उप-श्रेणी (Sub-Tab)</label>
                   <select
                     value={formSubCategory}
                     onChange={(e) => setFormSubCategory(e.target.value)}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
-                    <option value="General">General / All Topics</option>
-                    {(SUB_CATEGORIES_MAP[formCategory] || []).map((sub) => (
+                    <option value="General">General / All Sub-Tabs (सामान्य / सभी उप-श्रेणियां)</option>
+                    {getSubCategories(formCategory).map((sub) => (
                       <option key={sub.en} value={sub.en}>
-                        {sub.en} ({sub.hi})
+                        📌 {sub.hi} ({sub.en})
                       </option>
                     ))}
                   </select>
@@ -993,13 +934,18 @@ export default function AdminArticlesPage() {
                     onChange={(e) => {
                       const newSt = e.target.value;
                       setFormState(newSt);
-                      const stObj = INDIAN_STATES.find((s) => s.nameEn === newSt);
-                      const dists = getDistrictsForState(stObj?.code || "");
-                      if (dists.length > 0) setFormDistrict(dists[0].nameEn);
+                      if (newSt === "National" || newSt === "National / All India") {
+                        setFormDistrict("All");
+                      } else {
+                        const stObj = INDIAN_STATES.find((s) => s.nameEn === newSt);
+                        const dists = getDistrictsForState(stObj?.code || "");
+                        if (dists.length > 0) setFormDistrict(dists[0].nameEn);
+                        else setFormDistrict("All");
+                      }
                     }}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
-                    <option value="National">National / All India</option>
+                    <option value="National">National / All India (पूरा भारत)</option>
                     {INDIAN_STATES.map((st) => (
                       <option key={st.slug} value={st.nameEn}>
                         {st.nameEn} ({st.nameHi})
@@ -1013,13 +959,30 @@ export default function AdminArticlesPage() {
                   <select
                     value={formDistrict}
                     onChange={(e) => setFormDistrict(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
+                    disabled={formState === "National" || formState === "National / All India"}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "0.88rem",
+                      background: (formState === "National" || formState === "National / All India") ? "#f1f5f9" : "#ffffff",
+                      color: (formState === "National" || formState === "National / All India") ? "#94a3b8" : "#0f172a",
+                      cursor: (formState === "National" || formState === "National / All India") ? "not-allowed" : "pointer"
+                    }}
                   >
-                    {getDistrictsForState(INDIAN_STATES.find((s) => s.nameEn === formState)?.code || "").map((d) => (
-                      <option key={d.id} value={d.nameEn}>
-                        📍 {d.nameEn} ({d.nameHi})
-                      </option>
-                    ))}
+                    {(formState === "National" || formState === "National / All India") ? (
+                      <option value="All">All Cities & Districts (सभी शहर और ज़िले)</option>
+                    ) : (
+                      <>
+                        <option value="All">All Districts in {formState} (सभी ज़िले)</option>
+                        {getDistrictsForState(INDIAN_STATES.find((s) => s.nameEn === formState)?.code || "").map((d) => (
+                          <option key={d.id} value={d.nameEn}>
+                            📍 {d.nameEn} ({d.nameHi})
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
