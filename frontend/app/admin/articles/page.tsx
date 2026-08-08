@@ -17,7 +17,7 @@ import {
   Megaphone
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
-import { getArticleImage } from "@/lib/defaultArticles";
+import { getArticleImage, formatArticleSlug } from "@/lib/defaultArticles";
 import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
@@ -327,7 +327,7 @@ export default function AdminArticlesPage() {
       return;
     }
 
-    const slug = formTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    const slug = formatArticleSlug({ title: formTitle, createdAt: new Date().toISOString() });
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
     const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
