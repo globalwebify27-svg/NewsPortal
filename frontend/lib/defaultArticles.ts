@@ -31,105 +31,153 @@ export const defaultHindiArticles: DefaultArticle[] = [];
 export const allDefaultArticles: DefaultArticle[] = [];
 
 /**
- * Transliterate Devanagari (Hindi) text into Roman / English characters.
+ * Convert / Translate Devanagari (Hindi) text into Roman / English words for SEO Slugs.
  */
 export function transliterateDevanagari(text: string): string {
   if (!text) return "";
 
-  const HINDI_WORD_MAP: Record<string, string> = {
-    "दुनिया": "duniya",
-    "के": "ke",
-    "का": "ka",
-    "की": "ki",
-    "को": "ko",
-    "से": "se",
-    "में": "mein",
-    "पर": "par",
-    "ने": "ne",
-    "और": "aur",
-    "या": "ya",
-    "तक": "tak",
-    "सबसे": "sabse",
-    "अमीर": "ameer",
-    "नेताओं": "netaon",
-    "नेता": "neta",
-    "लिस्ट": "list",
-    "आई": "aai",
-    "आया": "aaya",
-    "सामने": "samne",
-    "पुतिन": "putin",
-    "नंबर": "number",
-    "ट्रंप": "trump",
-    "ऋषि": "rishi",
-    "सुनक": "sunak",
-    "मोदी": "modi",
-    "भारत": "bharat",
+  const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
+    "दुनिया": "world",
+    "विश्व": "world",
+    "देश": "country",
+    "विदेश": "international",
+    "भारत": "india",
     "चीन": "china",
-    "अमेरिका": "america",
-    "पाकिस्तान": "pakistan",
+    "अमेरिका": "us",
     "रूस": "russia",
     "यूक्रेन": "ukraine",
     "इजराइल": "israel",
     "हमास": "hamas",
-    "चुनाव": "chunav",
-    "सरकार": "sarkar",
-    "विपक्ष": "vipaksh",
+    "पाकिस्तान": "pakistan",
+    "पुतिन": "putin",
+    "ट्रंप": "trump",
+    "ऋषि": "rishi",
+    "सुनक": "sunak",
+    "मोदी": "modi",
+    "राहुल": "rahul",
+    "गांधी": "gandhi",
+    "अमित": "amit",
+    "शाह": "shah",
+    "केजरीवाल": "kejriwal",
+    "झारखंड": "jharkhand",
+    "बिहार": "bihar",
+    "दिल्ली": "delhi",
+    "रांची": "ranchi",
+    "पटना": "patna",
+
+    "अमीर": "richest",
+    "गरीब": "poor",
+    "नेताओं": "leaders",
+    "नेता": "leader",
+    "राष्ट्रपति": "president",
+    "प्रधानमंत्री": "prime-minister",
+    "मुख्यमंत्री": "chief-minister",
+    "मंत्री": "minister",
+    "सरकार": "government",
+    "विपक्ष": "opposition",
     "कांग्रेस": "congress",
     "भाजपा": "bjp",
     "सुप्रीम": "supreme",
     "कोर्ट": "court",
+    "फैसला": "verdict",
+    "कानून": "law",
     "पुलिस": "police",
-    "क्रिकेट": "cricket",
-    "टीम": "team",
-    "मैच": "match",
-    "विश्व": "vishwa",
-    "देश": "desh",
-    "विदेश": "videsh",
-    "खेल": "khel",
-    "सिनेमा": "cinema",
-    "फिल्म": "film",
-    "बॉलीवुड": "bollywood",
-    "टेक": "tech",
-    "ऑटो": "auto",
-    "बिजनेस": "business",
+    "क्राइम": "crime",
+    "जांच": "probe",
+    "सीबीआई": "cbi",
+
     "शेयर": "share",
-    "बाजार": "bazar",
-    "मौसम": "mausam",
-    "बारिश": "baarish",
-    "अलर्ट": "alert",
-    "खबर": "khabar",
-    "ताजा": "taaza",
-    "बड़ी": "badi",
+    "बाजार": "market",
+    "अर्थव्यवस्था": "economy",
+    "रुपया": "rupee",
+    "डॉलर": "dollar",
+    "बैंक": "bank",
+    "महंगाई": "inflation",
+    "बजट": "budget",
+    "टैक्स": "tax",
+    "सोना": "gold",
+    "चांदी": "silver",
+    "तेल": "oil",
+    "टेक": "tech",
+    "एआई": "ai",
+    "गूगल": "google",
+    "ऐप्पल": "apple",
+    "इसरो": "isro",
+    "नासा": "nasa",
+    "अंतरिक्ष": "space",
+    "रोवर": "rover",
+    "मंगल": "mars",
+    "चांद": "moon",
+
+    "क्रिकेट": "cricket",
+    "मैच": "match",
+    "टीम": "team",
+    "कप्तान": "captain",
+    "जीत": "win",
+    "हार": "loss",
+    "फाइनल": "final",
+    "विश्वकप": "worldcup",
+    "आईपीएल": "ipl",
+    "फिल्म": "movie",
+    "सिनेमा": "cinema",
+    "बॉलीवुड": "bollywood",
+    "अभिनेता": "actor",
+    "अभिनेत्री": "actress",
+    "स्टार": "star",
+
+    "सबसे": "most",
+    "बड़ी": "big",
+    "बड़ा": "big",
+    "खबर": "news",
+    "समाचार": "news",
+    "ताजा": "latest",
     "अपडेट": "update",
-    "वीडियो": "video",
-    "फोटो": "photo",
-    "लाइव": "live",
+    "लिस्ट": "list",
+    "सूची": "list",
+    "सामने": "out",
+    "आई": "out",
+    "आया": "out",
+    "शामिल": "included",
+    "नंबर": "number",
+    "बदलाव": "change",
+    "जारी": "released",
+    "घोषणा": "announced",
+    "दावा": "claim",
+    "हमला": "attack",
+    "हादसा": "accident",
+    "मौत": "death",
+    "अलर्ट": "alert",
+    "मौसम": "weather",
+    "बारिश": "rain",
+
+    // Filter out Hindi prepositions / stop words to make slugs clean and short
+    "के": "", "का": "", "की": "", "को": "", "से": "", "में": "", "पर": "", "ने": "",
+    "और": "and", "या": "or", "भी": "", "तक": "", "हुआ": "", "हुई": "", "होगा": "",
+    "है": "", "हैं": "", "था": "", "थी": "", "थे": ""
   };
 
   const DEVANAGARI_CHAR_MAP: Record<string, string> = {
-    "अ": "a", "आ": "aa", "इ": "i", "ई": "ee", "उ": "u", "ऊ": "oo", "ऋ": "ri",
-    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an", "अः": "ah",
-    "ा": "aa", "ि": "i", "ी": "ee", "ु": "u", "ू": "oo", "ृ": "ri",
-    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n", "ः": "h",
-    "ॅ": "e", "ॉ": "o", "़": "", "्": "",
-    "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "ng",
-    "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "ny",
+    "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "r",
+    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an",
+    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "r",
+    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n",
+    "क": "k", "ख": "kh", "ग": "g", "घ": "gh",
+    "च": "ch", "छ": "ch", "ज": "j", "झ": "jh",
     "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
     "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
     "प": "p", "फ": "f", "ब": "b", "भ": "bh", "म": "m",
     "य": "y", "र": "r", "ल": "l", "व": "v",
     "श": "sh", "ष": "sh", "स": "s", "ह": "h",
-    "ळ": "l", "क्ष": "ksh", "त्र": "tr", "ज्ञ": "gya",
-    "ड़": "d", "ढ़": "dh", "ॐ": "om", "₹": "rs"
+    "क्ष": "x", "त्र": "tr", "ज्ञ": "gy", "ड़": "d", "ढ़": "dh"
   };
 
-  const normalized = text.replace(/[-_]+/g, " ").trim();
-  const words = normalized.split(/\s+/);
+  const cleanStr = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
+  const words = cleanStr.split(/\s+/);
 
-  const transliteratedWords = words.map((w) => {
-    const cleanWord = w.replace(/[^\u0900-\u097F]/g, "");
-    if (cleanWord && HINDI_WORD_MAP[cleanWord]) {
-      return HINDI_WORD_MAP[cleanWord];
+  const translatedWords = words.map((w) => {
+    const hindiCharsOnly = w.replace(/[^\u0900-\u097F]/g, "");
+    if (hindiCharsOnly && HINDI_TO_ENGLISH_MAP[hindiCharsOnly] !== undefined) {
+      return HINDI_TO_ENGLISH_MAP[hindiCharsOnly];
     }
 
     let result = "";
@@ -144,16 +192,17 @@ export function transliterateDevanagari(text: string): string {
     return result;
   });
 
-  return transliteratedWords.join(" ");
+  return translatedWords.filter(Boolean).join(" ");
 }
 
 /** 
- * Format Article Slug in English only with Date (dd-mm-yy) and Unique ID at the end:
+ * Format Article Slug in English with Date (dd-mm-yy) and Unique ID:
  * Format: {headline-english-slug}-{dd-mm-yy}-{uniqueId}
- * Example: duniya-ke-sabse-ameer-netaon-ki-list-aai-samne-putin-number-1-trump-aur-rishi-03-08-26-art101
  */
 export function formatArticleSlug(article: any): string {
   if (!article) return "news-07-08-26-000";
+
+  const englishTitle = article.titleEn || article.englishTitle || article.title_en;
 
   const rawId = (article.id || article.slug || Math.random().toString(36).substring(2, 8)).toString();
   const cleanId = rawId.replace(/[^a-zA-Z0-9]/g, "").slice(-8) || "001";
@@ -170,7 +219,7 @@ export function formatArticleSlug(article: any): string {
     }
   } catch (e) {}
 
-  let rawTitle = (article.title || article.slug || "news")
+  let rawTitle = (englishTitle || article.title || article.slug || "news")
     .toString()
     .replace(/-\d{2}-\d{2}-\d{2}-[a-zA-Z0-9]+$/, "")
     .replace(/-\d{6}-[a-zA-Z0-9]+$/, "")
@@ -194,12 +243,11 @@ export function formatArticleSlug(article: any): string {
 /**
  * Format Full Article Path under category tab:
  * Format: /{tab}/{headline-slug}-{DDMMYY}-{uniqueId}
- * Example: /india/lok-sabha-news-070826-art101
  */
 export function getArticleUrl(article: any): string {
   if (!article) return "/article/news-070826-000";
   const catSlug = article.category?.slug
-    ? article.category.slug.toLowerCase().trim()
+    ? article.category.slug.toLowerCase().trim().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-")
     : "article";
   const slug = formatArticleSlug(article);
   return `/${catSlug}/${slug}`;

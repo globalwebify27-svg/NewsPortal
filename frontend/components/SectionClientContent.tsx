@@ -181,9 +181,13 @@ export default function SectionClientContent() {
         return false;
       }
 
-      const targetSub = activeSubCat.toLowerCase().trim();
+      const targetSub = activeSubCat.toLowerCase().trim().replace(/-/g, " ");
+      const targetSubSlug = activeSubCat.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
       const subItem = availableSubCats.find(
-        (s) => s.en.toLowerCase() === targetSub || s.hi.toLowerCase() === targetSub
+        (s) =>
+          s.en.toLowerCase() === targetSub ||
+          s.hi.toLowerCase() === targetSub ||
+          s.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") === targetSubSlug
       );
 
       if (subItem) {

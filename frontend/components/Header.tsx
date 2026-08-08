@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import NewsTicker from "./NewsTicker";
 import {
   Calendar,
   Facebook,
@@ -691,7 +692,7 @@ export default function Header() {
                   {getSubCategories("education").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/education?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/education?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -712,7 +713,7 @@ export default function Header() {
                   {getSubCategories("world").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/world?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/world?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -784,7 +785,7 @@ export default function Header() {
                   {getSubCategories("business").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/business?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/business?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -805,7 +806,7 @@ export default function Header() {
                   {getSubCategories("technology").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/technology?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/technology?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -826,7 +827,7 @@ export default function Header() {
                   {getSubCategories("sports").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/sports?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/sports?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -847,7 +848,7 @@ export default function Header() {
                   {getSubCategories("entertainment").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/entertainment?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/entertainment?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -868,7 +869,7 @@ export default function Header() {
                   {getSubCategories("science").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/science?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/science?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -889,7 +890,7 @@ export default function Header() {
                   {getSubCategories("health").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/health?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/health?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -910,7 +911,7 @@ export default function Header() {
                   {getSubCategories("opinion").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/opinion?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/opinion?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -931,7 +932,7 @@ export default function Header() {
                   {getSubCategories("videos").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/videos?sub=${encodeURIComponent(sub.en)}`}
+                      href={`/videos?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
                       }}
@@ -962,31 +963,31 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Breaking News Ticker Banner */}
-      <div className="live-news-banner">
-        <div className="container banner-inner">
-          <Link href="/breaking" className="breaking-badge">{t("breakingNews")}</Link>
-          <div className="ticker-wrap">
-            <div className="ticker-items">
-              {lang === "HI" ? (
-                <>
-                  <span>वैश्विक बाजार सूचकांक तकनीकी विस्तार के बीच रिकॉर्ड स्तर पर पहुंचा।</span>
-                  <span>मंगल ग्रह रोवर ने प्राचीन झील के तल में कार्बनिक यौगिकों की खोज की।</span>
-                  <span>चैम्पियनशिप फाइनल रोमांचक मुकाबले में पेनाल्टी शूटआउट तक पहुंचा।</span>
-                  <span>प्रमुख एआई शोध गठबंधन ने नैतिक नियमों की घोषणा की।</span>
-                </>
-              ) : (
-                <>
-                  <span>Global Market Index hits record high amid technological expansion.</span>
-                  <span>Mars mission rover discovers organic compounds in ancient lakebed.</span>
-                  <span>Championship final goes to penalty shootout in thrilling sports decider.</span>
-                  <span>Leading AI research coalition announces framework for ethical alignment.</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Clean Dynamic JS-Driven Infinite Non-Overlapping News Ticker */}
+      <NewsTicker
+        items={
+          lang === "HI"
+            ? [
+                "वैश्विक बाजार सूचकांक रिकॉर्ड स्तर पर पहुंचा।",
+                "मंगल ग्रह रोवर ने प्राचीन झील के तल में कार्बनिक यौगिकों की खोज की।",
+                "चैम्पियनशिप फाइनल में रोमांचक मुकाबले के बाद फैसला।",
+                "एआई शोध गठबंधन ने नए सुरक्षा सिद्धांतों की घोषणा की।",
+                "भारतीय रिज़र्व बैंक ने आर्थिक विकास दर का नया अनुमान जारी किया।",
+                "अंतरिक्ष केंद्र में नए प्रयोगों की सफल शुरुआत हुई।",
+              ]
+            : [
+                "Global Market Index hits record high amid tech expansion.",
+                "Mars mission rover discovers organic compounds in ancient lakebed.",
+                "Championship final goes to penalty shootout in thrilling sports decider.",
+                "Leading AI coalition announces global framework for safety.",
+                "Reserve Bank of India releases revised economic growth forecast.",
+                "Space station launches groundbreaking microgravity experiments.",
+              ]
+        }
+        badgeText={t("breakingNews")}
+        badgeLink="/breaking"
+        speed={0.75}
+      />
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
