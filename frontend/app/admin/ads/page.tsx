@@ -46,6 +46,16 @@ export default function AdminAdsPage() {
   const [leaderboardAdHeight, setLeaderboardAdHeight] = useState("110");
   const [leaderboardImageUploading, setLeaderboardImageUploading] = useState(false);
 
+  // Left Sidebar / Top News Grid Advertisement Banner State
+  const [leftGridAdEnabled, setLeftGridAdEnabled] = useState(true);
+  const [leftGridAdImage, setLeftGridAdImage] = useState("");
+  const [leftGridAdTitle, setLeftGridAdTitle] = useState("GLOBAL AWAAZ SPONSORSHIP");
+  const [leftGridAdSubtitle, setLeftGridAdSubtitle] = useState("Promote your brand to millions of readers across Bihar, Jharkhand & India.");
+  const [leftGridAdLink, setLeftGridAdLink] = useState("/advertise");
+  const [leftGridAdBtnText, setLeftGridAdBtnText] = useState("Advertise With Us");
+  const [leftGridAdBadge, setLeftGridAdBadge] = useState("SPONSORED");
+  const [leftGridImageUploading, setLeftGridImageUploading] = useState(false);
+
   const [saving, setSaving] = useState(false);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
@@ -74,6 +84,14 @@ export default function AdminAdsPage() {
         if (json.data.ad_leaderboard_btn_text) setLeaderboardAdBtnText(json.data.ad_leaderboard_btn_text);
         if (json.data.ad_leaderboard_badge) setLeaderboardAdBadge(json.data.ad_leaderboard_badge);
         if (json.data.ad_leaderboard_height) setLeaderboardAdHeight(json.data.ad_leaderboard_height);
+
+        setLeftGridAdEnabled(json.data.ad_left_grid_enabled !== "false");
+        if (json.data.ad_left_grid_image) setLeftGridAdImage(json.data.ad_left_grid_image);
+        if (json.data.ad_left_grid_title) setLeftGridAdTitle(json.data.ad_left_grid_title);
+        if (json.data.ad_left_grid_subtitle) setLeftGridAdSubtitle(json.data.ad_left_grid_subtitle);
+        if (json.data.ad_left_grid_link) setLeftGridAdLink(json.data.ad_left_grid_link);
+        if (json.data.ad_left_grid_btn_text) setLeftGridAdBtnText(json.data.ad_left_grid_btn_text);
+        if (json.data.ad_left_grid_badge) setLeftGridAdBadge(json.data.ad_left_grid_badge);
       }
     } catch (e) {}
   }, []);
@@ -100,6 +118,13 @@ export default function AdminAdsPage() {
         { key: "ad_leaderboard_btn_text", value: leaderboardAdBtnText },
         { key: "ad_leaderboard_badge", value: leaderboardAdBadge },
         { key: "ad_leaderboard_height", value: leaderboardAdHeight },
+        { key: "ad_left_grid_enabled", value: String(leftGridAdEnabled) },
+        { key: "ad_left_grid_image", value: leftGridAdImage },
+        { key: "ad_left_grid_title", value: leftGridAdTitle },
+        { key: "ad_left_grid_subtitle", value: leftGridAdSubtitle },
+        { key: "ad_left_grid_link", value: leftGridAdLink },
+        { key: "ad_left_grid_btn_text", value: leftGridAdBtnText },
+        { key: "ad_left_grid_badge", value: leftGridAdBadge },
       ];
       await fetch("/api/v1/ad-settings", {
         method: "POST",
@@ -177,6 +202,39 @@ export default function AdminAdsPage() {
       showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
     } finally {
       setLeaderboardImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleLeftGridImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i)) {
+      showToast("❌ Invalid file type! Please select JPG, PNG, WEBP, GIF, or SVG image.", "error");
+      return;
+    }
+
+    setLeftGridImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+
+      if (!uploadJson.success || !uploadJson.data?.url) {
+        showToast("❌ Upload failed: " + (uploadJson.message || "Unknown error"), "error");
+        return;
+      }
+
+      const uploadedUrl = uploadJson.data.url as string;
+      setLeftGridAdImage(uploadedUrl);
+      showToast("✓ Left Grid Advertisement image uploaded! (JPG/PNG/WEBP)");
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
+    } finally {
+      setLeftGridImageUploading(false);
       e.target.value = "";
     }
   };
@@ -677,6 +735,165 @@ export default function AdminAdsPage() {
               <span style={{ background: "#ffffff", color: "#0f172a", fontSize: "0.8rem", fontWeight: 800, padding: "7px 16px", borderRadius: "8px" }}>
                 {leaderboardAdBtnText}
               </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* CARD 3: Left Column / Top News Grid Advertisement (मुख्य समाचार ग्रिड विज्ञापन) */}
+        {/* ==================================================================== */}
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "16px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <Sparkles size={20} style={{ color: "#e50914" }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+                  Article Left Column — Top News Grid Advertisement (मुख्य समाचार ग्रिड विज्ञापन)
+                </h3>
+                <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+                  Displays an advertisement banner at the bottom of the left column news grid on article pages.
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle switch */}
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+              <span style={{ fontSize: "0.82rem", fontWeight: 800, color: leftGridAdEnabled ? "#16a34a" : "#64748b" }}>
+                {leftGridAdEnabled ? "ACTIVE" : "DISABLED"}
+              </span>
+              <input
+                type="checkbox"
+                checked={leftGridAdEnabled}
+                onChange={(e) => setLeftGridAdEnabled(e.target.checked)}
+                style={{ width: "18px", height: "18px", accentColor: "#e50914", cursor: "pointer" }}
+              />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🏷️ Ad Tag Badge</label>
+              <input
+                type="text"
+                value={leftGridAdBadge}
+                onChange={(e) => setLeftGridAdBadge(e.target.value)}
+                placeholder="SPONSORED"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🔘 Button CTA Text</label>
+              <input
+                type="text"
+                value={leftGridAdBtnText}
+                onChange={(e) => setLeftGridAdBtnText(e.target.value)}
+                placeholder="Advertise With Us"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📝 Ad Headline Title</label>
+            <input
+              type="text"
+              value={leftGridAdTitle}
+              onChange={(e) => setLeftGridAdTitle(e.target.value)}
+              placeholder="GLOBAL AWAAZ SPONSORSHIP"
+              style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📄 Subtitle / Description</label>
+            <textarea
+              rows={2}
+              value={leftGridAdSubtitle}
+              onChange={(e) => setLeftGridAdSubtitle(e.target.value)}
+              placeholder="Promote your brand to millions of readers across Bihar, Jharkhand & India."
+              style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", resize: "none" }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🖼️ Banner Image URL or Upload</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={leftGridAdImage}
+                  onChange={(e) => setLeftGridAdImage(e.target.value)}
+                  placeholder="https://... or upload image"
+                  style={{ flex: 1, padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                />
+                <label style={{
+                  background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "8px 12px", borderRadius: "8px",
+                  fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap"
+                }}>
+                  {leftGridImageUploading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={14} />}
+                  Upload
+                  <input type="file" accept="image/*" onChange={handleLeftGridImageUpload} style={{ display: "none" }} />
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🔗 Target Click URL</label>
+              <input
+                type="text"
+                value={leftGridAdLink}
+                onChange={(e) => setLeftGridAdLink(e.target.value)}
+                placeholder="/advertise"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+              />
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#64748b", marginBottom: "6px", textTransform: "uppercase" }}>
+              Live Left Grid Ad Preview:
+            </label>
+            <div style={{
+              maxWidth: "320px",
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              borderRadius: "12px",
+              padding: "14px",
+              color: "#ffffff"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
+                  {leftGridAdBadge || "SPONSORED"}
+                </span>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                  ADVERTISEMENT
+                </span>
+              </div>
+              {leftGridAdImage ? (
+                <img src={leftGridAdImage} alt="Preview" style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <h5 style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>
+                    {leftGridAdTitle || "GLOBAL AWAAZ SPONSORSHIP"}
+                  </h5>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1" }}>
+                    {leftGridAdSubtitle}
+                  </p>
+                  <span style={{ background: "#e50914", color: "#ffffff", padding: "5px 12px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 800, width: "fit-content", marginTop: "4px" }}>
+                    {leftGridAdBtnText}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

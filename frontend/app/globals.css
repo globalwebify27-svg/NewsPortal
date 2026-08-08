@@ -2800,7 +2800,7 @@
   width: max-content !important;
   flex-shrink: 0 !important;
   will-change: transform !important;
-  animation: circular-linked-list-spin 4s linear infinite !important;
+  animation: circular-linked-list-spin 20s linear infinite !important;
 }
 
 .circular-ticker-track:hover {

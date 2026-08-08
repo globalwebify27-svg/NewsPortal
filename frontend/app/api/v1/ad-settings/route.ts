@@ -22,7 +22,15 @@ const AD_KEYS = [
   "ad_leaderboard_link",
   "ad_leaderboard_btn_text",
   "ad_leaderboard_badge",
-  "ad_leaderboard_height"
+  "ad_leaderboard_height",
+  // Left Sidebar Top News Grid Banner Keys
+  "ad_left_grid_enabled",
+  "ad_left_grid_image",
+  "ad_left_grid_title",
+  "ad_left_grid_subtitle",
+  "ad_left_grid_link",
+  "ad_left_grid_btn_text",
+  "ad_left_grid_badge"
 ];
 
 // GET /api/v1/ad-settings — returns all ad settings as a key-value map
@@ -46,7 +54,14 @@ export async function GET() {
       ad_leaderboard_link: "/advertise",
       ad_leaderboard_btn_text: "Advertise With Us",
       ad_leaderboard_badge: "ADVERTISEMENT",
-      ad_leaderboard_height: "110"
+      ad_leaderboard_height: "110",
+      ad_left_grid_enabled: "true",
+      ad_left_grid_image: "",
+      ad_left_grid_title: "GLOBAL AWAAZ SPONSORSHIP",
+      ad_left_grid_subtitle: "Promote your brand to millions of readers across Bihar, Jharkhand & India.",
+      ad_left_grid_link: "/advertise",
+      ad_left_grid_btn_text: "Advertise With Us",
+      ad_left_grid_badge: "SPONSORED"
     };
 
     for (const s of settings) {

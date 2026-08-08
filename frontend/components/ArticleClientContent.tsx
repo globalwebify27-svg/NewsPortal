@@ -6,8 +6,6 @@ import {
   Clock,
   Calendar,
   Heart,
-  MessageSquare,
-  Send,
   Loader2,
   ArrowLeft,
   BookOpen,
@@ -87,11 +85,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
   const { lang } = useLanguage();
   const [article, setArticle] = useState<ArticleDetail | null>(initialArticle || null);
   const [loading, setLoading] = useState(!initialArticle);
-  const [comments, setComments] = useState([
-    { id: 1, author: "Rajesh Sharma", text: "Exceptional analysis. Highly relevant to current policy frameworks.", time: "2 hours ago" },
-    { id: 2, author: "Emily Watson", text: "Great points regarding sustainable scalability and technological alignment.", time: "4 hours ago" }
-  ]);
-  const [newComment, setNewComment] = useState("");
+
   const [likes, setLikes] = useState(initialArticle?.views || 42);
   const [hasLiked, setHasLiked] = useState(false);
 
@@ -107,7 +101,14 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
     ad_sticky_text: "📢 SPECIAL ANNOUNCEMENT: Partner with Global Awaaz Digital News Platform!",
     ad_sticky_link: "/advertise",
     ad_sticky_badge: "SPONSORED",
-    ad_sticky_bg: "#000000"
+    ad_sticky_bg: "#000000",
+    ad_left_grid_enabled: "true",
+    ad_left_grid_image: "",
+    ad_left_grid_title: "GLOBAL AWAAZ SPONSORSHIP",
+    ad_left_grid_subtitle: "Promote your brand to millions of readers across Bihar, Jharkhand & India.",
+    ad_left_grid_link: "/advertise",
+    ad_left_grid_btn_text: "Advertise With Us",
+    ad_left_grid_badge: "SPONSORED"
   });
 
   useEffect(() => {
@@ -273,12 +274,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
     setHasLiked((h) => !h);
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-    setComments((c) => [...c, { id: Date.now(), author: "Reader", text: newComment, time: "Just now" }]);
-    setNewComment("");
-  };
+
 
   // Loading State
   if (loading) {
@@ -393,6 +389,68 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               </article>
             ))}
           </div>
+
+          {/* Left Column / Top News Grid Advertisement Banner */}
+          {adSettings.ad_left_grid_enabled !== "false" && (
+            <div
+              style={{
+                marginTop: "14px",
+                padding: "14px",
+                background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                color: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+                flexShrink: 0
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {adSettings.ad_left_grid_badge || "SPONSORED"}
+                </span>
+                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                  ADVERTISEMENT
+                </span>
+              </div>
+              {adSettings.ad_left_grid_image ? (
+                <a href={adSettings.ad_left_grid_link || "/advertise"} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={adSettings.ad_left_grid_image}
+                    alt="Grid Ad Banner"
+                    style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
+                  />
+                </a>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <h5 style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
+                    {adSettings.ad_left_grid_title || "GLOBAL AWAAZ SPONSORSHIP"}
+                  </h5>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.4 }}>
+                    {adSettings.ad_left_grid_subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
+                  </p>
+                  <Link
+                    href={adSettings.ad_left_grid_link || "/advertise"}
+                    style={{
+                      background: "#e50914",
+                      color: "#ffffff",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontWeight: 800,
+                      fontSize: "0.75rem",
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      width: "fit-content",
+                      marginTop: "4px"
+                    }}
+                  >
+                    {adSettings.ad_left_grid_btn_text || "Advertise With Us"} <ExternalLink size={12} />
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
         </aside>
 
         {/* ========================================================
@@ -641,68 +699,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             </span>
           </div>
 
-          {/* Comments Section */}
-          <section style={{ marginTop: "60px", paddingTop: "32px", borderTop: "2px solid var(--color-border)" }}>
-            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
-              <MessageSquare size={22} style={{ color: "#e50914" }} /> Comments ({comments.length})
-            </h2>
 
-            {/* Add comment */}
-            <form onSubmit={handleAddComment} style={{ display: "flex", gap: "12px", marginBottom: "32px", flexWrap: "wrap" }}>
-              <input
-                type="text"
-                placeholder="Share your thoughts on this story…"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                style={{
-                  flex: 1, minWidth: "200px", padding: "12px 16px", borderRadius: "10px",
-                  border: "1px solid var(--color-border)", fontSize: "0.95rem",
-                  background: "var(--color-card-bg)", color: "var(--color-primary)",
-                  outline: "none"
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  background: "#e50914", color: "#fff", border: "none",
-                  padding: "12px 24px", borderRadius: "10px", fontWeight: 700,
-                  cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem"
-                }}
-              >
-                <Send size={15} /> Post
-              </button>
-            </form>
-
-            {/* Comment list */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {comments.map((c) => (
-                <div key={c.id} style={{
-                  background: "var(--color-card-bg)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: "12px", padding: "16px",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.04)"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <div style={{
-                        width: "32px", height: "32px", borderRadius: "50%",
-                        background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "#fff", fontWeight: 700, fontSize: "0.85rem"
-                      }}>
-                        {c.author[0]}
-                      </div>
-                      <strong style={{ fontSize: "0.92rem" }}>{c.author}</strong>
-                    </div>
-                    <span style={{ fontSize: "0.75rem", color: "var(--color-secondary)" }}>{c.time}</span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--color-secondary)", lineHeight: 1.55 }}>
-                    {c.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
         </main>
 
         {/* ========================================================
