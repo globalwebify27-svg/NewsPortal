@@ -83,6 +83,8 @@ export default function AdminArticlesPage() {
 
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [isSlugCustomized, setIsSlugCustomized] = useState(false);
   const [formCategory, setFormCategory] = useState("Education");
   const [formCategories, setFormCategories] = useState<string[]>(["Top News", "Education"]);
   const [formSubCategory, setFormSubCategory] = useState("General");
@@ -167,6 +169,8 @@ export default function AdminArticlesPage() {
     if (art) {
       setEditingArticle(art);
       setFormTitle(art.title);
+      setFormSlug(art.slug || formatArticleSlug(art));
+      setIsSlugCustomized(false);
       setFormCategory(art.category?.name || "Education");
       const initialCats = art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "Education"];
       setFormCategories(initialCats);
@@ -219,6 +223,8 @@ export default function AdminArticlesPage() {
     } else {
       setEditingArticle(null);
       setFormTitle("");
+      setFormSlug("");
+      setIsSlugCustomized(false);
       setFormCategory("Education");
       setFormCategories(["Top News", "Education"]);
       setFormSubCategory("General");
@@ -327,14 +333,17 @@ export default function AdminArticlesPage() {
       return;
     }
 
-    const slug = formatArticleSlug({ title: formTitle, createdAt: new Date().toISOString() });
+    const autoSlug = formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
+    const finalSlug = (formSlug.trim() && isSlugCustomized)
+      ? formSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+      : autoSlug;
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
     const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
     const newArt: AdminArticle = {
       id: editingArticle ? editingArticle.id : `art_${Date.now()}`,
       title: formTitle,
-      slug: editingArticle ? editingArticle.slug : slug,
+      slug: finalSlug,
       summary: formSummary,
       body: formContent,
       featuredImage: formImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=60",
@@ -712,15 +721,59 @@ export default function AdminArticlesPage() {
 
             <form onSubmit={handleSaveArticle} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Article Headline *</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Article Headline / समाचार शीर्षक *</label>
                 <input
                   type="text"
-                  placeholder="Enter high-impact headline..."
+                  placeholder="Enter news headline (e.g. LPG उपभोक्ताओं की बढ़ सकती है परेशानी)..."
                   value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
+                  onChange={(e) => {
+                    const newTitle = e.target.value;
+                    setFormTitle(newTitle);
+                    if (!isSlugCustomized) {
+                      setFormSlug(formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() }));
+                    }
+                  }}
                   style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.95rem", fontWeight: 600 }}
                   required
                 />
+              </div>
+
+              {/* LIVE ENGLISH TRANSLATED URL SLUG PREVIEW & EDITOR */}
+              <div style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "14px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>🌐</span> Translated English SEO URL Slug (हिंदी शीर्षक का अंग्रेजी URL)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const auto = formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
+                      setFormSlug(auto);
+                      setIsSlugCustomized(false);
+                    }}
+                    style={{ background: "#e2e8f0", border: "none", color: "#2563eb", padding: "4px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer" }}
+                  >
+                    🔄 Auto-Translate Headline
+                  </button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 700, whiteSpace: "nowrap" }}>
+                    /{formCategory.toLowerCase().trim()}/
+                  </span>
+                  <input
+                    type="text"
+                    value={formSlug || formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() })}
+                    onChange={(e) => {
+                      setFormSlug(e.target.value);
+                      setIsSlugCustomized(true);
+                    }}
+                    placeholder="translated-english-news-url-slug"
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.84rem", fontWeight: 600, fontFamily: "monospace", color: "#0f172a", background: "#ffffff" }}
+                  />
+                </div>
+                <p style={{ margin: "6px 0 0 0", fontSize: "0.74rem", color: "#64748b" }}>
+                  💡 Hindi headlines are automatically converted to clean English keywords for SEO URLs. You can customize the URL above if needed.
+                </p>
               </div>
 
               {/* MULTI-TAB / MULTI-CATEGORY PUBLISHING SELECTOR */}
