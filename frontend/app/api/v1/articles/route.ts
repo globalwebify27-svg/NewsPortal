@@ -1,19 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPublicArticles, createOrUpdateArticle } from "@/lib/services/articles";
+import { getPublicArticles, getAllArticlesForAdmin, createOrUpdateArticle } from "@/lib/services/articles";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = Number(searchParams.get("page")) || 1;
-  const limit = Number(searchParams.get("limit")) || 20;
+  const limit = Number(searchParams.get("limit")) || 50;
   const category = searchParams.get("category") || undefined;
   const tag = searchParams.get("tag") || undefined;
   const search = searchParams.get("search") || undefined;
+  const status = searchParams.get("status") || undefined;
+  const role = searchParams.get("role") || undefined;
+  const authorId = searchParams.get("authorId") || undefined;
+  const admin = searchParams.get("admin") === "true" || !!role || !!status;
 
+  // Admin Request (queue, drafts, pending reviews, approvals, rejections)
+  if (admin) {
+    const result = await getAllArticlesForAdmin({ page, limit, category, tag, search, status, role, authorId });
+    return NextResponse.json({
+      success: true,
+      data: result.articles,
+      articles: result.articles,
+      meta: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / limit) || 1,
+      },
+    });
+  }
+
+  // Public Request (Strictly PUBLISHED articles only)
   const result = await getPublicArticles({ page, limit, category, tag, search });
 
   return NextResponse.json({
     success: true,
     data: result.articles,
+    articles: result.articles,
     meta: {
       page: result.page,
       limit: result.limit,
@@ -26,6 +48,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    // Support bulk article list updates if passed as array or object with articles
+    if (body?.articles && Array.isArray(body.articles)) {
+      const saved = [];
+      for (const art of body.articles) {
+        const item = await createOrUpdateArticle({ ...art, userRole: body.userRole || art.userRole });
+        if (item) saved.push(item);
+      }
+      return NextResponse.json({
+        success: true,
+        data: saved,
+        message: "Articles batch saved successfully",
+      });
+    }
+
     if (!body || !body.title) {
       return NextResponse.json({ success: false, message: "Title is required" }, { status: 400 });
     }

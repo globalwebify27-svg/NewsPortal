@@ -21,7 +21,7 @@ import {
   Loader2
 } from "lucide-react";
 
-import { getStoredAboutData, LOCAL_STORAGE_ABOUT_KEY, AboutPageData } from "@/lib/aboutData";
+import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
 
 export default function AdminSettingsPage() {
   // Toast state
@@ -29,14 +29,21 @@ export default function AdminSettingsPage() {
   const [toastType, setToastType] = useState<"success" | "error">("success");
 
   // About Page Editable State
-  const [aboutData, setAboutData] = useState<AboutPageData>(getStoredAboutData());
+  const [aboutData, setAboutData] = useState<AboutPageData>(defaultAboutData);
 
-  const handleSaveAboutData = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function loadAbout() {
+      const res = await getStoredAboutData();
+      setAboutData(res);
+    }
+    loadAbout();
+  }, []);
+
+  const handleSaveAboutData = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(aboutData));
-      window.dispatchEvent(new Event("ga_about_content_updated"));
-      showToast("About Us page content saved successfully!");
+      await saveAboutData(aboutData);
+      showToast("About Us page content saved to database!");
     } catch (err) {
       showToast("Failed to save About Us content", "error");
     }
@@ -249,26 +256,6 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     loadLogoSettings();
     loadStickyAdSettings();
-
-    try {
-      const storedSocial = localStorage.getItem("ga_social_links");
-      if (storedSocial) {
-        const parsed = JSON.parse(storedSocial);
-        if (parsed.facebook) setSocialFb(parsed.facebook);
-        if (parsed.twitter) setSocialTwitter(parsed.twitter);
-        if (parsed.youtube) setSocialYt(parsed.youtube);
-        if (parsed.instagram) setSocialInsta(parsed.instagram);
-        if (parsed.linkedin) setSocialLinkedin(parsed.linkedin);
-      }
-
-      const storedCompany = localStorage.getItem("ga_company_footer_links");
-      if (storedCompany) {
-        const parsed = JSON.parse(storedCompany);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCompanyLinks(parsed);
-        }
-      }
-    } catch (e) {}
   }, [loadLogoSettings, loadStickyAdSettings]);
 
   const handleAddCompanyLink = (e: React.FormEvent) => {
@@ -287,8 +274,6 @@ export default function AdminSettingsPage() {
 
     const updated = [...companyLinks, newLink];
     setCompanyLinks(updated);
-    localStorage.setItem("ga_company_footer_links", JSON.stringify(updated));
-    window.dispatchEvent(new Event("ga_company_links_changed"));
     showToast(`✓ Footer link "${newLinkHi}" added successfully!`);
 
     setNewLinkHi("");
@@ -299,8 +284,6 @@ export default function AdminSettingsPage() {
   const handleDeleteCompanyLink = (id: string, nameHi: string) => {
     const updated = companyLinks.filter(l => l.id !== id);
     setCompanyLinks(updated);
-    localStorage.setItem("ga_company_footer_links", JSON.stringify(updated));
-    window.dispatchEvent(new Event("ga_company_links_changed"));
     showToast(`Footer link "${nameHi}" deleted.`);
   };
 
@@ -391,7 +374,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleSaveSocialLinks = () => {
+  const handleSaveSocialLinks = async () => {
     const payload = {
       facebook: socialFb.trim(),
       twitter: socialTwitter.trim(),
@@ -399,9 +382,8 @@ export default function AdminSettingsPage() {
       instagram: socialInsta.trim(),
       linkedin: socialLinkedin.trim()
     };
-    localStorage.setItem("ga_social_links", JSON.stringify(payload));
-    window.dispatchEvent(new Event("ga_social_links_changed"));
-    showToast("✓ Social media links updated successfully!");
+    await saveLogoSetting("social_links", JSON.stringify(payload));
+    showToast("✓ Social media links updated centrally in database!");
   };
 
   return (

@@ -46,14 +46,13 @@ export default function EPaperPage() {
 
   useEffect(() => {
     const loadIssues = () => {
-      const issues = getStoredEPaperIssues();
-      setAllIssues(issues);
+      getStoredEPaperIssues().then((issues) => {
+        if (Array.isArray(issues)) setAllIssues(issues);
+      });
     };
     loadIssues();
-    window.addEventListener("storage", loadIssues);
     window.addEventListener("ga_epaper_updated", loadIssues);
     return () => {
-      window.removeEventListener("storage", loadIssues);
       window.removeEventListener("ga_epaper_updated", loadIssues);
     };
   }, []);

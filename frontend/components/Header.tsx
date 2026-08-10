@@ -62,7 +62,7 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
-import { getStoredVideos, fetchCentralVideos } from "@/lib/youtube";
+import { fetchCentralVideos } from "@/lib/youtube";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { autoDetectUserCity, getDistrictsForState } from "@/lib/districts";
 import { getSubCategories } from "@/lib/subCategories";
@@ -79,6 +79,7 @@ export default function Header() {
   const { lang, setLang, toggleLang, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
+  const [isSticky, setIsSticky] = useState(false);
 
   // Interactive State Selector States
   const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
@@ -107,7 +108,7 @@ export default function Header() {
 
   useEffect(() => {
     try {
-      const savedFilters = localStorage.getItem("ga_active_filters");
+      const savedFilters = sessionStorage.getItem("ga_active_filters");
       if (savedFilters) {
         const parsed = JSON.parse(savedFilters);
         if (parsed.sort) setFilterSort(parsed.sort);
@@ -149,7 +150,7 @@ export default function Header() {
       state: filterState
     };
     try {
-      localStorage.setItem("ga_active_filters", JSON.stringify(filtersObj));
+      sessionStorage.setItem("ga_active_filters", JSON.stringify(filtersObj));
       window.dispatchEvent(new Event("ga_filters_changed"));
     } catch (e) {}
     setIsFilterModalOpen(false);
@@ -162,7 +163,7 @@ export default function Header() {
     setFilterTimeRange("all");
     setFilterStateFilter("all");
     try {
-      localStorage.removeItem("ga_active_filters");
+      sessionStorage.removeItem("ga_active_filters");
       window.dispatchEvent(new Event("ga_filters_changed"));
     } catch (e) {}
   };
@@ -191,54 +192,25 @@ export default function Header() {
           if (detected.temperature) setUserTemperature(detected.temperature);
           if (detected.timezone) setUserTimezone(detected.timezone);
 
-          if (isIntl) {
-            const explicitLang = localStorage.getItem("ga_language_manual");
-            if (!explicitLang && setLang) {
-              setLang("EN");
-            }
-          }
-        }
-      } catch (e) {}
-    };
-
-    // 2. Active News State Filter Tracker for Header State Pill & Modal
-    const loadStateFilter = () => {
-      try {
-        const storedStateCode = localStorage.getItem("ga_selected_state");
-        if (storedStateCode) {
-          const stObj = INDIAN_STATES.find(
-            (s) =>
-              s.code === storedStateCode ||
-              s.slug === storedStateCode ||
-              s.nameEn.toLowerCase() === storedStateCode.toLowerCase()
-          );
-          if (stObj) {
-            setSelectedState(stObj);
+          if (isIntl && setLang) {
+            setLang("EN");
           }
         }
       } catch (e) {}
     };
 
     loadGeoLocation();
-    loadStateFilter();
     fetchCentralVideos().catch(() => {});
-
-    window.addEventListener("ga_state_changed", loadStateFilter);
-    window.addEventListener("storage", loadStateFilter);
-    return () => {
-      window.removeEventListener("ga_state_changed", loadStateFilter);
-      window.removeEventListener("storage", loadStateFilter);
-    };
   }, []);
 
   const handleSelectState = (st: IndianState) => {
     setSelectedState(st);
-    localStorage.setItem("ga_selected_state", st.code);
+    sessionStorage.setItem("ga_selected_state", st.code);
     sessionStorage.setItem("ga_manual_state_selected", "true");
     const dists = getDistrictsForState(st.code);
     if (dists && dists.length > 0) {
       const defaultCity = dists[0].nameEn.split("/")[0].trim();
-      localStorage.setItem("ga_selected_city", defaultCity);
+      sessionStorage.setItem("ga_selected_city", defaultCity);
       sessionStorage.setItem("ga_manual_city_selected", "true");
     }
     window.dispatchEvent(new Event("ga_state_changed"));
@@ -288,72 +260,28 @@ export default function Header() {
   });
 
   useEffect(() => {
-    const loadSocialLinks = () => {
-      try {
-        const stored = localStorage.getItem("ga_social_links");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setSocialLinks((prev) => ({ ...prev, ...parsed }));
-        }
-      } catch (e) {}
-    };
-    loadSocialLinks();
-    window.addEventListener("storage", loadSocialLinks);
-    window.addEventListener("ga_social_links_changed", loadSocialLinks);
-    return () => {
-      window.removeEventListener("storage", loadSocialLinks);
-      window.removeEventListener("ga_social_links_changed", loadSocialLinks);
-    };
-  }, []);
-
-  // Sticky Nav Scroll Handler
-  const [isSticky, setIsSticky] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 110) {
-        setIsSticky(true);
-      } else {
-        setIsSticky(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
     }
 
     const q = searchQuery.toLowerCase().trim();
-    let localArticles: any[] = [];
-
-    try {
-      const local = localStorage.getItem("ga_custom_articles");
-      if (local) {
-        localArticles = JSON.parse(local);
-      }
-    } catch (e) {}
-
-    const storedVideos = getStoredVideos();
-
-    const matchedArticles = localArticles
-      .filter((a: any) => {
-        const st = (a.status || "PUBLISHED").toUpperCase();
-        if (st !== "PUBLISHED") return false;
-        return a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q);
+    fetch("/api/v1/articles")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json && json.success && Array.isArray(json.articles)) {
+          const matched = json.articles.filter((a: any) => {
+            const st = (a.status || "PUBLISHED").toUpperCase();
+            if (st !== "PUBLISHED") return false;
+            return a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q);
+          }).map((a: any) => ({ ...a, resultType: "article" }));
+          setSearchResults(matched.slice(0, 6));
+        }
       })
-      .map((a: any) => ({ ...a, resultType: "article" }));
-
-    const matchedVideos = storedVideos
-      .filter((v: any) => v.title?.toLowerCase().includes(q) || v.category?.toLowerCase().includes(q))
-      .map((v: any) => ({ ...v, resultType: "video" }));
-
-    setSearchResults([...matchedArticles, ...matchedVideos].slice(0, 6));
+      .catch(() => {});
   }, [searchQuery]);
+
+
 
   const isActive = (path: string) => {
     if (!pathname || typeof pathname !== "string") return false;
@@ -734,7 +662,7 @@ export default function Header() {
                   className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
                   onClick={() => {
                     setSelectedState({ code: "ALL", nameEn: "All India", nameHi: "भारत समाचार", slug: "all" });
-                    localStorage.setItem("ga_selected_state", "ALL");
+                    sessionStorage.setItem("ga_selected_state", "ALL");
                     window.dispatchEvent(new Event("ga_state_changed"));
                   }}
                 >

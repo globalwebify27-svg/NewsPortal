@@ -105,7 +105,7 @@ export default function SectionClientContent() {
 
   useEffect(() => {
     const syncState = () => {
-      const stored = localStorage.getItem("ga_selected_state");
+      const stored = sessionStorage.getItem("ga_selected_state");
       if (stored) {
         setSelectedState(stored);
       } else if (section === "state" || section === "states") {
@@ -143,33 +143,11 @@ export default function SectionClientContent() {
         console.warn("API fetch error for section:", section, err);
       }
 
-      // Merge custom admin articles from localStorage
-      try {
-        const customRaw = localStorage.getItem("ga_custom_articles");
-        if (customRaw) {
-          const customList: Article[] = JSON.parse(customRaw);
-          const matchedCustom = customList.filter((a) => {
-            const st = (a.status || "PUBLISHED").toUpperCase();
-            if (st !== "PUBLISHED") return false;
-
-            const catName = (a.category?.name || (a.category as any) || "").toLowerCase().trim();
-            const secLower = section.toLowerCase().trim();
-            if (secLower === "latest" || secLower === "top news") return true;
-            return catName.includes(secLower) || secLower.includes(catName);
-          });
-          const customIds = new Set(matchedCustom.map((c) => c.id));
-          const filteredBackend = combined.filter((b) => !customIds.has(b.id));
-          combined = [...matchedCustom, ...filteredBackend];
-        }
-      } catch (e) {}
-
       setArticles(combined);
       setLoading(false);
     }
 
     fetchSectionArticles();
-    window.addEventListener("ga_articles_updated", fetchSectionArticles);
-    return () => window.removeEventListener("ga_articles_updated", fetchSectionArticles);
   }, [section, selectedState]);
 
   const availableSubCats = getSubCategories(section);
@@ -300,7 +278,7 @@ export default function SectionClientContent() {
               onChange={(e) => {
                 const val = e.target.value;
                 setSelectedState(val);
-                localStorage.setItem("ga_selected_state", val);
+                sessionStorage.setItem("ga_selected_state", val);
                 window.dispatchEvent(new Event("ga_state_changed"));
               }}
               style={{

@@ -93,7 +93,7 @@ export default function RolesManagementPage() {
   // Fetch Roles and Permissions from API or seed defaults fallback
   useEffect(() => {
     try {
-      const savedRole = localStorage.getItem("ga_admin_role") || "super_admin";
+      const savedRole = sessionStorage.getItem("ga_admin_role") || "super_admin";
       setActiveAdminRole(savedRole);
     } catch (e) {}
 

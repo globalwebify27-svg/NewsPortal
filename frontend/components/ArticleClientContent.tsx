@@ -117,51 +117,6 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
     async function loadArticle() {
       const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
 
-      // 1. Check localStorage (custom admin articles)
-      try {
-        const local = localStorage.getItem("ga_custom_articles");
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (Array.isArray(parsed)) {
-            const found = parsed.find((a: ArticleDetail & { status?: string }) => {
-              if (!a) return false;
-              const st = (a.status || "PUBLISHED").toUpperCase();
-              if (st !== "PUBLISHED") return false;
-
-              const aSlug = (a.slug || "").trim().toLowerCase();
-              const aId = (a.id || "").trim().toLowerCase();
-              const cleanId = aId.replace(/^custom-/, "");
-
-              // Base title comparison without random hash suffix
-              const baseTarget = targetSlug.replace(/--?[a-z0-9]{4,8}$/, "");
-              const baseASlug = aSlug.replace(/--?[a-z0-9]{4,8}$/, "");
-              const titleMatch = baseTarget.length > 3 && baseASlug === baseTarget;
-
-              return (
-                aSlug === targetSlug ||
-                aId === targetSlug ||
-                cleanId === targetSlug ||
-                titleMatch ||
-                (aSlug && targetSlug.includes(aSlug)) ||
-                (aSlug && aSlug.includes(targetSlug))
-              );
-            });
-            if (found) {
-              setArticle((prev) => ({
-                ...(prev || {}),
-                ...found,
-                customAds: (found.customAds && found.customAds.length > 0) ? found.customAds : prev?.customAds
-              }));
-              if (found.views) setLikes(found.views);
-              setLoading(false);
-              return;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("localStorage read error:", e);
-      }
-
       // If initialArticle was provided from server SSR, we're set
       if (initialArticle) {
         setArticle(initialArticle);
@@ -212,18 +167,6 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
         if (res.ok) {
           const json = await res.json();
           if (json?.data && Array.isArray(json.data)) pool = json.data;
-        }
-      } catch (e) {}
-
-      try {
-        const local = localStorage.getItem("ga_custom_articles");
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (Array.isArray(parsed)) {
-            const existingIds = new Set(pool.map((a: any) => a.id));
-            const unique = parsed.filter((a: any) => !existingIds.has(a.id));
-            pool = [...unique, ...pool];
-          }
         }
       } catch (e) {}
 

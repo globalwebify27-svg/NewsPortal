@@ -245,31 +245,26 @@ export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
 
 export const SEO_STORAGE_KEY = "ga_seo_settings";
 
-export function getAllSeoConfigs(): SeoPageConfig[] {
-  if (typeof window === "undefined") return DEFAULT_SEO_PAGES;
+export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
   try {
-    const stored = localStorage.getItem(SEO_STORAGE_KEY);
-    if (!stored) return DEFAULT_SEO_PAGES;
-    const parsed: SeoPageConfig[] = JSON.parse(stored);
-    
-    // Merge default pages with stored pages to ensure any missing path exists
-    const merged = DEFAULT_SEO_PAGES.map((def) => {
-      const found = parsed.find((p) => p.path === def.path);
-      return found ? { ...def, ...found } : def;
-    });
-
-    // Also keep any extra custom routes user added
-    const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
-    const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
-
-    return [...merged, ...extraCustom];
-  } catch {
-    return DEFAULT_SEO_PAGES;
-  }
+    const res = await fetch("/api/v1/seo-settings");
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+      const parsed: SeoPageConfig[] = json.data;
+      const merged = DEFAULT_SEO_PAGES.map((def) => {
+        const found = parsed.find((p) => p.path === def.path);
+        return found ? { ...def, ...found } : def;
+      });
+      const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
+      const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
+      return [...merged, ...extraCustom];
+    }
+  } catch {}
+  return DEFAULT_SEO_PAGES;
 }
 
-export function getSeoConfigForPath(currentPath: string): SeoPageConfig {
-  const configs = getAllSeoConfigs();
+export async function getSeoConfigForPath(currentPath: string): Promise<SeoPageConfig> {
+  const configs = await getAllSeoConfigs();
   const normalized = currentPath === "" ? "/" : currentPath;
 
   const exact = configs.find((c) => c.path === normalized);
@@ -369,11 +364,13 @@ export function calculateSeoScore(config: SeoPageConfig): { score: number; label
   return { score, label, tips };
 }
 
-export function saveSeoConfigs(list: SeoPageConfig[]) {
-  if (typeof window === "undefined") return;
+export async function saveSeoConfigs(list: SeoPageConfig[]): Promise<void> {
   try {
-    localStorage.setItem(SEO_STORAGE_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event("ga_seo_updated"));
+    await fetch("/api/v1/seo-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list)
+    });
   } catch (e) {
     console.error("Failed saving SEO configs:", e);
   }

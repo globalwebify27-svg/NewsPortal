@@ -44,42 +44,7 @@ export default function Footer() {
   ]);
 
   useEffect(() => {
-    const loadSocialLinks = () => {
-      try {
-        const stored = localStorage.getItem("ga_social_links");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setSocialLinks((prev) => ({ ...prev, ...parsed }));
-        }
-      } catch (e) {}
-    };
-
-    const loadCompanyLinks = () => {
-      try {
-        const stored = localStorage.getItem("ga_company_footer_links");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setCustomCompanyLinks(parsed);
-          }
-        }
-      } catch (e) {}
-    };
-
-    loadSocialLinks();
-    loadCompanyLinks();
-
-    window.addEventListener("storage", loadSocialLinks);
-    window.addEventListener("ga_social_links_changed", loadSocialLinks);
-    window.addEventListener("storage", loadCompanyLinks);
-    window.addEventListener("ga_company_links_changed", loadCompanyLinks);
-
-    return () => {
-      window.removeEventListener("storage", loadSocialLinks);
-      window.removeEventListener("ga_social_links_changed", loadSocialLinks);
-      window.removeEventListener("storage", loadCompanyLinks);
-      window.removeEventListener("ga_company_links_changed", loadCompanyLinks);
-    };
+    // Component mounted cleanly
   }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {

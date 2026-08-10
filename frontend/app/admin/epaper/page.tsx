@@ -42,15 +42,21 @@ export default function AdminEPaperPage() {
   const [pdfUploadUrl, setPdfUploadUrl] = useState("");
   const [savedToast, setSavedToast] = useState(false);
 
+  const refreshIssues = () => {
+    getStoredEPaperIssues().then((list) => {
+      if (Array.isArray(list)) setIssues(list);
+    });
+  };
+
   useEffect(() => {
-    setIssues(getStoredEPaperIssues());
+    refreshIssues();
   }, []);
 
   const handleAutoCompile = () => {
     try {
       const compiled = compileEPaperFromArticles(allDefaultArticles, issueDate, selectedEdition);
       saveEPaperIssue(compiled);
-      setIssues(getStoredEPaperIssues());
+      refreshIssues();
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 3500);
     } catch (e) {
@@ -85,7 +91,7 @@ export default function AdminEPaperPage() {
         }
       };
       saveEPaperIssue(newIssue);
-      setIssues(getStoredEPaperIssues());
+      refreshIssues();
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 3500);
     } catch (err) {

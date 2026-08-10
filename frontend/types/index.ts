@@ -25,6 +25,8 @@ export interface Tag {
   color?: string;
 }
 
+export type ArticleStatus = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "PUBLISHED" | "REJECTED";
+
 export interface Article {
   id: string;
   title: string;
@@ -33,7 +35,14 @@ export interface Article {
   body: string;
   featuredImage?: string;
   caption?: string;
-  status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "ARCHIVED";
+  status: ArticleStatus;
+  authorId?: string;
+  submittedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   isFeatured?: boolean;
   isBreaking?: boolean;
   isTrending?: boolean;

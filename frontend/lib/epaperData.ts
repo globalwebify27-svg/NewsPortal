@@ -134,66 +134,27 @@ export const defaultEPaperIssue: EPaperIssue = {
   }))
 };
 
-export const LOCAL_STORAGE_EPAPER_KEY = "ga_epaper_issues";
-
-export function getStoredEPaperIssues(): EPaperIssue[] {
-  if (typeof window === "undefined") return [defaultEPaperIssue];
+export async function getStoredEPaperIssues(): Promise<EPaperIssue[]> {
   try {
-    const local = localStorage.getItem(LOCAL_STORAGE_EPAPER_KEY);
-    let issuesList: EPaperIssue[] = [];
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        issuesList = parsed;
-      }
-    }
-    
-    // Also auto-compile from custom articles published in admin (grouped by date)
-    const customArticlesRaw = localStorage.getItem("ga_custom_articles");
-    if (customArticlesRaw) {
-      const customArticles = JSON.parse(customArticlesRaw);
-      if (Array.isArray(customArticles) && customArticles.length > 0) {
-        // Group articles by YYYY-MM-DD
-        const groupedByDate: Record<string, any[]> = {};
-        customArticles.forEach((art) => {
-          let rawDate = art.createdAt || art.publishedAt || new Date().toISOString();
-          let dateKey = rawDate.split("T")[0];
-          if (!dateKey || dateKey.length < 10) dateKey = "2026-08-04";
-          if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
-          groupedByDate[dateKey].push(art);
-        });
-
-        // For every date, compile for each edition so articles added on that date populate e-Paper
-        Object.keys(groupedByDate).forEach((d) => {
-          defaultEditions.forEach((ed) => {
-            const compiled = compileEPaperFromArticles(groupedByDate[d], d, ed.id);
-            const existingIdx = issuesList.findIndex((i) => i.date === d && i.editionId === ed.id);
-            if (existingIdx >= 0) {
-              // Update with freshly added articles of that date
-              issuesList[existingIdx] = compiled;
-            } else {
-              issuesList.push(compiled);
-            }
-          });
-        });
-      }
-    }
-
-    if (issuesList.length > 0) {
-      return issuesList;
+    const res = await fetch("/api/v1/epaper");
+    const json = await res.json();
+    if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+      return json.data;
     }
   } catch (e) {}
   return [defaultEPaperIssue];
 }
 
-export function saveEPaperIssue(issue: EPaperIssue): void {
-  if (typeof window === "undefined") return;
+export async function saveEPaperIssue(issue: EPaperIssue): Promise<void> {
   try {
-    const current = getStoredEPaperIssues();
+    const current = await getStoredEPaperIssues();
     const filtered = current.filter((i) => !(i.editionId === issue.editionId && i.date === issue.date));
     const updated = [issue, ...filtered];
-    localStorage.setItem(LOCAL_STORAGE_EPAPER_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new Event("ga_epaper_updated"));
+    await fetch("/api/v1/epaper", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated)
+    });
   } catch (e) {}
 }
 

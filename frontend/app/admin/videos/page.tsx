@@ -14,7 +14,7 @@ import {
   Share2,
   ExternalLink
 } from "lucide-react";
-import { saveStoredVideos, getStoredVideos, fetchCentralVideos, saveCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
+import { fetchCentralVideos, saveCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 
 export default function AdminVideosPage() {
   const [videosList, setVideosList] = useState<YouTubeVideoItem[]>([]);
@@ -43,9 +43,6 @@ export default function AdminVideosPage() {
   };
 
   useEffect(() => {
-    // Initial fast local load
-    setVideosList(getStoredVideos());
-
     // Central Database load across all machines & devices
     fetchCentralVideos().then(({ videos, liveTvConfig }) => {
       if (Array.isArray(videos) && videos.length > 0) {
@@ -69,9 +66,7 @@ export default function AdminVideosPage() {
       googleNewsUrl: googleNewsUrl.trim() || "https://news.google.com",
       whatsappUrl: whatsappUrl.trim() || "https://whatsapp.com"
     };
-    localStorage.setItem("ga_livetv_config", JSON.stringify(config));
     saveCentralVideos(videosList, config);
-    window.dispatchEvent(new Event("ga_livetv_config_updated"));
     showToast("✓ Live TV Stream & Social Channel settings saved centrally to database!");
   };
 
@@ -144,7 +139,6 @@ export default function AdminVideosPage() {
     }
 
     setVideosList(updated);
-    localStorage.setItem("ga_custom_videos", JSON.stringify(updated));
     await saveCentralVideos(updated);
     setIsVideoModalOpen(false);
   };
@@ -153,7 +147,6 @@ export default function AdminVideosPage() {
     if (confirm(`Delete video "${title}"?`)) {
       const updated = videosList.filter((v) => v.id !== id);
       setVideosList(updated);
-      localStorage.setItem("ga_custom_videos", JSON.stringify(updated));
       await saveCentralVideos(updated);
       showToast("Video deleted successfully.");
     }

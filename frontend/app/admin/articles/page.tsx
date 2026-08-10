@@ -47,7 +47,14 @@ interface AdminArticle {
   categories?: string[];
   subCategory?: string;
   author?: { name: string };
+  authorId?: string;
   status: string;
+  submittedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   views?: number;
   readTime?: string;
   publishedAt?: string;
@@ -149,19 +156,16 @@ export default function AdminArticlesPage() {
   };
 
   const getStoredArticles = (): AdminArticle[] => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    return [];
   };
 
-  const saveToLocalStorage = (list: AdminArticle[]) => {
+  const saveToLocalStorage = async (list: AdminArticle[]) => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-      window.dispatchEvent(new Event("ga_articles_updated"));
-      window.dispatchEvent(new Event("ga_epaper_updated"));
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articles: list })
+      });
     } catch (e) {
       console.error(e);
     }
@@ -170,8 +174,8 @@ export default function AdminArticlesPage() {
   useEffect(() => {
     async function initArticlesPageRole() {
       try {
-        let rawRole = localStorage.getItem("ga_admin_role") || "";
-        const user = localStorage.getItem("ga_admin_user") || "Global Admin";
+        let rawRole = sessionStorage.getItem("ga_admin_role") || "";
+        const user = sessionStorage.getItem("ga_admin_user") || "Global Admin";
 
         if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
           try {
@@ -194,50 +198,20 @@ export default function AdminArticlesPage() {
     initArticlesPageRole();
 
     async function loadInitialArticles() {
-      let combined: AdminArticle[] = [];
       try {
-        const res = await fetch(API_ENDPOINTS.articles);
+        const res = await fetch("/api/v1/articles?admin=true");
         const json = await res.json();
-        if (json && json.data && Array.isArray(json.data)) {
-          combined = json.data;
+        if (json && (json.data || json.articles)) {
+          const list = json.data || json.articles;
+          if (Array.isArray(list)) {
+            setArticles(list);
+          }
         }
       } catch (err) {
-        console.warn("Backend fetch failed, using stored local articles:", err);
+        console.warn("Backend fetch failed:", err);
+      } finally {
+        setLoading(false);
       }
-
-      const custom = getStoredArticles();
-      let updatedCustom = false;
-      const customMigrated = await Promise.all(
-        custom.map(async (art) => {
-          if (art.title && /[\u0900-\u097F]/.test(art.title) && (art.slug?.includes("in-entry-no") || art.slug?.includes("still-team-india"))) {
-            const cleanBase = await translateHindiToEnglishSlug(art.title);
-            if (cleanBase) {
-              const rawDate = art.publishedAt || new Date().toISOString();
-              const d = new Date(rawDate);
-              const dd = String(d.getDate()).padStart(2, "0");
-              const mm = String(d.getMonth() + 1).padStart(2, "0");
-              const yy = String(d.getFullYear()).slice(-2);
-              const dateStr = `${dd}-${mm}-${yy}`;
-              const cleanId = (art.id || Math.random().toString(36).substring(2, 8)).replace(/[^a-zA-Z0-9]/g, "").slice(-8);
-              updatedCustom = true;
-              return { ...art, slug: `${cleanBase}-${dateStr}-${cleanId}` };
-            }
-          }
-          return art;
-        })
-      );
-
-      if (updatedCustom) {
-        saveToLocalStorage(customMigrated);
-      }
-
-      const activeCustom = updatedCustom ? customMigrated : custom;
-      const customIds = new Set(activeCustom.map((c) => c.id));
-      const backendFiltered = combined.filter((b) => !customIds.has(b.id));
-      const finalArticles = [...activeCustom, ...backendFiltered];
-
-      setArticles(finalArticles);
-      setLoading(false);
     }
 
     loadInitialArticles();
@@ -421,13 +395,38 @@ export default function AdminArticlesPage() {
 
     const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
 
-    // Role-Based Status Enforcement:
-    // Editor MUST submit for REVIEW. Chief Editor or Super Admin can publish live.
-    let targetStatus = formStatus;
-    if (isEditor(adminRole)) {
-      targetStatus = "REVIEW";
-    } else if (editingArticle && editingArticle.status === "REVIEW") {
-      targetStatus = formStatus === "DRAFT" ? "DRAFT" : "PUBLISHED";
+    const isEditorRole = adminRole === "editor" || adminRole.includes("staff");
+    const isChiefOrAdmin = isChiefOrSuperAdmin(adminRole);
+
+    let targetStatus: string = (formStatus || "DRAFT").toUpperCase();
+    if (isEditorRole) {
+      if (targetStatus === "PUBLISHED" || targetStatus === "APPROVED" || targetStatus === "PENDING_REVIEW") {
+        targetStatus = "PENDING_REVIEW";
+      } else {
+        targetStatus = "DRAFT";
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const reviewerName = `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : adminRole === "super_admin" ? "Super Admin" : "Editor"})`;
+
+    let submittedAt = editingArticle?.submittedAt;
+    if (targetStatus === "PENDING_REVIEW" && !submittedAt) {
+      submittedAt = nowIso;
+    }
+
+    let approvedBy = editingArticle?.approvedBy;
+    let approvedAt = editingArticle?.approvedAt;
+    let rejectedBy = editingArticle?.rejectedBy;
+    let rejectedAt = editingArticle?.rejectedAt;
+    let rejectionReason = editingArticle?.rejectionReason || editingArticle?.reviewComment;
+
+    if ((targetStatus === "APPROVED" || targetStatus === "PUBLISHED") && isChiefOrAdmin) {
+      approvedBy = reviewerName;
+      approvedAt = nowIso;
+      rejectedBy = undefined;
+      rejectedAt = undefined;
+      rejectionReason = undefined;
     }
 
     const newArt: AdminArticle = {
@@ -441,13 +440,20 @@ export default function AdminArticlesPage() {
       categories: formCategories.length > 0 ? formCategories : [activeCat],
       subCategory: formSubCategory,
       author: { name: editingArticle?.author?.name || `${adminUserName}` },
+      authorId: editingArticle?.authorId || adminUserName,
       status: targetStatus,
-      submittedBy: isEditor(adminRole) ? adminUserName : editingArticle?.submittedBy,
-      reviewComment: targetStatus === "REVIEW" ? undefined : editingArticle?.reviewComment,
-      reviewedBy: isChiefOrSuperAdmin(adminRole) ? adminUserName : editingArticle?.reviewedBy,
+      submittedAt: submittedAt || undefined,
+      approvedBy: approvedBy || undefined,
+      approvedAt: approvedAt || undefined,
+      rejectedBy: rejectedBy || undefined,
+      rejectedAt: rejectedAt || undefined,
+      rejectionReason: rejectionReason || undefined,
+      reviewComment: rejectionReason || undefined,
+      reviewedBy: (approvedBy || rejectedBy) ? (approvedBy || rejectedBy) : editingArticle?.reviewedBy,
+      submittedBy: isEditorRole ? adminUserName : editingArticle?.submittedBy,
       views: editingArticle ? editingArticle.views : 100,
       readTime: "3 min read",
-      publishedAt: editingArticle ? editingArticle.publishedAt : new Date().toISOString(),
+      publishedAt: targetStatus === "PUBLISHED" ? (editingArticle?.publishedAt || nowIso) : editingArticle?.publishedAt,
       isHero: formIsHero,
       isSuperfast: formIsSuperfast,
       isTrending: formIsTrending,
@@ -473,13 +479,11 @@ export default function AdminArticlesPage() {
       updatedList = [newArt, ...previousList];
     }
 
-    // 1. Instantly update UI & localStorage
     setArticles(updatedList);
-    saveToLocalStorage(updatedList);
     setIsModalOpen(false);
 
     showToast(
-      isEditor(adminRole)
+      isEditorRole
         ? `Article "${formTitle}" submitted for Chief Editor & Super Admin review!`
         : formIsHero
         ? `Article "${formTitle}" set as Main Hero Banner!`
@@ -488,44 +492,60 @@ export default function AdminArticlesPage() {
         : `Article "${formTitle}" published live!`
     );
 
-    // 2. Persist to real database so it survives page refresh
     try {
       const res = await fetch(API_ENDPOINTS.articles, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newArt,
-          slug: newArt.slug,
-          status: newArt.status === "DRAFT" ? "DRAFT" : newArt.status === "REVIEW" ? "REVIEW" : "PUBLISHED",
+          userRole: adminRole,
+          userName: adminUserName,
+          status: targetStatus
         }),
       });
       const json = await res.json();
       if (json?.success && json?.data) {
-        const dbArt = { ...newArt, id: json.data.id || newArt.id, slug: json.data.slug || newArt.slug };
-        const synced = updatedList.map((a) => (a.id === newArt.id ? dbArt : a));
-        setArticles(synced);
-        saveToLocalStorage(synced);
+        const dbArt = { ...newArt, ...json.data };
+        setArticles((prev) => prev.map((a) => (a.id === newArt.id ? dbArt : a)));
       }
     } catch (err) {
-      console.warn("DB save failed – article is kept in localStorage only:", err);
+      console.warn("DB save error:", err);
     }
   };
 
   // Chief Editor Approval Handler
-  const handleApproveArticle = (art: AdminArticle) => {
-    const updatedList = articles.map((a) =>
-      a.id === art.id
-        ? {
-            ...a,
-            status: "PUBLISHED",
-            publishedAt: new Date().toISOString(),
-            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
-          }
-        : a
-    );
-    setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+  const handleApproveArticle = async (art: AdminArticle) => {
+    const nowIso = new Date().toISOString();
+    const reviewer = `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`;
+
+    const updatedArt: AdminArticle = {
+      ...art,
+      status: "PUBLISHED",
+      approvedBy: reviewer,
+      approvedAt: nowIso,
+      rejectedBy: undefined,
+      rejectedAt: undefined,
+      reviewComment: undefined,
+      rejectionReason: undefined,
+      publishedAt: art.publishedAt || nowIso
+    };
+
+    setArticles((prev) => prev.map((a) => (a.id === art.id ? updatedArt : a)));
     showToast(`✅ Article "${art.title}" approved & published live!`);
+
+    try {
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...updatedArt,
+          userRole: adminRole,
+          userName: adminUserName,
+          reviewerName: reviewer,
+          status: "PUBLISHED"
+        })
+      });
+    } catch (e) {}
   };
 
   // Chief Editor Rejection Modal Handlers
@@ -535,44 +555,58 @@ export default function AdminArticlesPage() {
     setShowRejectModal(true);
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = async () => {
     if (!rejectingArticle) return;
     if (!rejectComment.trim()) {
       showToast("Please enter a feedback comment for the Editor!");
       return;
     }
 
-    const updatedList = articles.map((a) =>
-      a.id === rejectingArticle.id
-        ? {
-            ...a,
-            status: "REJECTED",
-            reviewComment: rejectComment.trim(),
-            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
-          }
-        : a
-    );
+    const nowIso = new Date().toISOString();
+    const reviewer = `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`;
 
-    setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+    const updatedArt: AdminArticle = {
+      ...rejectingArticle,
+      status: "REJECTED",
+      rejectedBy: reviewer,
+      rejectedAt: nowIso,
+      reviewComment: rejectComment.trim(),
+      rejectionReason: rejectComment.trim(),
+      approvedBy: undefined,
+      approvedAt: undefined
+    };
+
+    setArticles((prev) => prev.map((a) => (a.id === rejectingArticle.id ? updatedArt : a)));
     setShowRejectModal(false);
     setRejectingArticle(null);
     setRejectComment("");
     showToast(`❌ Article rejected with feedback comment sent to Editor.`);
+
+    try {
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...updatedArt,
+          userRole: adminRole,
+          userName: adminUserName,
+          reviewerName: reviewer,
+          rejectionReason: rejectComment.trim(),
+          status: "REJECTED"
+        })
+      });
+    } catch (e) {}
   };
 
   const handleDeleteArticle = async (id: string, slug: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      const updatedList = articles.filter((a) => a.id !== id && a.slug !== slug);
-      setArticles(updatedList);
-      saveToLocalStorage(updatedList);
+      setArticles((prev) => prev.filter((a) => a.id !== id && a.slug !== slug));
       showToast(`Article "${title}" deleted.`);
 
-      // Also delete from the real database
       try {
         await fetch(`${API_ENDPOINTS.articles}/${slug}`, { method: "DELETE" });
       } catch (err) {
-        console.warn("DB delete failed – removed from localStorage only:", err);
+        console.warn("DB delete failed:", err);
       }
     }
   };
@@ -594,7 +628,7 @@ export default function AdminArticlesPage() {
 
   const filteredArticles = articles.filter((art) => {
     const matchesSearch = art.title ? art.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
-    const matchesStatus = statusFilter === "ALL" || art.status === statusFilter;
+    const matchesStatus = statusFilter === "ALL" || art.status === statusFilter || (statusFilter === "PENDING_REVIEW" && art.status === "REVIEW") || (statusFilter === "REVIEW" && art.status === "PENDING_REVIEW");
     const matchesLang = languageFilter === "ALL" || (languageFilter === "HI" ? art.language === "HI" : art.language !== "HI");
     const matchesDate = !dateFilter || (art.publishedAt ? art.publishedAt.slice(0, 10) === dateFilter : false);
     return matchesSearch && matchesStatus && matchesLang && matchesDate;
@@ -697,10 +731,11 @@ export default function AdminArticlesPage() {
               style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--color-border)", fontSize: "0.85rem" }}
             >
               <option value="ALL">All Status</option>
-              <option value="PUBLISHED">Published (Live)</option>
-              <option value="REVIEW">Pending Review</option>
-              <option value="REJECTED">Needs Revision (Rejected)</option>
-              <option value="DRAFT">Draft</option>
+              <option value="PENDING_REVIEW">⏳ Pending Review</option>
+              <option value="APPROVED">✅ Approved</option>
+              <option value="PUBLISHED">🟢 Published (Live)</option>
+              <option value="REJECTED">🔴 Rejected (Needs Revision)</option>
+              <option value="DRAFT">⚪ Draft</option>
             </select>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <input
@@ -789,17 +824,49 @@ export default function AdminArticlesPage() {
                     </td>
                     <td>
                       {art.status === "PUBLISHED" ? (
-                        <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                          🟢 Published
-                        </span>
-                      ) : art.status === "REVIEW" ? (
-                        <span style={{ background: "#fefce8", color: "#a16207", border: "1px solid #fef08a", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                          🟡 Pending Review
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            🟢 Published Live
+                          </span>
+                          {art.approvedBy && (
+                            <span style={{ fontSize: "0.68rem", color: "#047857", fontWeight: 600 }}>
+                              Approved by {art.approvedBy}
+                            </span>
+                          )}
+                        </div>
+                      ) : (art.status === "PENDING_REVIEW" || art.status === "REVIEW") ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ background: "#fefce8", color: "#a16207", border: "1px solid #fef08a", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            ⏳ Pending Review
+                          </span>
+                          {art.submittedAt && (
+                            <span style={{ fontSize: "0.68rem", color: "#a16207", fontWeight: 600 }}>
+                              Submitted {new Date(art.submittedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      ) : art.status === "APPROVED" ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            ✅ Approved
+                          </span>
+                          {art.approvedBy && (
+                            <span style={{ fontSize: "0.68rem", color: "#1d4ed8", fontWeight: 600 }}>
+                              Approved by {art.approvedBy}
+                            </span>
+                          )}
+                        </div>
                       ) : art.status === "REJECTED" ? (
-                        <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                          🔴 Needs Revision
-                        </span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            🔴 Rejected
+                          </span>
+                          {art.rejectedBy && (
+                            <span style={{ fontSize: "0.68rem", color: "#b91c1c", fontWeight: 600 }}>
+                              Rejected by {art.rejectedBy}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                           ⚪ Draft
@@ -818,7 +885,7 @@ export default function AdminArticlesPage() {
                             <CheckCircle size={13} /> Approve & Publish
                           </button>
                         )}
-                        {isChiefOrSuperAdmin(adminRole) && art.status === "REVIEW" && (
+                        {isChiefOrSuperAdmin(adminRole) && (art.status === "PENDING_REVIEW" || art.status === "REVIEW") && (
                           <button
                             onClick={() => handleOpenRejectModal(art)}
                             title="Reject Article with Revision Feedback"

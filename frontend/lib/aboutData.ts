@@ -104,16 +104,23 @@ export const defaultAboutData: AboutPageData = {
   phone2: "+91 (011) 4567-8901"
 };
 
-export const LOCAL_STORAGE_ABOUT_KEY = "ga_about_page_content";
-
-export function getStoredAboutData(): AboutPageData {
-  if (typeof window === "undefined") return defaultAboutData;
+export async function getStoredAboutData(): Promise<AboutPageData> {
   try {
-    const local = localStorage.getItem(LOCAL_STORAGE_ABOUT_KEY);
-    if (local) {
-      const parsed = JSON.parse(local);
-      return { ...defaultAboutData, ...parsed };
+    const res = await fetch("/api/v1/about");
+    const json = await res.json();
+    if (json && json.success && json.data && Object.keys(json.data).length > 0) {
+      return { ...defaultAboutData, ...json.data };
     }
   } catch (e) {}
   return defaultAboutData;
+}
+
+export async function saveAboutData(data: AboutPageData): Promise<void> {
+  try {
+    await fetch("/api/v1/about", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+  } catch (e) {}
 }

@@ -166,19 +166,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [lang, setLangState] = useState<Language>("HI");
 
   useEffect(() => {
-    const savedLang = localStorage.getItem("ga_language") as Language;
-    if (savedLang === "EN" || savedLang === "HI") {
-      setLangState(savedLang);
-      document.documentElement.setAttribute("lang", savedLang.toLowerCase());
-    } else {
-      setLangState("HI");
-      document.documentElement.setAttribute("lang", "hi");
-    }
+    document.documentElement.setAttribute("lang", "hi");
   }, []);
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
-    localStorage.setItem("ga_language", newLang);
     document.documentElement.setAttribute("lang", newLang.toLowerCase());
   };
 

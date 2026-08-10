@@ -37,7 +37,9 @@ export default function AdminSeoPage() {
   const [activeTab, setActiveTab] = useState<"serp" | "social" | "schema">("serp");
 
   useEffect(() => {
-    setConfigs(getAllSeoConfigs());
+    getAllSeoConfigs().then((res) => {
+      if (Array.isArray(res)) setConfigs(res);
+    });
   }, []);
 
   const showToast = (msg: string) => {

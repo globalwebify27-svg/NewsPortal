@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { getStoredVideos, fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
+import { fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
@@ -138,10 +138,6 @@ export default function Home() {
 
   useEffect(() => {
     const updateVideos = () => {
-      // 1. Immediate local cache load
-      setTrendingVideos(getStoredVideos());
-
-      // 2. Fetch central database videos across all devices & computers
       fetchCentralVideos().then(({ videos, liveTvConfig }) => {
         if (Array.isArray(videos) && videos.length > 0) {
           setTrendingVideos(videos);
@@ -156,31 +152,14 @@ export default function Home() {
     };
 
     updateVideos();
-    window.addEventListener("storage", updateVideos);
-    window.addEventListener("ga_videos_updated", updateVideos);
-    return () => {
-      window.removeEventListener("storage", updateVideos);
-      window.removeEventListener("ga_videos_updated", updateVideos);
-    };
   }, []);
 
   useEffect(() => {
     const loadUserState = async () => {
-      const stored = localStorage.getItem("ga_selected_state");
-      if (stored) {
-        const match = INDIAN_STATES.find(
-          (s) => s.code === stored || s.slug === stored || s.nameEn.toLowerCase() === stored.toLowerCase()
-        );
-        if (match) {
-          setUserState(match);
-          return;
-        }
-      }
-
       const detected = await autoDetectUserIndianState();
       if (detected) {
         setUserState(detected);
-        localStorage.setItem("ga_selected_state", detected.code);
+        sessionStorage.setItem("ga_selected_state", detected.code);
       }
     };
 
@@ -193,13 +172,13 @@ export default function Home() {
     const match = INDIAN_STATES.find((s) => s.code === stCode || s.slug === stCode || s.nameEn.toLowerCase() === stCode.toLowerCase());
     if (match) {
       setUserState(match);
-      localStorage.setItem("ga_selected_state", match.code);
+      sessionStorage.setItem("ga_selected_state", match.code);
       sessionStorage.setItem("ga_manual_state_selected", "true");
       const dists = getDistrictsForState(match.code);
       if (dists && dists.length > 0) {
         const defaultCity = dists[0].nameEn.split("/")[0].trim();
         setUserCity(defaultCity);
-        localStorage.setItem("ga_selected_city", defaultCity);
+        sessionStorage.setItem("ga_selected_city", defaultCity);
         sessionStorage.setItem("ga_manual_city_selected", "true");
       }
       window.dispatchEvent(new Event("ga_state_changed"));
@@ -229,73 +208,23 @@ export default function Home() {
         console.warn("Using fallback articles data:", err);
       }
 
-      try {
-        const local = localStorage.getItem("ga_custom_articles");
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const customMap = new Map(parsed.map((a: Article) => [a.id, a]));
-            const validCustom = parsed.filter((a: Article) => {
-              const st = (a.status || "PUBLISHED").toUpperCase();
-              return st === "PUBLISHED";
-            });
-            const nonCustomApi = apiList.filter((a) => !customMap.has(a.id));
-            apiList = [...validCustom, ...nonCustomApi];
-          }
-        }
-      } catch (e) {}
-
       setArticles(apiList);
       setLoading(false);
     }
 
     fetchArticles();
-    window.addEventListener("storage", fetchArticles);
-    window.addEventListener("ga_articles_updated", fetchArticles);
-    window.addEventListener("ga_epaper_updated", fetchArticles);
+  }, []);
 
-    const loadLiveConfig = () => {
-      try {
-        const saved = localStorage.getItem("ga_livetv_config");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setLiveTvConfig((prev) => ({ ...prev, ...parsed }));
-        }
-      } catch (e) {}
-    };
-    loadLiveConfig();
-    window.addEventListener("ga_livetv_config_updated", loadLiveConfig);
-
+  useEffect(() => {
     const syncLocation = async () => {
       try {
-        const storedState = localStorage.getItem("ga_selected_state");
-        const storedCity = localStorage.getItem("ga_selected_city");
-        if (storedState) {
-          const found = INDIAN_STATES.find(
-            s => s.code === storedState || s.slug === storedState || s.nameEn.toLowerCase() === storedState.toLowerCase()
-          );
-          if (found) {
-            setUserState(found);
-            if (storedCity) {
-              setUserCity(storedCity);
-            } else {
-              const dists = getDistrictsForState(found.code);
-              if (dists && dists.length > 0) {
-                setUserCity(dists[0].nameEn.split("/")[0].trim());
-              }
-            }
-            return;
-          }
-        }
-
-        // Dynamic IP / VPN Geolocation Detection (Only if no state stored)
         const detected = await autoDetectUserCity();
         if (detected) {
           setUserCity(detected.city);
           const stObj = INDIAN_STATES.find((s) => s.code === detected.stateCode);
           if (stObj) {
             setUserState(stObj);
-            localStorage.setItem("ga_selected_state", stObj.code);
+            sessionStorage.setItem("ga_selected_state", stObj.code);
           }
         }
       } catch (e) {}
@@ -305,10 +234,6 @@ export default function Home() {
     window.addEventListener("ga_state_changed", syncLocation);
 
     return () => {
-      window.removeEventListener("storage", fetchArticles);
-      window.removeEventListener("ga_articles_updated", fetchArticles);
-      window.removeEventListener("ga_epaper_updated", fetchArticles);
-      window.removeEventListener("ga_livetv_config_updated", loadLiveConfig);
       window.removeEventListener("ga_state_changed", syncLocation);
     };
   }, []);
@@ -324,7 +249,7 @@ export default function Home() {
   useEffect(() => {
     const loadFilters = () => {
       try {
-        const saved = localStorage.getItem("ga_active_filters");
+        const saved = sessionStorage.getItem("ga_active_filters");
         if (saved) {
           setActiveFilters(JSON.parse(saved));
         } else {
@@ -768,7 +693,7 @@ export default function Home() {
             <button
               onClick={() => {
                 try {
-                  localStorage.removeItem("ga_active_filters");
+                  sessionStorage.removeItem("ga_active_filters");
                   window.dispatchEvent(new Event("ga_filters_changed"));
                 } catch (e) {}
               }}
@@ -1020,7 +945,7 @@ export default function Home() {
                 setUserCity(newCity);
                 try {
                   sessionStorage.setItem("ga_manual_city_selected", "true");
-                  localStorage.setItem("ga_selected_city", newCity);
+                  sessionStorage.setItem("ga_selected_city", newCity);
                   window.dispatchEvent(new Event("ga_state_changed"));
                 } catch (err) {}
               }}
@@ -1056,8 +981,8 @@ export default function Home() {
                   setUserCity(newCity);
                   try {
                     sessionStorage.setItem("ga_manual_city_selected", "true");
-                    localStorage.setItem("ga_selected_state", selectedSt.code);
-                    localStorage.setItem("ga_selected_city", newCity);
+                    sessionStorage.setItem("ga_selected_state", selectedSt.code);
+                    sessionStorage.setItem("ga_selected_city", newCity);
                     window.dispatchEvent(new Event("ga_state_changed"));
                   } catch (err) {}
                 }

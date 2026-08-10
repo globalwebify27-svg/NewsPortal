@@ -1,0 +1,22 @@
+[
+  {
+    "id": "user_1786359166395_y0ek",
+    "name": "tux1",
+    "email": "tux1@123",
+    "password": "tux1",
+    "roleSlug": "chief_editor",
+    "roleName": "Chief Editor",
+    "createdBy": "Super Admin",
+    "createdAt": "2026-08-10T10:52:46.395Z"
+  },
+  {
+    "id": "user_1786358606311_1259",
+    "name": "tux",
+    "email": "tux@123",
+    "password": "tux",
+    "roleSlug": "editor",
+    "roleName": "Editor",
+    "createdBy": "Super Admin",
+    "createdAt": "2026-08-10T10:43:26.311Z"
+  }
+]

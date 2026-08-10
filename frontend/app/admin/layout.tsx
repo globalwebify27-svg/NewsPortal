@@ -53,10 +53,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     async function initSession() {
       try {
-        const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
-        const user = localStorage.getItem("ga_admin_user");
-        let savedActual = (localStorage.getItem("ga_actual_role") as AdminRoleSlug);
-        let savedRole = (localStorage.getItem("ga_admin_role") as AdminRoleSlug);
+        const isAuth = sessionStorage.getItem("ga_admin_logged_in") === "true";
+        const user = sessionStorage.getItem("ga_admin_user");
+        let savedActual = (sessionStorage.getItem("ga_actual_role") as AdminRoleSlug);
+        let savedRole = (sessionStorage.getItem("ga_admin_role") as AdminRoleSlug);
 
         // Auto-resolve role from central DB API for staff accounts
         if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
@@ -68,8 +68,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             if (found && found.roleSlug) {
               savedActual = found.roleSlug as AdminRoleSlug;
               savedRole = found.roleSlug as AdminRoleSlug;
-              localStorage.setItem("ga_actual_role", found.roleSlug);
-              localStorage.setItem("ga_admin_role", found.roleSlug);
+              sessionStorage.setItem("ga_actual_role", found.roleSlug);
+              sessionStorage.setItem("ga_admin_role", found.roleSlug);
             }
           } catch (e) {}
         }
@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // SECURITY: Only actual Super Admin is permitted to switch role view
     if (actualRole !== "super_admin") return;
     setAdminRole(newRole);
-    localStorage.setItem("ga_admin_role", newRole);
+    sessionStorage.setItem("ga_admin_role", newRole);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -131,10 +131,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } catch (err) {}
 
     if (isSuperAdminMatch) {
-      localStorage.setItem("ga_admin_logged_in", "true");
-      localStorage.setItem("ga_admin_user", "Global Awaaz Admin");
-      localStorage.setItem("ga_actual_role", "super_admin");
-      localStorage.setItem("ga_admin_role", "super_admin");
+      sessionStorage.setItem("ga_admin_logged_in", "true");
+      sessionStorage.setItem("ga_admin_user", "Global Awaaz Admin");
+      sessionStorage.setItem("ga_actual_role", "super_admin");
+      sessionStorage.setItem("ga_admin_role", "super_admin");
       setAdminUser("Global Awaaz Admin");
       setActualRole("super_admin");
       setAdminRole("super_admin");
@@ -142,10 +142,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setIsSubmitting(false);
     } else if (matchedCreatedUser) {
       const role = matchedCreatedUser.roleSlug;
-      localStorage.setItem("ga_admin_logged_in", "true");
-      localStorage.setItem("ga_admin_user", matchedCreatedUser.name || matchedCreatedUser.email);
-      localStorage.setItem("ga_actual_role", role);
-      localStorage.setItem("ga_admin_role", role);
+      sessionStorage.setItem("ga_admin_logged_in", "true");
+      sessionStorage.setItem("ga_admin_user", matchedCreatedUser.name || matchedCreatedUser.email);
+      sessionStorage.setItem("ga_actual_role", role);
+      sessionStorage.setItem("ga_admin_role", role);
       setAdminUser(matchedCreatedUser.name || matchedCreatedUser.email);
       setActualRole(role);
       setAdminRole(role);
@@ -158,10 +158,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("ga_admin_logged_in");
-    localStorage.removeItem("ga_admin_user");
-    localStorage.removeItem("ga_actual_role");
-    localStorage.removeItem("ga_admin_role");
+    sessionStorage.removeItem("ga_admin_logged_in");
+    sessionStorage.removeItem("ga_admin_user");
+    sessionStorage.removeItem("ga_actual_role");
+    sessionStorage.removeItem("ga_admin_role");
     setIsAuthenticated(false);
   };
 

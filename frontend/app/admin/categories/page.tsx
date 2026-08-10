@@ -40,22 +40,27 @@ export default function AdminCategoriesPage() {
   };
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
-      if (stored) {
-        const customItems: CategoryItem[] = JSON.parse(stored);
-        const customSlugs = new Set(customItems.map(c => c.slug));
-        const filteredDefault = DEFAULT_CATEGORIES.filter(c => !customSlugs.has(c.slug));
-        setCategories([...filteredDefault, ...customItems]);
+    async function loadCategories() {
+      try {
+        const res = await fetch("/api/v1/categories");
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setCategories(json.data);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
     }
+    loadCategories();
   }, []);
 
-  const saveCategoriesToStorage = (items: CategoryItem[]) => {
+  const saveCategoriesToStorage = async (items: CategoryItem[]) => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(items));
+      await fetch("/api/v1/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categories: items })
+      });
     } catch (e) {
       console.error(e);
     }

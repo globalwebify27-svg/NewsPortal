@@ -26,13 +26,13 @@ export default function AboutPage() {
 
   useEffect(() => {
     const loadContent = () => {
-      setData(getStoredAboutData());
+      getStoredAboutData().then((res) => {
+        if (res) setData(res);
+      });
     };
     loadContent();
-    window.addEventListener("storage", loadContent);
     window.addEventListener("ga_about_content_updated", loadContent);
     return () => {
-      window.removeEventListener("storage", loadContent);
       window.removeEventListener("ga_about_content_updated", loadContent);
     };
   }, []);

@@ -24,10 +24,10 @@ enum Role {
 
 enum ArticleStatus {
   DRAFT
-  REVIEW
-  SCHEDULED
+  PENDING_REVIEW
+  APPROVED
   PUBLISHED
-  ARCHIVED
+  REJECTED
 }
 
 enum MediaType {
@@ -192,8 +192,14 @@ model Article {
   editor       User?         @relation("EditorArticles", fields: [editorId], references: [id])
   publisherId  String?
   publisher    User?         @relation("PublisherArticles", fields: [publisherId], references: [id])
-  status       ArticleStatus @default(DRAFT)
-  isBreaking   Boolean       @default(false)
+  status          ArticleStatus @default(DRAFT)
+  submittedAt     DateTime?
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  rejectionReason String?       @db.Text
+  isBreaking      Boolean       @default(false)
   isTrending   Boolean       @default(false)
   isFeatured   Boolean       @default(false)
   isEditorsPick Boolean      @default(false)

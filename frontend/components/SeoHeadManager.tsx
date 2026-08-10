@@ -8,8 +8,8 @@ export default function SeoHeadManager() {
   const pathname = usePathname() || "/";
 
   useEffect(() => {
-    function applySeoMetadata() {
-      const config: SeoPageConfig = getSeoConfigForPath(pathname);
+    async function applySeoMetadata() {
+      const config: SeoPageConfig = await getSeoConfigForPath(pathname);
 
       // 1. Update Title
       if (config.metaTitle) {

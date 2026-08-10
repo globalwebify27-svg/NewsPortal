@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import {
   YouTubeVideoItem,
-  getStoredVideos,
   fetchCentralVideos,
   DEFAULT_VIDEOS
 } from "@/lib/youtube";
@@ -68,10 +67,6 @@ export default function VideosPage() {
       }
     }
 
-    // 1. Initial fast local render
-    processVideoList(getStoredVideos());
-
-    // 2. Fetch central DB videos across all devices
     const syncCentral = () => {
       fetchCentralVideos().then(({ videos: centralList }) => {
         if (Array.isArray(centralList) && centralList.length > 0) {

@@ -28,9 +28,9 @@ function LoginForm() {
   const redirectUrl = searchParams.get("redirect") || "/admin";
 
   useEffect(() => {
-    const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
+    const isAuth = sessionStorage.getItem("ga_admin_logged_in") === "true";
     if (isAuth) {
-      const user = localStorage.getItem("ga_admin_user") || "admin@globalawaaz.com";
+      const user = sessionStorage.getItem("ga_admin_user") || "Global Awaaz Admin";
       setLoggedInUser(user);
     }
   }, []);
@@ -55,10 +55,10 @@ function LoginForm() {
 
     if (isSuperAdminUser && isSuperAdminPass) {
       const userEmail = "Global Awaaz Admin";
-      localStorage.setItem("ga_admin_logged_in", "true");
-      localStorage.setItem("ga_admin_user", userEmail);
-      localStorage.setItem("ga_actual_role", "super_admin");
-      localStorage.setItem("ga_admin_role", "super_admin");
+      sessionStorage.setItem("ga_admin_logged_in", "true");
+      sessionStorage.setItem("ga_admin_user", userEmail);
+      sessionStorage.setItem("ga_actual_role", "super_admin");
+      sessionStorage.setItem("ga_admin_role", "super_admin");
       setLoggedInUser(userEmail);
       setIsSubmitting(false);
       router.push(redirectUrl);
@@ -80,10 +80,10 @@ function LoginForm() {
       if (matched) {
         const userName = matched.name || matched.email;
         const role = (matched.roleSlug || "editor").toLowerCase();
-        localStorage.setItem("ga_admin_logged_in", "true");
-        localStorage.setItem("ga_admin_user", userName);
-        localStorage.setItem("ga_actual_role", role);
-        localStorage.setItem("ga_admin_role", role);
+        sessionStorage.setItem("ga_admin_logged_in", "true");
+        sessionStorage.setItem("ga_admin_user", userName);
+        sessionStorage.setItem("ga_actual_role", role);
+        sessionStorage.setItem("ga_admin_role", role);
         setLoggedInUser(userName);
         setIsSubmitting(false);
         router.push(redirectUrl);
@@ -102,8 +102,10 @@ function LoginForm() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("ga_admin_logged_in");
-    localStorage.removeItem("ga_admin_user");
+    sessionStorage.removeItem("ga_admin_logged_in");
+    sessionStorage.removeItem("ga_admin_user");
+    sessionStorage.removeItem("ga_actual_role");
+    sessionStorage.removeItem("ga_admin_role");
     setLoggedInUser("");
   };
 

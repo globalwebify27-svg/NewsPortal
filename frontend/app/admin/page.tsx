@@ -25,7 +25,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
-import { getStoredVideos } from "@/lib/youtube";
+import { fetchCentralVideos } from "@/lib/youtube";
 
 interface AdminArticle {
   id: string;
@@ -34,7 +34,14 @@ interface AdminArticle {
   summary?: string;
   category?: { name: string; slug?: string; color?: string };
   author?: { name: string };
+  authorId?: string;
   status: string;
+  submittedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   views?: number;
   publishedAt?: string;
   isHero?: boolean;
@@ -68,8 +75,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function initRole() {
       try {
-        let rawRole = localStorage.getItem("ga_admin_role") || "";
-        const userName = localStorage.getItem("ga_admin_user") || "Global Admin";
+        let rawRole = sessionStorage.getItem("ga_admin_role") || "";
+        const userName = sessionStorage.getItem("ga_admin_user") || "Global Admin";
 
         if (userName && userName !== "Global Awaaz Admin" && userName !== "Chief Editor" && userName !== "Staff Editor") {
           try {
@@ -91,56 +98,73 @@ export default function AdminDashboardPage() {
     initRole();
   }, []);
 
-  const saveToLocalStorage = (updated: AdminArticle[]) => {
+  const saveToLocalStorage = async (updated: AdminArticle[]) => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articles: updated })
+      });
     } catch (e) {}
   };
 
   useEffect(() => {
     async function loadDashboardData() {
-      let combined: AdminArticle[] = [];
       try {
-        const res = await fetch(API_ENDPOINTS.articles);
+        const res = await fetch("/api/v1/articles?admin=true");
         const json = await res.json();
-        if (json && json.data && Array.isArray(json.data)) {
-          combined = json.data;
+        if (json && (json.data || json.articles)) {
+          const list = json.data || json.articles;
+          if (Array.isArray(list)) {
+            setArticles(list);
+          }
         }
-      } catch (e) {}
-
-      try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const custom: AdminArticle[] = stored ? JSON.parse(stored) : [];
-        const customIds = new Set(custom.map((c) => c.id));
-        const backendFiltered = combined.filter((b) => !customIds.has(b.id));
-        combined = [...custom, ...backendFiltered];
-      } catch (e) {}
-
-      setArticles(combined);
-      setLoading(false);
-
-      const vids = getStoredVideos();
-      setVideoCount(vids.length);
+      } catch (e) {
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchCentralVideos().then(({ videos }) => {
+      if (Array.isArray(videos)) setVideoCount(videos.length);
+    });
 
     loadDashboardData();
   }, []);
 
   // Chief Editor Actions directly from Dashboard
-  const handleApproveArticle = (art: AdminArticle) => {
-    const updatedList = articles.map((a) =>
-      a.id === art.id
-        ? {
-            ...a,
-            status: "PUBLISHED",
-            publishedAt: new Date().toISOString(),
-            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
-          }
-        : a
-    );
-    setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+  const handleApproveArticle = async (art: AdminArticle) => {
+    const nowIso = new Date().toISOString();
+    const reviewer = `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`;
+
+    const updatedArt = {
+      ...art,
+      status: "PUBLISHED",
+      approvedBy: reviewer,
+      approvedAt: nowIso,
+      rejectedBy: undefined,
+      rejectedAt: undefined,
+      reviewComment: undefined,
+      rejectionReason: undefined,
+      publishedAt: art.publishedAt || nowIso
+    };
+
+    setArticles((prev) => prev.map((a) => (a.id === art.id ? updatedArt : a)));
     showToast(`✅ Article "${art.title}" approved & published live!`);
+
+    try {
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...updatedArt,
+          userRole: adminRole,
+          userName: adminUserName,
+          reviewerName: reviewer,
+          status: "PUBLISHED"
+        })
+      });
+    } catch (e) {}
   };
 
   const handleOpenRejectModal = (art: AdminArticle) => {
@@ -149,34 +173,51 @@ export default function AdminDashboardPage() {
     setShowRejectModal(true);
   };
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = async () => {
     if (!rejectingArticle) return;
     if (!rejectComment.trim()) {
       showToast("Please enter a revision feedback comment!");
       return;
     }
 
-    const updatedList = articles.map((a) =>
-      a.id === rejectingArticle.id
-        ? {
-            ...a,
-            status: "REJECTED",
-            reviewComment: rejectComment.trim(),
-            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
-          }
-        : a
-    );
+    const nowIso = new Date().toISOString();
+    const reviewer = `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`;
 
-    setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+    const updatedArt = {
+      ...rejectingArticle,
+      status: "REJECTED",
+      rejectedBy: reviewer,
+      rejectedAt: nowIso,
+      reviewComment: rejectComment.trim(),
+      rejectionReason: rejectComment.trim(),
+      approvedBy: undefined,
+      approvedAt: undefined
+    };
+
+    setArticles((prev) => prev.map((a) => (a.id === rejectingArticle.id ? updatedArt : a)));
     setShowRejectModal(false);
     setRejectingArticle(null);
     setRejectComment("");
     showToast(`❌ Article rejected with feedback comment sent back to Editor.`);
+
+    try {
+      await fetch(API_ENDPOINTS.articles, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...updatedArt,
+          userRole: adminRole,
+          userName: adminUserName,
+          reviewerName: reviewer,
+          rejectionReason: rejectComment.trim(),
+          status: "REJECTED"
+        })
+      });
+    } catch (e) {}
   };
 
   const totalViews = articles.reduce((acc, curr) => acc + (curr.views || 120), 0);
-  const pendingReviewArticles = articles.filter((a) => a.status === "REVIEW");
+  const pendingReviewArticles = articles.filter((a) => a.status === "PENDING_REVIEW" || a.status === "REVIEW");
 
   const isEditor = (role: string) => {
     const r = (role || "").toLowerCase();

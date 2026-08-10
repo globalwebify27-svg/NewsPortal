@@ -18,21 +18,24 @@ import {
   Save,
   Newspaper
 } from "lucide-react";
-import { getStoredAboutData, LOCAL_STORAGE_ABOUT_KEY, AboutPageData, defaultAboutData } from "@/lib/aboutData";
+import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
 
 export default function AdminAboutPage() {
   const [data, setData] = useState<AboutPageData>(defaultAboutData);
   const [savedToast, setSavedToast] = useState(false);
 
   useEffect(() => {
-    setData(getStoredAboutData());
+    async function loadData() {
+      const res = await getStoredAboutData();
+      setData(res);
+    }
+    loadData();
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(data));
-      window.dispatchEvent(new Event("ga_about_content_updated"));
+      await saveAboutData(data);
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 3500);
     } catch (err) {
@@ -40,11 +43,10 @@ export default function AdminAboutPage() {
     }
   };
 
-  const handleResetToDefault = () => {
+  const handleResetToDefault = async () => {
     if (confirm("Are you sure you want to reset all About Us content to defaults?")) {
       setData(defaultAboutData);
-      localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(defaultAboutData));
-      window.dispatchEvent(new Event("ga_about_content_updated"));
+      await saveAboutData(defaultAboutData);
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 3500);
     }
