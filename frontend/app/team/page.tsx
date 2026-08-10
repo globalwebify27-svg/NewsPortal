@@ -19,7 +19,11 @@ import {
   Newspaper,
   UserCheck,
   GraduationCap,
-  Briefcase
+  Briefcase,
+  Clock,
+  Globe,
+  Lock,
+  Send
 } from "lucide-react";
 
 interface TeamMember {
@@ -82,19 +86,19 @@ export default function PublicTeamPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-red-600 selection:text-white">
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-10">
         {/* Premium Light Mode Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-red-50/50 via-white to-slate-50 py-14 sm:py-20 border-b border-slate-200/80">
+        <section className="relative overflow-hidden bg-gradient-to-b from-red-50/50 via-white to-slate-50 py-8 sm:py-10 border-b border-slate-200/80">
           <div className="absolute top-0 right-10 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
               <Sparkles className="w-4 h-4 text-red-600" />
               <span>{isHi ? "हमारी संपादकीय टीम" : "Editorial Leadership"}</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4 max-w-4xl mx-auto leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3 max-w-4xl mx-auto leading-tight">
               {isHi ? (
                 <>
                   ग्लोबल आवाज़ की <span className="text-red-600">विश्वसनीय और निष्पक्ष</span> मीडिया टीम
@@ -106,28 +110,16 @@ export default function PublicTeamPage() {
               )}
             </h1>
 
-            <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed mb-8 font-normal">
+            <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-normal">
               {isHi
                 ? "देश-विदेश, राजनीति, खेल, और जनसरोकार की खबरों को आप तक निर्भीकता और सटीकता से पहुंचाने वाले हमारे वरिष्ठ पत्रकारों एवं संपादकों की टीम।"
                 : "Our dedicated team of veteran journalists, editors, and correspondents bringing uncompromised truth, breaking news, and in-depth analysis."}
             </p>
-
-            {/* Light Mode Search Bar */}
-            <div className="max-w-md mx-auto relative">
-              <Search className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder={isHi ? "नाम या पद द्वारा खोजें..." : "Search team by name or designation..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 shadow-md transition"
-              />
-            </div>
           </div>
         </section>
 
         {/* Team Grid Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
           {loading ? (
             <div className="py-20 text-center flex flex-col items-center gap-3">
               <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
@@ -146,124 +138,102 @@ export default function PublicTeamPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7">
               {filteredMembers.map((member) => {
                 const displayName = isHi && member.nameHi ? member.nameHi : member.name;
                 const displayRole = isHi && member.designationHi ? member.designationHi : member.designation;
-                const displayBio = isHi && member.bioHi ? member.bioHi : member.bio;
 
                 return (
                   <div
                     key={member.id}
-                    className="bg-white border border-slate-200 hover:border-red-300 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group flex flex-col justify-between"
+                    className="bg-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/80 hover:shadow-[0_16px_40px_rgb(0,0,0,0.12)] transition-all duration-300 group flex flex-col justify-between overflow-hidden"
                   >
-                    <div>
-                      {/* Photo & Header */}
-                      <div className="flex items-center gap-4 mb-5">
-                        {member.avatar ? (
-                          <img
-                            src={member.avatar}
-                            alt={displayName}
-                            className="w-20 h-20 rounded-2xl object-cover ring-4 ring-slate-100 group-hover:ring-red-100 transition shadow-md shrink-0"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-2xl font-black text-red-600 shrink-0">
-                            {displayName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-red-600 transition leading-snug">
-                            {displayName}
-                          </h3>
-                          <p className="text-xs font-bold text-red-600 mt-1 uppercase tracking-wider bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-md inline-block">
-                            {displayRole}
-                          </p>
-
-                          {(member.education || member.experience) && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {member.education && (
-                                <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <GraduationCap className="w-3 h-3 text-red-600" />
-                                  {member.education}
-                                </span>
-                              )}
-                              {member.experience && (
-                                <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <Briefcase className="w-3 h-3 text-red-600" />
-                                  {member.experience}
-                                </span>
-                              )}
-                            </div>
-                          )}
+                    {/* Top Flush Full-Width Photo Frame */}
+                    <div className="relative w-full aspect-[4/3.8] overflow-hidden bg-slate-100">
+                      {member.avatar ? (
+                        <img
+                          src={member.avatar}
+                          alt={displayName}
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-slate-100 flex items-center justify-center text-4xl font-black text-emerald-500/30">
+                          {displayName.charAt(0).toUpperCase()}
                         </div>
-                      </div>
-
-                      {/* Bio */}
-                      {displayBio && (
-                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-4 border-t border-slate-100 pt-4 mb-4">
-                          {displayBio}
-                        </p>
                       )}
                     </div>
 
-                    {/* Contact & Social Links */}
-                    <div className="border-t border-slate-100 pt-4 mt-2 space-y-3">
-                      {member.email && (
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="flex items-center gap-2 text-xs text-slate-500 hover:text-red-600 transition truncate font-medium"
-                        >
-                          <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                          <span className="truncate">{member.email}</span>
-                        </a>
-                      )}
+                    {/* Middle Content Section */}
+                    <div className="pt-5 pb-4 px-4 text-center flex-1 flex flex-col justify-between">
+                      <div>
+                        {/* Black Name */}
+                        <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-red-600 transition leading-snug tracking-tight mb-1">
+                          {displayName}
+                        </h3>
 
-                      <div className="flex items-center gap-2 pt-1">
-                        {member.twitter && (
-                          <a
-                            href={member.twitter}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-sky-500 hover:text-white text-slate-600 flex items-center justify-center transition border border-slate-200"
-                            title="Twitter / X"
-                          >
-                            <Twitter className="w-4 h-4" />
-                          </a>
+                        {/* Slate Uppercase Designation */}
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                          {displayRole}
+                        </p>
+
+                        {/* Education & Experience Pills if present */}
+                        {(member.education || member.experience) && (
+                          <div className="flex flex-wrap justify-center gap-1.5 mt-2.5">
+                            {member.education && (
+                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-semibold border border-emerald-100/80">
+                                {member.education}
+                              </span>
+                            )}
+                            {member.experience && (
+                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-semibold border border-emerald-100/80">
+                                {member.experience}
+                              </span>
+                            )}
+                          </div>
                         )}
-                        {member.linkedin && (
-                          <a
-                            href={member.linkedin}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 flex items-center justify-center transition border border-slate-200"
-                            title="LinkedIn"
-                          >
-                            <Linkedin className="w-4 h-4" />
-                          </a>
-                        )}
-                        {member.facebook && (
-                          <a
-                            href={member.facebook}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-blue-700 hover:text-white text-slate-600 flex items-center justify-center transition border border-slate-200"
-                            title="Facebook"
-                          >
-                            <Facebook className="w-4 h-4" />
-                          </a>
-                        )}
-                        {member.instagram && (
-                          <a
-                            href={member.instagram}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-pink-600 hover:text-white text-slate-600 flex items-center justify-center transition border border-slate-200"
-                            title="Instagram"
-                          >
-                            <Instagram className="w-4 h-4" />
-                          </a>
-                        )}
+                      </div>
+
+                      {/* Bottom Social Icons Row */}
+                      <div className="flex items-center justify-center gap-3 pt-4 mt-3 border-t border-slate-100">
+                        <a
+                          href={member.facebook || "https://facebook.com"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#1877F2] hover:border-[#1877F2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                          title="Facebook"
+                        >
+                          <Facebook className="w-4 h-4" />
+                        </a>
+
+                        <a
+                          href={member.instagram || "https://instagram.com"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-gradient-to-tr hover:from-amber-500 hover:via-rose-500 hover:to-purple-600 hover:border-transparent hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                          title="Instagram"
+                        >
+                          <Instagram className="w-4 h-4" />
+                        </a>
+
+                        <a
+                          href={member.linkedin || "https://linkedin.com"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#0A66C2] hover:border-[#0A66C2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                          title="LinkedIn"
+                        >
+                          <Linkedin className="w-4 h-4" />
+                        </a>
+
+                        <a
+                          href={member.twitter || "https://x.com"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-slate-900 hover:border-slate-900 hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                          title="Twitter / X"
+                        >
+                          <Twitter className="w-4 h-4" />
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -273,31 +243,83 @@ export default function PublicTeamPage() {
           )}
         </section>
 
-        {/* Light Mode Commitment Banner */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-          <div className="bg-white border-l-4 border-l-red-600 border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-3 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 text-red-600 text-xs font-bold uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4" />
-                <span>{isHi ? "हमारा संकल्प" : "Our Editorial Integrity"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-                {isHi ? "निष्पक्ष पत्रकारिता और सत्य का प्रहरी" : "Independent Journalism You Can Trust"}
-              </h2>
-              <p className="text-slate-600 text-sm max-w-xl leading-relaxed">
-                {isHi
-                  ? "ग्लोबल आवाज़ का हर रिपोर्टर और संपादक बिना किसी दबाव या पक्षपात के केवल तथ्यपरक समाचार आप तक पहुँचाने के लिए प्रतिबद्ध है।"
-                  : "Every reporter and editor at GLOBAL AWAAZ adheres to strict editorial integrity, verified facts, and unbiased reporting."}
-              </p>
-            </div>
+        {/* Compact Horizontal Newsletter Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+          <div className="relative bg-gradient-to-r from-zinc-950 via-zinc-900 to-[#1d080a] text-white rounded-[24px] p-5 sm:p-7 shadow-2xl border border-red-900/30 overflow-hidden">
+            {/* Background Decorative Glow */}
+            <div className="absolute top-0 right-0 w-80 h-full bg-red-600/10 blur-3xl pointer-events-none rounded-full" />
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-red-600/10 blur-2xl pointer-events-none rounded-full" />
 
-            <Link
-              href="/about"
-              className="px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl text-sm transition shadow-md shadow-red-600/20 flex items-center gap-2 shrink-0"
-            >
-              <span>{isHi ? "हमारे बारे में पढ़ें" : "About Our Mission"}</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 lg:gap-10">
+              {/* Left Graphic Badge */}
+              <div className="relative shrink-0 flex items-center justify-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-red-600 via-red-700 to-red-900 border-4 border-red-950/60 shadow-xl flex items-center justify-center text-white relative">
+                  <Mail className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white/20" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white shadow-md">
+                    <Send className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Content & Form */}
+              <div className="flex-1 text-center md:text-left">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-1 tracking-tight">
+                  {isHi ? (
+                    <>
+                      ग्लोबल मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
+                    </>
+                  ) : (
+                    <>
+                      Stay Ahead with <span className="text-red-500">Global Morning Briefing</span>
+                    </>
+                  )}
+                </h2>
+
+                <p className="text-slate-400 text-xs sm:text-sm mb-4 max-w-2xl leading-relaxed font-normal">
+                  {isHi
+                    ? "हर सुबह अपने इनबॉक्स में संपादकीय विश्लेषण, बाजार की जानकारी और ताज़ा अंतरराष्ट्रीय अपडेट प्राप्त करें।"
+                    : "Get editorial analysis, market insights, and fresh international updates delivered to your inbox every morning."}
+                </p>
+
+                {/* Integrated Pill Form Input Bar */}
+                <div className="bg-white rounded-2xl p-1.5 flex items-center shadow-lg border border-slate-200/50 max-w-lg mx-auto md:mx-0">
+                  <Mail className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
+                  <input
+                    type="email"
+                    placeholder={isHi ? "अपना ईमेल पता दर्ज करें..." : "Enter your email address..."}
+                    className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none flex-1 min-w-0 pr-2"
+                  />
+                  <button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-1.5 shrink-0">
+                    <span>{isHi ? "निःशुल्क सदस्यता लें" : "Subscribe Free"}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Trust Badges Row */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[11px] text-slate-400 mt-3.5 font-medium">
+                  <span className="flex items-center gap-1 text-slate-300">
+                    <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
+                    {isHi ? "विश्वसनीय समाचार" : "Trusted Journalism"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="flex items-center gap-1 text-slate-300">
+                    <Clock className="w-3.5 h-3.5 text-red-500" />
+                    {isHi ? "हर सुबह अपडेट" : "Daily Morning Updates"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="flex items-center gap-1 text-slate-300">
+                    <Globe className="w-3.5 h-3.5 text-red-500" />
+                    {isHi ? "स्थानीय से वैश्विक कवरेज" : "Global & Local Coverage"}
+                  </span>
+                </div>
+
+                {/* Privacy Note */}
+                <div className="mt-2 text-[10px] text-slate-500 flex items-center justify-center md:justify-start gap-1">
+                  <Lock className="w-3 h-3 text-slate-500" />
+                  <span>{isHi ? "आपकी जानकारी सुरक्षित है। हम स्पैम नहीं भेजते।" : "Your information is 100% secure. We never spam."}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

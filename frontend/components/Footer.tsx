@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   LayoutGrid,
@@ -34,20 +34,40 @@ export default function Footer() {
     linkedin: "https://linkedin.com"
   });
 
+  const loadSocialLinks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/social-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setSocialLinks({
+          facebook: json.data.facebook || "https://facebook.com",
+          twitter: json.data.twitter || "https://twitter.com",
+          youtube: json.data.youtube || "https://youtube.com",
+          instagram: json.data.instagram || "https://instagram.com",
+          linkedin: json.data.linkedin || "https://linkedin.com"
+        });
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    loadSocialLinks();
+    const handleSocialUpdate = () => loadSocialLinks();
+    window.addEventListener("ga_social_links_updated", handleSocialUpdate);
+    return () => {
+      window.removeEventListener("ga_social_links_updated", handleSocialUpdate);
+    };
+  }, [loadSocialLinks]);
+
   const [customCompanyLinks, setCustomCompanyLinks] = useState<Array<{ nameHi: string; nameEn: string; href: string }>>([
     { nameHi: "हमारे बारे में", nameEn: "About Us", href: "/about" },
     { nameHi: "हमारी टीम", nameEn: "Our Team", href: "/team" },
-    { nameHi: "करियर", nameEn: "Careers", href: "/#careers" },
+    { nameHi: "करियर / नौकरियां", nameEn: "Careers & Jobs", href: "/careers" },
     { nameHi: "गोपनीयता नीति", nameEn: "Privacy Policy", href: "/#privacy" },
     { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
     { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/#contact" },
-    { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/#advertise" }
+    { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/advertise" }
   ]);
-
-
-  useEffect(() => {
-    // Component mounted cleanly
-  }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +101,30 @@ export default function Footer() {
     ) {
       targetHref = "/about";
     }
+    if (
+      item.nameHi?.includes("टीम") ||
+      item.nameEn?.toLowerCase().includes("team") ||
+      targetHref === "/#team" ||
+      targetHref === "#team"
+    ) {
+      targetHref = "/team";
+    }
+    if (
+      item.nameHi?.includes("करियर") ||
+      item.nameEn?.toLowerCase().includes("careers") ||
+      targetHref === "/#careers" ||
+      targetHref === "#careers"
+    ) {
+      targetHref = "/careers";
+    }
+    if (
+      item.nameHi?.includes("विज्ञापन") ||
+      item.nameEn?.toLowerCase().includes("advertise") ||
+      targetHref === "/#advertise" ||
+      targetHref === "#advertise"
+    ) {
+      targetHref = "/advertise";
+    }
     return {
       name: isHindi ? item.nameHi : item.nameEn,
       href: targetHref
@@ -91,9 +135,9 @@ export default function Footer() {
   const quickLinks = [
     { name: isHindi ? "ताज़ा समाचार" : "Latest News", href: "/#latest" },
     { name: isHindi ? "विशेष रिपोर्ट" : "Special Reports", href: "/#reports" },
+    { name: isHindi ? "हमारी टीम" : "Our Editorial Team", href: "/team" },
+    { name: isHindi ? "करियर / नौकरियां" : "Careers & Jobs", href: "/careers" },
     { name: isHindi ? "वीडियो" : "Videos", href: "/videos" },
-    { name: isHindi ? "संपादकीय" : "Editorials", href: "/#editorials" },
-    { name: isHindi ? "फोटो गैलरी" : "Photo Gallery", href: "/#gallery" },
     { name: isHindi ? "ई-पेपर" : "E-Paper", href: "/epaper" },
     { name: isHindi ? "विज्ञापन दें" : "Advertise With Us", href: "/advertise" }
   ];

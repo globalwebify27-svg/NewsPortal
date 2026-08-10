@@ -63,6 +63,8 @@ export default function AdminSettingsPage() {
   const [socialYt, setSocialYt] = useState("https://youtube.com");
   const [socialInsta, setSocialInsta] = useState("https://instagram.com");
   const [socialLinkedin, setSocialLinkedin] = useState("https://linkedin.com");
+  const [socialWhatsapp, setSocialWhatsapp] = useState("https://wa.me/919876543210");
+  const [socialTelegram, setSocialTelegram] = useState("https://t.me/globalawaaz");
 
   // Company Footer Links State
   const [companyLinks, setCompanyLinks] = useState<Array<{ id: string; nameHi: string; nameEn: string; href: string }>>([
@@ -110,6 +112,27 @@ export default function AdminSettingsPage() {
       setLogoInitLoaded(true);
     }
   }, []);
+
+  // Load dynamic social settings from backend
+  const loadSocialSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/social-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (json.data.facebook) setSocialFb(json.data.facebook);
+        if (json.data.twitter) setSocialTwitter(json.data.twitter);
+        if (json.data.youtube) setSocialYt(json.data.youtube);
+        if (json.data.instagram) setSocialInsta(json.data.instagram);
+        if (json.data.linkedin) setSocialLinkedin(json.data.linkedin);
+        if (json.data.whatsapp) setSocialWhatsapp(json.data.whatsapp);
+        if (json.data.telegram) setSocialTelegram(json.data.telegram);
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    loadSocialSettings();
+  }, [loadSocialSettings]);
 
   // Sticky Advertisement Bar State
   const [stickyAdEnabled, setStickyAdEnabled] = useState(true);
@@ -375,15 +398,31 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveSocialLinks = async () => {
-    const payload = {
-      facebook: socialFb.trim(),
-      twitter: socialTwitter.trim(),
-      youtube: socialYt.trim(),
-      instagram: socialInsta.trim(),
-      linkedin: socialLinkedin.trim()
-    };
-    await saveLogoSetting("social_links", JSON.stringify(payload));
-    showToast("✓ Social media links updated centrally in database!");
+    try {
+      const payload = {
+        facebook: socialFb.trim(),
+        twitter: socialTwitter.trim(),
+        youtube: socialYt.trim(),
+        instagram: socialInsta.trim(),
+        linkedin: socialLinkedin.trim(),
+        whatsapp: socialWhatsapp.trim(),
+        telegram: socialTelegram.trim()
+      };
+      const res = await fetch("/api/v1/social-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        window.dispatchEvent(new Event("ga_social_links_updated"));
+        showToast("✓ Social media links saved & updated live globally!");
+      } else {
+        showToast("❌ Failed to save social links: " + (json.message || ""), "error");
+      }
+    } catch (err: any) {
+      showToast("❌ Error saving social links: " + (err?.message || ""), "error");
+    }
   };
 
   return (
@@ -1174,7 +1213,7 @@ export default function AdminSettingsPage() {
           </h4>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📘 Facebook URL</label>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📘 Facebook Page URL</label>
               <input
                 type="text"
                 placeholder="https://facebook.com/yourpage"
@@ -1184,7 +1223,7 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🐦 Twitter / X URL</label>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>🐦 Twitter / X Profile URL</label>
               <input
                 type="text"
                 placeholder="https://twitter.com/yourhandle"
@@ -1204,12 +1243,42 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📸 Instagram URL</label>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>📸 Instagram Profile URL</label>
               <input
                 type="text"
                 placeholder="https://instagram.com/yourprofile"
                 value={socialInsta}
                 onChange={(e) => setSocialInsta(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>💼 LinkedIn Page URL</label>
+              <input
+                type="text"
+                placeholder="https://linkedin.com/company/yourcompany"
+                value={socialLinkedin}
+                onChange={(e) => setSocialLinkedin(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>💬 WhatsApp Channel / Number Link</label>
+              <input
+                type="text"
+                placeholder="https://wa.me/919876543210"
+                value={socialWhatsapp}
+                onChange={(e) => setSocialWhatsapp(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>✈️ Telegram News Channel Link</label>
+              <input
+                type="text"
+                placeholder="https://t.me/globalawaaz"
+                value={socialTelegram}
+                onChange={(e) => setSocialTelegram(e.target.value)}
                 style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
               />
             </div>

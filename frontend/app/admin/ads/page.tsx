@@ -304,6 +304,55 @@ export default function AdminAdsPage() {
         </button>
       </div>
 
+      {/* Quick Navigation Alert Banner for Submitted Advertising Proposals */}
+      <div style={{
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        color: "#ffffff",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "12px",
+        border: "1px solid rgba(229, 9, 20, 0.4)",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.1)"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(229, 9, 20, 0.2)", color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Megaphone size={20} />
+          </div>
+          <div>
+            <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800 }}>
+              📥 Submitted Advertising Proposal Inquiries (प्राप्त विज्ञापन प्रस्ताव)
+            </h4>
+            <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "#cbd5e1" }}>
+              View and manage client brand proposal inquiries submitted directly from the public Advertise page.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/admin/advertise"
+          style={{
+            background: "#e50914",
+            color: "#ffffff",
+            padding: "9px 20px",
+            borderRadius: "8px",
+            fontWeight: 800,
+            fontSize: "0.82rem",
+            textDecoration: "none",
+            boxShadow: "0 4px 12px rgba(229,9,20,0.35)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+        >
+          View All Proposal Inquiries ▶
+        </Link>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
         {/* ==================================================================== */}
         {/* CARD 1: STICKY HEADER ADVERTISEMENT BAR */}

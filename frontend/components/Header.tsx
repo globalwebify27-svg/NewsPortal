@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NewsTicker from "./NewsTicker";
@@ -58,7 +58,8 @@ import {
   ChevronRight,
   Clock,
   Play,
-  Megaphone
+  Megaphone,
+  Briefcase
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
@@ -251,13 +252,37 @@ export default function Header() {
     };
   }, []);
 
-  // Custom Social Links State
+  // Dynamic Social Links State
   const [socialLinks, setSocialLinks] = useState({
     facebook: "https://facebook.com",
     twitter: "https://twitter.com",
     youtube: "https://youtube.com",
     instagram: "https://instagram.com"
   });
+
+  const loadSocialLinks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/social-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        setSocialLinks({
+          facebook: json.data.facebook || "https://facebook.com",
+          twitter: json.data.twitter || "https://twitter.com",
+          youtube: json.data.youtube || "https://youtube.com",
+          instagram: json.data.instagram || "https://instagram.com"
+        });
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    loadSocialLinks();
+    const handleSocialUpdate = () => loadSocialLinks();
+    window.addEventListener("ga_social_links_updated", handleSocialUpdate);
+    return () => {
+      window.removeEventListener("ga_social_links_updated", handleSocialUpdate);
+    };
+  }, [loadSocialLinks]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -332,7 +357,7 @@ export default function Header() {
           <div className="top-bar-right">
             <nav className="top-bar-links">
               <Link href="/about">{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link>
-              <Link href="/#careers">{lang === "HI" ? "करियर" : "Careers"}</Link>
+              <Link href="/careers">{lang === "HI" ? "करियर" : "Careers"}</Link>
               <Link href="/advertise">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link>
               <Link href="/#contact">{lang === "HI" ? "संपर्क करें" : "Contact Us"}</Link>
             </nav>
@@ -883,6 +908,13 @@ export default function Header() {
                 </Link>
               </li>
               <li>
+                <Link href="/careers" className={`nav-link pill-nav-link ${isActive("/careers") ? "active" : ""}`}>
+                  <Briefcase size={15} />
+                  <span>{lang === "HI" ? "करियर" : "Careers"}</span>
+                  {isActive("/careers") && <span className="active-pill-bar"></span>}
+                </Link>
+              </li>
+              <li>
                 <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`}>
                   <Megaphone size={15} />
                   <span>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</span>
@@ -945,6 +977,7 @@ export default function Header() {
               <li><Link href="/opinion" onClick={() => setMobileMenuOpen(false)}>{t("opinion")}</Link></li>
               <li><Link href="/videos" onClick={() => setMobileMenuOpen(false)}>{t("videos")}</Link></li>
               <li><Link href="/about" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link></li>
+              <li><Link href="/careers" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "करियर / नौकरियां" : "Careers & Jobs"}</Link></li>
               <li><Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link></li>
             </ul>
           </div>

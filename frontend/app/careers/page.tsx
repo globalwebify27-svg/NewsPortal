@@ -208,14 +208,14 @@ export default function CareersPage() {
 
       <main className="flex-1 pb-16">
         {/* Light Mode Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-red-50/60 via-white to-slate-50 py-16 sm:py-20 border-b border-slate-200/80">
+        <section className="relative overflow-hidden bg-gradient-to-b from-red-50/60 via-white to-slate-50 py-8 sm:py-12 border-b border-slate-200/80">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-6 shadow-sm">
-              <Sparkles className="w-4 h-4 text-red-600" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-red-600" />
               <span>{isHi ? "ग्लोबल आवाज़ करियर पोर्टल" : "Careers at GLOBAL AWAAZ"}</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4 max-w-4xl mx-auto leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 max-w-4xl mx-auto leading-tight">
               {isHi ? (
                 <>
                   हमारे साथ जुड़ें और <span className="text-red-600">निष्पक्ष मीडिया</span> का हिस्सा बनें
@@ -227,55 +227,58 @@ export default function CareersPage() {
               )}
             </h1>
 
-            <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed mb-8">
+            <p className="text-slate-600 text-xs sm:text-base max-w-2xl mx-auto leading-relaxed mb-4">
               {isHi
                 ? "संपादकीय, पत्रकारिता, तकनीक, और वीडियो निर्माण क्षेत्र में नए अवसरों की तलाश करें और हमारे डिजिटल मीडिया नेटवर्क के साथ अपना करियर बनाएं।"
                 : "Explore current openings in journalism, video production, tech, and digital marketing to build an impactful media career."}
             </p>
 
-            {/* Search & Filter Controls */}
-            <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder={isHi ? "पद या विभाग द्वारा खोजें..." : "Search positions, skills, department..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 shadow-sm transition"
-                />
-              </div>
-
-              {departments.length > 0 && (
-                <select
-                  value={selectedDept}
-                  onChange={(e) => setSelectedDept(e.target.value)}
-                  className="px-4 py-3 bg-white border border-slate-300 rounded-2xl text-sm text-slate-700 font-semibold focus:outline-none focus:border-red-500 shadow-sm"
+            {/* Department Filters Chips (No Search Bar) */}
+            {departments.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDept("ALL")}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                    selectedDept === "ALL"
+                      ? "bg-red-600 text-white border-red-600 shadow-sm"
+                      : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
+                  }`}
                 >
-                  <option value="ALL">{isHi ? "सभी विभाग" : "All Departments"}</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+                  {isHi ? "सभी विभाग" : "All Departments"}
+                </button>
+
+                {departments.map((dept) => (
+                  <button
+                    key={dept}
+                    type="button"
+                    onClick={() => setSelectedDept(dept)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                      selectedDept === dept
+                        ? "bg-red-600 text-white border-red-600 shadow-sm"
+                        : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
         {/* Job Openings Grid */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
-          <div className="flex items-center justify-between mb-8">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900">
                 {isHi ? "वर्तमान पद रिक्तियां" : "Open Positions"}
               </h2>
-              <p className="text-slate-500 text-sm mt-0.5">
+              <p className="text-slate-500 text-xs mt-0.5">
                 {isHi ? "उपयुक्त पद चुनें और सीधा रिज्यूमे अपलोड करें" : "Select a role below to review requirements and apply directly"}
               </p>
             </div>
-            <span className="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl shrink-0">
               {filteredJobs.length} {isHi ? "पद उपलब्ध" : "Jobs Available"}
             </span>
           </div>

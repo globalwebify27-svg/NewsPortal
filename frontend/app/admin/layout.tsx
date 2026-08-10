@@ -175,6 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Team Management", href: "/admin/team", icon: Users, badge: "TEAM", allowed: ["super_admin", "chief_editor"] },
     { name: "Careers & Jobs", href: "/admin/careers", icon: Briefcase, badge: "JOBS", allowed: ["super_admin", "chief_editor"] },
     { name: "Advertisements", href: "/admin/ads", icon: Megaphone, badge: "ADS", allowed: ["super_admin"] },
+    { name: "Ad Proposals", href: "/admin/advertise", icon: Megaphone, badge: "INQUIRIES", allowed: ["super_admin", "chief_editor"] },
     { name: "About Us Page", href: "/admin/about", icon: BookOpen, badge: "NEW", allowed: ["super_admin", "chief_editor"] },
     { name: "e-Paper Manager", href: "/admin/epaper", icon: Newspaper, badge: "NEW", allowed: ["super_admin", "chief_editor"] },
     { name: "SEO Settings", href: "/admin/seo", icon: Globe, badge: "SEO", allowed: ["super_admin"] },

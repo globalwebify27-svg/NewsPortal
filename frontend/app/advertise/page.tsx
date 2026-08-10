@@ -28,7 +28,10 @@ import {
   ArrowRight,
   TrendingUp,
   ShieldCheck,
-  Clock
+  Clock,
+  ChevronRight,
+  Target,
+  BarChart3
 } from "lucide-react";
 
 export default function AdvertisePage() {
@@ -47,13 +50,15 @@ export default function AdvertisePage() {
   const [toastMessage, setToastMessage] = useState("");
   const [selectedAdTypeChip, setSelectedAdTypeChip] = useState("");
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
       if (name === "adType") {
         setSelectedAdTypeChip(value);
       }
@@ -62,10 +67,10 @@ export default function AdvertisePage() {
 
   const selectChip = (optionValue: string) => {
     setSelectedAdTypeChip(optionValue);
-    setFormData(prev => ({ ...prev, adType: optionValue }));
+    setFormData((prev) => ({ ...prev, adType: optionValue }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.brandName || !formData.contactPerson || !formData.mobileNumber || !formData.agreeContact) {
       setToastMessage("⚠️ Please fill in all required fields and check the agreement box.");
@@ -75,22 +80,36 @@ export default function AdvertisePage() {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setToastMessage("🎉 Proposal inquiry sent successfully! Our advertising team will contact you shortly.");
-      setFormData({
-        brandName: "",
-        contactPerson: "",
-        mobileNumber: "",
-        email: "",
-        cityState: "",
-        adType: "",
-        campaignDetails: "",
-        agreeContact: false
+    try {
+      const res = await fetch("/api/v1/advertise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-      setSelectedAdTypeChip("");
-      setTimeout(() => setToastMessage(""), 5000);
-    }, 800);
+      const json = await res.json();
+
+      if (json.success) {
+        setToastMessage("🎉 " + (json.message || "Proposal inquiry sent successfully! Our advertising team will contact you shortly."));
+        setFormData({
+          brandName: "",
+          contactPerson: "",
+          mobileNumber: "",
+          email: "",
+          cityState: "",
+          adType: "",
+          campaignDetails: "",
+          agreeContact: false
+        });
+        setSelectedAdTypeChip("");
+      } else {
+        setToastMessage("❌ " + (json.message || "Failed to submit proposal inquiry. Please try again."));
+      }
+    } catch (err: any) {
+      setToastMessage("❌ Error sending inquiry: " + (err?.message || "Server error"));
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setToastMessage(""), 6000);
+    }
   };
 
   const scrollToForm = () => {
@@ -101,315 +120,186 @@ export default function AdvertisePage() {
   };
 
   return (
-    <div style={{ background: "#f8fafc", minHeight: "100vh", color: "#0f172a", fontFamily: "var(--font-sans, system-ui, sans-serif)" }}>
-
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-red-600 selection:text-white pb-20">
       {/* Toast Notification */}
       {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "28px",
-            right: "28px",
-            background: "#0f172a",
-            color: "#ffffff",
-            border: "2px solid #e50914",
-            padding: "16px 24px",
-            borderRadius: "14px",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
-            zIndex: 99999,
-            fontWeight: 700,
-            fontSize: "0.92rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            backdropFilter: "blur(12px)"
-          }}
-        >
+        <div className="fixed bottom-7 right-7 bg-slate-900 text-white border-2 border-red-600 px-6 py-4 rounded-2xl shadow-2xl z-[99999] font-bold text-sm flex items-center gap-3 backdrop-blur-xl animate-bounce">
           {toastMessage}
         </div>
       )}
 
-      {/* ─── HERO HEADER SECTION ──────────────────────────────────────────────── */}
-      <section
-        style={{
-          background: "linear-gradient(135deg, #090d16 0%, #111827 50%, #0f172a 100%)",
-          color: "#ffffff",
-          padding: "85px 20px 95px 20px",
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-          borderBottom: "4px solid #e50914"
-        }}
-      >
-        {/* Background Ambient Glow Effects */}
-        <div style={{ position: "absolute", top: "-120px", left: "50%", transform: "translateX(-50%)", width: "750px", height: "450px", background: "radial-gradient(circle, rgba(229,9,20,0.25) 0%, rgba(0,0,0,0) 70%)", pointerEvents: "none" }}></div>
-        <div style={{ position: "absolute", bottom: "-80px", right: "5%", width: "300px", height: "300px", background: "radial-gradient(circle, rgba(37,211,102,0.12) 0%, rgba(0,0,0,0) 70%)", pointerEvents: "none" }}></div>
+      {/* ─── NEW CLEAN & SIMPLE HERO SECTION ────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-red-50/60 via-white to-slate-50 py-12 sm:py-16 border-b border-slate-200/80">
+        <div className="absolute top-0 right-10 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div style={{ maxWidth: "920px", margin: "0 auto", position: "relative", zIndex: 2 }}>
-
-          {/* Premium Capsule Tag */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "rgba(229, 9, 20, 0.12)",
-              border: "1px solid rgba(229, 9, 20, 0.4)",
-              color: "#ff4d4d",
-              padding: "7px 18px",
-              borderRadius: "30px",
-              fontSize: "0.82rem",
-              fontWeight: 800,
-              letterSpacing: "0.06em",
-              marginBottom: "24px",
-              textTransform: "uppercase",
-              backdropFilter: "blur(8px)",
-              boxShadow: "0 4px 15px rgba(229, 9, 20, 0.15)"
-            }}
-          >
-            <Megaphone size={15} /> Enterprise Advertising Portal
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          {/* Tag Capsule */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-5 shadow-sm">
+            <Megaphone className="w-4 h-4 text-red-600" />
+            <span>Enterprise Advertising Portal</span>
           </div>
 
-          {/* Main Title */}
-          <h1
-            style={{
-              fontSize: "3.2rem",
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-              margin: "0 0 18px 0",
-              lineHeight: "1.15",
-              color: "#ffffff",
-              textShadow: "0 2px 10px rgba(0,0,0,0.5)"
-            }}
-          >
-            Advertise With <span style={{ color: "#e50914", background: "linear-gradient(135deg, #ef4444 0%, #e50914 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>GLOBAL AWAAZ</span>
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4 max-w-4xl mx-auto">
+            Advertise With <span className="text-red-600">GLOBAL AWAAZ</span>
           </h1>
 
           {/* Subtitle */}
-          <p
-            style={{
-              fontSize: "1.25rem",
-              color: "#cbd5e1",
-              maxWidth: "720px",
-              margin: "0 auto 40px auto",
-              lineHeight: "1.6",
-              fontWeight: 500
-            }}
-          >
-            Reach readers across Bihar and Jharkhand through our digital news platform.
+          <p className="text-slate-600 text-base sm:text-xl max-w-2xl mx-auto leading-relaxed mb-8 font-normal">
+            Reach engaged readers across Bihar and Jharkhand through India's trusted digital news platform.
           </p>
 
-          {/* CTAs */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
+          {/* Action Buttons Row */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
             <a
               href="https://wa.me/919876543210?text=Hello%20Global%20Awaaz,%20I%20want%20to%20advertise%20my%20business."
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                background: "linear-gradient(135deg, #25D366 0%, #1da851 100%)",
-                color: "#ffffff",
-                padding: "15px 32px",
-                borderRadius: "30px",
-                fontWeight: 800,
-                fontSize: "0.98rem",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                boxShadow: "0 8px 25px rgba(37,211,102,0.35)",
-                transition: "all 0.2s ease",
-                cursor: "pointer"
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+              className="px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-sm transition shadow-md shadow-emerald-600/20 flex items-center gap-2"
             >
-              <MessageCircle size={19} /> Chat on WhatsApp
+              <MessageCircle className="w-4 h-4" />
+              <span>Chat on WhatsApp</span>
+              <ChevronRight className="w-4 h-4" />
             </a>
 
             <button
               onClick={scrollToForm}
-              style={{
-                background: "linear-gradient(135deg, #e50914 0%, #b91c1c 100%)",
-                color: "#ffffff",
-                border: "none",
-                padding: "15px 32px",
-                borderRadius: "30px",
-                fontWeight: 800,
-                fontSize: "0.98rem",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                boxShadow: "0 8px 25px rgba(229,9,20,0.38)",
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+              className="px-7 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl text-sm transition shadow-md shadow-red-600/20 flex items-center gap-2"
             >
-              <FileText size={19} /> Request Proposal
+              <FileText className="w-4 h-4" />
+              <span>Request Proposal</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "50px", flexWrap: "wrap", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "30px" }}>
-            {[
-              { label: "Regional Readership", val: "2.5M+ Readers" },
-              { label: "Primary Coverage", val: "Bihar & Jharkhand" },
-              { label: "Ad Response Time", val: "Under 2 Hours" }
-            ].map((m, idx) => (
-              <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 600 }}>
-                <CheckCircle size={15} style={{ color: "#25D366" }} />
-                <span><strong style={{ color: "#ffffff", fontWeight: 800 }}>{m.val}</strong> — {m.label}</span>
+          {/* 4 Clean Metric Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-3">
+                <Users className="w-5 h-5" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-lg font-bold text-slate-900">2.5M+</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Monthly Readers</p>
+            </div>
 
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-3">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Bihar & Jharkhand</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Primary Regional Reach</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-3">
+                <Zap className="w-5 h-5 fill-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Under 2 Hours</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Fast Response Guarantee</p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center mb-3">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">High Engagement</h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Targeted Display & Video</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ─── MAIN CONTENT CONTAINER ───────────────────────────────────────────── */}
-      <div style={{ maxWidth: "1160px", margin: "0 auto", padding: "70px 20px" }}>
-
-        {/* ─── WHY BUSINESSES CHOOSE US ────────────────────────────────────────── */}
-        <section style={{ marginBottom: "80px" }}>
-          <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.08em" }}>Proven Media Reach</span>
-            <h2 style={{ fontSize: "2.1rem", fontWeight: 900, color: "#0f172a", margin: "6px 0 10px 0", letterSpacing: "-0.02em" }}>
-              Why businesses choose us
-            </h2>
-            <p style={{ color: "#64748b", fontSize: "1.02rem", margin: 0, maxWidth: "600px", marginInline: "auto" }}>
-              Targeted digital promotion connecting national & regional brands directly with active news consumers.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "22px" }}>
-            {[
-              { num: "01", title: "Local Bihar & Jharkhand audience", icon: MapPin, desc: "Direct reach in Patna, Ranchi, Gaya, Muzaffarpur, Dhanbad, Jamshedpur & Bhagalpur." },
-              { num: "02", title: "Hindi news readers", icon: Globe, desc: "Deep engagement with native Hindi readers who check daily regional & local headlines." },
-              { num: "03", title: "Website + social media promotion", icon: Share2, desc: "Cross-channel campaign reach spanning news portal, mobile web, WhatsApp & social feeds." },
-              { num: "04", title: "Sponsored articles and banner opportunities", icon: Award, desc: "High-impact leaderboard banners, sidebar sticky units & custom editorial stories." },
-              { num: "05", title: "Quick campaign support", icon: Zap, desc: "Dedicated media account strategist for instant ad setup, design assistance & reports." }
-            ].map((item, idx) => {
-              const IconComp = item.icon;
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderTop: "4px solid #e50914",
-                    borderRadius: "18px",
-                    padding: "26px 20px",
-                    boxShadow: "0 6px 25px rgba(0,0,0,0.04)",
-                    transition: "all 0.25s ease",
-                    display: "flex",
-                    flexDirection: "column",
-                    position: "relative"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 14px 35px rgba(0,0,0,0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 6px 25px rgba(0,0,0,0.04)";
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-                    <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: "rgba(229, 9, 20, 0.08)", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <IconComp size={23} />
-                    </div>
-                    <span style={{ fontSize: "1.2rem", fontWeight: 900, color: "#cbd5e1" }}>{item.num}</span>
-                  </div>
-
-                  <h3 style={{ fontSize: "1.08rem", fontWeight: 800, color: "#0f172a", margin: "0 0 10px 0", lineHeight: "1.35" }}>
-                    {item.title}
-                  </h3>
-
-                  <p style={{ fontSize: "0.87rem", color: "#64748b", margin: 0, lineHeight: "1.6" }}>
-                    {item.desc}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-
+      {/* ─── MAIN CONTENT SECTION CONTAINER ───────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 space-y-16">
         {/* ─── ADVERTISING OPPORTUNITIES GRID ─────────────────────────────────── */}
-        <section style={{ marginBottom: "80px" }}>
-          <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.08em" }}>Flexible Formats</span>
-            <h2 style={{ fontSize: "2.1rem", fontWeight: 900, color: "#0f172a", margin: "6px 0 10px 0", letterSpacing: "-0.02em" }}>
-              Advertising opportunities
+        <section>
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-xs font-bold text-red-600 uppercase tracking-widest bg-red-100/80 px-3 py-1 rounded-full border border-red-200">
+              High-Impact Placement Options
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mt-3 mb-2">
+              Advertising Opportunities
             </h2>
-            <p style={{ color: "#64748b", fontSize: "1.02rem", margin: 0 }}>
+            <p className="text-slate-600 text-sm sm:text-base">
               Select high-performing display banner placements or editorial content sponsorships.
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: "26px" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: "Homepage Banner", icon: Layout, tag: "High Visibility", desc: "Top header leaderboard banner placed prominently above main headlines for maximum brand recall." },
-              { title: "Sidebar Banner", icon: SidebarIcon, tag: "High CTR", desc: "Sticky right-hand rail ad unit visible continuously as readers scroll through news articles." },
-              { title: "Mobile Banner", icon: Smartphone, tag: "Mobile First", desc: "Optimized mobile web banner units tailored for 85%+ smartphone news readers." },
-              { title: "Sponsored News Article", icon: FileText, tag: "Editorial Trust", desc: "Custom brand narrative or press release written in editorial style with SEO backlinks." },
-              { title: "Video Promotion", icon: Video, tag: "Engagement", desc: "Short video ad placement integrated inside video news reels and ground reports." },
-              { title: "Festival Campaigns", icon: Sparkles, tag: "Special Offer", desc: "Custom festive packages for Chhath Puja, Diwali, Holi, Durga Puja & New Year sales." }
+              {
+                title: "Homepage Leaderboard Banner",
+                icon: Layout,
+                tag: "High Visibility",
+                desc: "Top header leaderboard banner placed prominently above main headlines for maximum brand recall."
+              },
+              {
+                title: "Sidebar Sticky Banner",
+                icon: SidebarIcon,
+                tag: "High CTR",
+                desc: "Sticky right-hand rail ad unit visible continuously as readers scroll through news articles."
+              },
+              {
+                title: "Mobile Web Banner",
+                icon: Smartphone,
+                tag: "Mobile First",
+                desc: "Optimized mobile web banner units tailored for 85%+ smartphone news readers."
+              },
+              {
+                title: "Sponsored Editorial Article",
+                icon: FileText,
+                tag: "Editorial Trust",
+                desc: "Custom brand narrative or press release written in editorial style with permanent SEO backlinks."
+              },
+              {
+                title: "Video News Promotion",
+                icon: Video,
+                tag: "High Engagement",
+                desc: "Short video ad placement integrated inside central video reels and ground reporting coverage."
+              },
+              {
+                title: "Festive & Event Campaigns",
+                icon: Sparkles,
+                tag: "Special Offer",
+                desc: "Custom festive packages for Chhath Puja, Diwali, Holi, Durga Puja & New Year sales promotions."
+              }
             ].map((op, i) => {
               const OpIcon = op.icon;
               return (
                 <div
                   key={i}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "20px",
-                    padding: "28px",
-                    boxShadow: "0 6px 25px rgba(0,0,0,0.03)",
-                    transition: "all 0.25s ease",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#cbd5e1";
-                    e.currentTarget.style.boxShadow = "0 12px 35px rgba(0,0,0,0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#e2e8f0";
-                    e.currentTarget.style.boxShadow = "0 6px 25px rgba(0,0,0,0.03)";
-                  }}
+                  className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:border-red-400 hover:shadow-xl transition duration-300 group"
                 >
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <OpIcon size={23} />
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center group-hover:scale-110 transition">
+                        <OpIcon className="w-6 h-6" />
                       </div>
-                      <span style={{ background: "rgba(229,9,20,0.08)", color: "#e50914", border: "1px solid rgba(229,9,20,0.2)", fontSize: "0.74rem", fontWeight: 800, padding: "5px 12px", borderRadius: "20px", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <span className="px-3 py-1 bg-red-50 border border-red-200 text-red-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
                         {op.tag}
                       </span>
                     </div>
 
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a", margin: "0 0 10px 0" }}>
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-red-600 transition mb-2">
                       {op.title}
                     </h3>
-
-                    <p style={{ fontSize: "0.9rem", color: "#64748b", margin: 0, lineHeight: "1.6" }}>
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">
                       {op.desc}
                     </p>
                   </div>
 
-                  <div style={{ marginTop: "22px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
+                  <div className="mt-6 pt-4 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => {
                         selectChip(op.title);
                         scrollToForm();
                       }}
-                      style={{ background: "transparent", border: "none", color: "#e50914", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", padding: 0 }}
+                      className="text-red-600 font-bold text-xs hover:text-red-700 transition flex items-center gap-1.5"
                     >
-                      Select This Format →
+                      <span>Select Format</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -418,169 +308,161 @@ export default function AdvertisePage() {
           </div>
         </section>
 
-
         {/* ─── REQUEST PROPOSAL FORM & CONTACT SECTION ───────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "40px" }} id="proposal-form-section">
-
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="proposal-form-section">
           {/* Proposal Request Form */}
-          <section
-            style={{
-              background: "#ffffff",
-              border: "1px solid #cbd5e1",
-              borderRadius: "24px",
-              padding: "40px",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.05)"
-            }}
-          >
-            <div style={{ marginBottom: "30px", borderBottom: "2px solid #f1f5f9", paddingBottom: "20px" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.08em" }}>Custom Media Kit</span>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#0f172a", margin: "4px 0 6px 0", letterSpacing: "-0.02em" }}>
-                Request an advertising proposal
+          <section className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+            <div className="mb-8 pb-6 border-b border-slate-100">
+              <span className="text-xs font-bold text-red-600 uppercase tracking-widest">
+                Custom Media Kit
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 mb-2">
+                Request an Advertising Proposal
               </h2>
-              <p style={{ fontSize: "0.92rem", color: "#64748b", margin: 0 }}>
-                Fill out the campaign details below and our media advertising team will send custom proposal pricing.
+              <p className="text-xs sm:text-sm text-slate-600">
+                Fill out the campaign details below and our media advertising team will send custom proposal pricing within 2 hours.
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Business / Brand Name *
                   </label>
-                  <div style={{ position: "relative" }}>
-                    <Building size={17} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <div className="relative">
+                    <Building className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="text"
                       name="brandName"
                       value={formData.brandName}
                       onChange={handleInputChange}
                       placeholder="e.g. Acme Retailers"
-                      style={{ width: "100%", padding: "13px 14px 13px 42px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", fontWeight: 600, color: "#0f172a" }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Contact Person *
                   </label>
-                  <div style={{ position: "relative" }}>
-                    <User size={17} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <div className="relative">
+                    <User className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="text"
                       name="contactPerson"
                       value={formData.contactPerson}
                       onChange={handleInputChange}
                       placeholder="Your Full Name"
-                      style={{ width: "100%", padding: "13px 14px 13px 42px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", fontWeight: 600, color: "#0f172a" }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Mobile Number *
                   </label>
-                  <div style={{ position: "relative" }}>
-                    <Phone size={17} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <div className="relative">
+                    <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="tel"
                       name="mobileNumber"
                       value={formData.mobileNumber}
                       onChange={handleInputChange}
                       placeholder="+91 98765 43210"
-                      style={{ width: "100%", padding: "13px 14px 13px 42px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", fontWeight: 600, color: "#0f172a" }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Email Address
                   </label>
-                  <div style={{ position: "relative" }}>
-                    <Mail size={17} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="name@business.com"
-                      style={{ width: "100%", padding: "13px 14px 13px 42px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", fontWeight: 600, color: "#0f172a" }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                     />
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     City / State
                   </label>
-                  <div style={{ position: "relative" }}>
-                    <MapPin size={17} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="text"
                       name="cityState"
                       value={formData.cityState}
                       onChange={handleInputChange}
                       placeholder="e.g. Patna, Bihar"
-                      style={{ width: "100%", padding: "13px 14px 13px 42px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", fontWeight: 600, color: "#0f172a" }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">
                     Type of Advertisement
                   </label>
                   <select
                     name="adType"
                     value={formData.adType}
                     onChange={handleInputChange}
-                    style={{ width: "100%", padding: "13px 14px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", background: "#ffffff", color: "#0f172a", outline: "none", fontWeight: 600 }}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium"
                   >
                     <option value="">Select an option</option>
-                    <option value="Homepage Banner">Homepage Banner</option>
-                    <option value="Sidebar Banner">Sidebar Banner</option>
-                    <option value="Mobile Banner">Mobile Banner</option>
-                    <option value="Sponsored News Article">Sponsored News Article</option>
-                    <option value="Video Promotion">Video Promotion</option>
-                    <option value="Festival Campaigns">Festival Campaigns</option>
-                    <option value="Full Brand Takeover">Full Brand Takeover</option>
+                    <option value="Homepage Leaderboard Banner">Homepage Leaderboard Banner</option>
+                    <option value="Sidebar Sticky Banner">Sidebar Sticky Banner</option>
+                    <option value="Mobile Web Banner">Mobile Web Banner</option>
+                    <option value="Sponsored Editorial Article">Sponsored Editorial Article</option>
+                    <option value="Video News Promotion">Video News Promotion</option>
+                    <option value="Festive & Event Campaigns">Festive & Event Campaigns</option>
                   </select>
                 </div>
               </div>
 
-              {/* Quick Select Chips */}
+              {/* Format Chips */}
               <div>
-                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b", display: "block", marginBottom: "8px" }}>Quick Format Selection:</span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {["Homepage Banner", "Sidebar Banner", "Mobile Banner", "Sponsored News Article", "Video Promotion", "Festival Campaigns"].map((chip) => {
+                <span className="block text-xs font-semibold text-slate-500 mb-2">
+                  Quick Format Selection:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Homepage Leaderboard Banner",
+                    "Sidebar Sticky Banner",
+                    "Mobile Web Banner",
+                    "Sponsored Editorial Article",
+                    "Video News Promotion"
+                  ].map((chip) => {
                     const isSelected = selectedAdTypeChip === chip || formData.adType === chip;
                     return (
                       <button
                         key={chip}
                         type="button"
                         onClick={() => selectChip(chip)}
-                        style={{
-                          padding: "5px 12px",
-                          borderRadius: "20px",
-                          fontSize: "0.78rem",
-                          fontWeight: isSelected ? 800 : 600,
-                          border: isSelected ? "2px solid #e50914" : "1px solid #cbd5e1",
-                          background: isSelected ? "rgba(229,9,20,0.08)" : "#f8fafc",
-                          color: isSelected ? "#e50914" : "#475569",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease"
-                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                          isSelected
+                            ? "bg-red-50 border-red-500 text-red-600 font-bold"
+                            : "bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100"
+                        }`}
                       >
                         {chip}
                       </button>
@@ -590,7 +472,7 @@ export default function AdvertisePage() {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "7px" }}>
+                <label className="block text-xs font-bold text-slate-700 mb-2">
                   Tell us about your campaign
                 </label>
                 <textarea
@@ -598,132 +480,120 @@ export default function AdvertisePage() {
                   rows={4}
                   value={formData.campaignDetails}
                   onChange={handleInputChange}
-                  placeholder="Share details about your campaign dates, target budget, or specific promotion goals..."
-                  style={{ width: "100%", padding: "13px 14px", borderRadius: "12px", border: "1.5px solid #cbd5e1", fontSize: "0.92rem", outline: "none", resize: "vertical", fontWeight: 500 }}
-                ></textarea>
+                  placeholder="Share details about your campaign dates, target budget, or promotion goals..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:bg-white transition font-medium resize-none"
+                />
               </div>
 
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center gap-3">
                 <input
                   type="checkbox"
                   id="agreeContact"
                   name="agreeContact"
                   checked={formData.agreeContact}
                   onChange={handleInputChange}
-                  style={{ marginTop: "2px", width: "19px", height: "19px", accentColor: "#e50914", cursor: "pointer" }}
+                  className="w-4 h-4 accent-red-600 rounded cursor-pointer"
                   required
                 />
-                <label htmlFor="agreeContact" style={{ fontSize: "0.87rem", color: "#334155", fontWeight: 700, cursor: "pointer", lineHeight: "1.4" }}>
-                  I agree to be contacted regarding advertising opportunities.
+                <label htmlFor="agreeContact" className="text-xs text-slate-700 font-medium cursor-pointer">
+                  I agree to be contacted regarding advertising opportunities on Global Awaaz.
                 </label>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                style={{
-                  background: "linear-gradient(135deg, #e50914 0%, #b91c1c 100%)",
-                  color: "#ffffff",
-                  border: "none",
-                  padding: "16px 32px",
-                  borderRadius: "14px",
-                  fontWeight: 800,
-                  fontSize: "1.05rem",
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "10px",
-                  boxShadow: "0 8px 25px rgba(229,9,20,0.35)",
-                  transition: "all 0.2s ease"
-                }}
+                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl text-sm transition shadow-md flex items-center justify-center gap-2"
               >
-                {isSubmitting ? "Sending Inquiry..." : "Send Inquiry"} <Send size={19} />
+                <span>{isSubmitting ? "Sending Inquiry..." : "Send Proposal Inquiry"}</span>
+                <Send className="w-4 h-4" />
               </button>
             </form>
           </section>
 
-
-          {/* Immediate Assistance Contact Sidebar */}
-          <aside>
-            <div
-              style={{
-                background: "linear-gradient(145deg, #0f172a 0%, #1e293b 100%)",
-                color: "#ffffff",
-                borderRadius: "24px",
-                padding: "36px 28px",
-                boxShadow: "0 14px 40px rgba(0,0,0,0.18)",
-                position: "sticky",
-                top: "100px",
-                border: "1px solid rgba(255,255,255,0.1)"
-              }}
-            >
-              {/* Live Desk Badge */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)", padding: "4px 12px", borderRadius: "20px", width: "fit-content", marginBottom: "16px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#25D366", boxShadow: "0 0 8px #25D366" }}></span>
-                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#25D366", textTransform: "uppercase" }}>Live Ad Desk Active</span>
+          {/* Contact Assistance Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 sticky top-24 shadow-xl space-y-6">
+              {/* Active Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span>Live Ad Desk Active</span>
               </div>
 
-              <h3 style={{ fontSize: "1.35rem", fontWeight: 900, margin: "0 0 22px 0", color: "#ffffff", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: "14px" }}>
-                Need immediate assistance?
+              <h3 className="text-xl font-black text-white border-b border-slate-800 pb-4">
+                Need Immediate Assistance?
               </h3>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "rgba(37,211,102,0.18)", color: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <MessageCircle size={22} />
+              <div className="space-y-5">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <span style={{ display: "block", fontSize: "0.78rem", color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>WhatsApp:</span>
-                    <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" style={{ color: "#ffffff", fontWeight: 900, fontSize: "1.08rem", textDecoration: "none", display: "inline-block", marginTop: "2px" }}>
-                      +91 XXXXX XXXXX
+                    <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      WhatsApp Ad Desk:
+                    </span>
+                    <a
+                      href="https://wa.me/919876543210"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white font-bold text-sm hover:text-emerald-400 transition inline-block mt-0.5"
+                    >
+                      +91 98765 43210
                     </a>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "rgba(229,9,20,0.18)", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Mail size={22} />
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <span style={{ display: "block", fontSize: "0.78rem", color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>Email:</span>
-                    <a href="mailto:advertise@globalawaaz.com" style={{ color: "#ffffff", fontWeight: 800, fontSize: "0.98rem", textDecoration: "none", display: "inline-block", marginTop: "2px" }}>
+                    <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Email Address:
+                    </span>
+                    <a
+                      href="mailto:advertise@globalawaaz.com"
+                      className="text-white font-bold text-sm hover:text-red-400 transition inline-block mt-0.5"
+                    >
                       advertise@globalawaaz.com
                     </a>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-                  <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "rgba(59,130,246,0.18)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <MapPin size={22} />
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5" />
                   </div>
                   <div>
-                    <span style={{ display: "block", fontSize: "0.78rem", color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>Location:</span>
-                    <span style={{ color: "#ffffff", fontWeight: 800, fontSize: "0.98rem", display: "block", marginTop: "2px" }}>
-                      Patna, Bihar
+                    <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Head Office:
+                    </span>
+                    <span className="text-white font-bold text-sm block mt-0.5">
+                      Patna, Bihar & Ranchi, Jharkhand
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
-                <span style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "12px", fontWeight: 600 }}>Fast 2-Hour Proposal Turnaround</span>
+              <div className="pt-4 border-t border-slate-800 text-center space-y-3">
+                <span className="text-xs text-slate-400 block font-medium">
+                  Fast 2-Hour Proposal Turnaround
+                </span>
                 <a
                   href="https://wa.me/919876543210?text=I%20want%20to%20advertise"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%", background: "#25D366", color: "#ffffff", padding: "12px 18px", borderRadius: "25px", fontWeight: 800, fontSize: "0.9rem", textDecoration: "none", boxShadow: "0 6px 20px rgba(37,211,102,0.3)" }}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2"
                 >
-                  <MessageCircle size={16} /> Quick WhatsApp Chat
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Quick WhatsApp Chat</span>
                 </a>
               </div>
             </div>
           </aside>
-
         </div>
-
       </div>
-
     </div>
   );
 }
