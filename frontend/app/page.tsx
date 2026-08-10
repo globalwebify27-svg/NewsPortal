@@ -11,6 +11,7 @@ import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/li
 
 import { defaultEnglishArticles, defaultHindiArticles, allDefaultArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
 
 interface Article {
   id: string;
@@ -102,11 +103,11 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselWrapperRef = useRef<HTMLDivElement>(null);
 
-  const loadStickyAdSettings = useCallback(async () => {
+  const loadStickyAdSettings = useCallback(async (forceBypass = false) => {
     try {
-      const res = await fetch("/api/v1/ad-settings");
-      const json = await res.json();
-      if (json.success && json.data) {
+      if (forceBypass) clearCacheKey("/api/v1/ad-settings");
+      const json = await fetchWithCache<{ success?: boolean; data?: any }>("/api/v1/ad-settings", 30000);
+      if (json && json.success && json.data) {
         setStickyAdData({
           enabled: json.data.ad_sticky_enabled !== "false",
           badge: json.data.ad_sticky_badge || "SPONSORED",
@@ -132,7 +133,7 @@ export default function Home() {
 
   useEffect(() => {
     loadStickyAdSettings();
-    const handleUpdate = () => loadStickyAdSettings();
+    const handleUpdate = () => loadStickyAdSettings(true);
     window.addEventListener("ga_sticky_ad_updated", handleUpdate);
     return () => window.removeEventListener("ga_sticky_ad_updated", handleUpdate);
   }, [loadStickyAdSettings]);
@@ -200,8 +201,7 @@ export default function Home() {
     async function fetchArticles() {
       let apiList: Article[] = [];
       try {
-        const res = await fetch(API_ENDPOINTS.articles);
-        const json = await res.json();
+        const json = await fetchWithCache<any>(API_ENDPOINTS.articles, 30000);
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           apiList = json.data;
         } else if (json?.articles && Array.isArray(json.articles) && json.articles.length > 0) {

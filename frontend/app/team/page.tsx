@@ -194,47 +194,57 @@ export default function PublicTeamPage() {
                       </div>
 
                       {/* Bottom Social Icons Row */}
-                      <div className="flex items-center justify-center gap-3 pt-4 mt-3 border-t border-slate-100">
-                        <a
-                          href={member.facebook || "https://facebook.com"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#1877F2] hover:border-[#1877F2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
-                          title="Facebook"
-                        >
-                          <Facebook className="w-4 h-4" />
-                        </a>
+                      {(member.facebook || member.instagram || member.linkedin || member.twitter) && (
+                        <div className="flex items-center justify-center gap-3 pt-4 mt-3 border-t border-slate-100">
+                          {member.facebook && (
+                            <a
+                              href={member.facebook}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#1877F2] hover:border-[#1877F2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title="Facebook"
+                            >
+                              <Facebook className="w-4 h-4" />
+                            </a>
+                          )}
 
-                        <a
-                          href={member.instagram || "https://instagram.com"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-gradient-to-tr hover:from-amber-500 hover:via-rose-500 hover:to-purple-600 hover:border-transparent hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
-                          title="Instagram"
-                        >
-                          <Instagram className="w-4 h-4" />
-                        </a>
+                          {member.instagram && (
+                            <a
+                              href={member.instagram}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-gradient-to-tr hover:from-amber-500 hover:via-rose-500 hover:to-purple-600 hover:border-transparent hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title="Instagram"
+                            >
+                              <Instagram className="w-4 h-4" />
+                            </a>
+                          )}
 
-                        <a
-                          href={member.linkedin || "https://linkedin.com"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#0A66C2] hover:border-[#0A66C2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
-                          title="LinkedIn"
-                        >
-                          <Linkedin className="w-4 h-4" />
-                        </a>
+                          {member.linkedin && (
+                            <a
+                              href={member.linkedin}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-[#0A66C2] hover:border-[#0A66C2] hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title="LinkedIn"
+                            >
+                              <Linkedin className="w-4 h-4" />
+                            </a>
+                          )}
 
-                        <a
-                          href={member.twitter || "https://x.com"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-slate-900 hover:border-slate-900 hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
-                          title="Twitter / X"
-                        >
-                          <Twitter className="w-4 h-4" />
-                        </a>
-                      </div>
+                          {member.twitter && (
+                            <a
+                              href={member.twitter}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-9 h-9 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-600 hover:text-white hover:bg-slate-900 hover:border-slate-900 hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title="Twitter / X"
+                            >
+                              <Twitter className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

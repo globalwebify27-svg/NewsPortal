@@ -1,3 +1,5 @@
+import { fetchWithCache, clearCacheKey } from "./settingsCache";
+
 export interface YouTubeVideoItem {
   id: string;
   title: string;
@@ -40,12 +42,9 @@ export const DEFAULT_VIDEOS: YouTubeVideoItem[] = [];
 
 export async function fetchCentralVideos(): Promise<{ videos: YouTubeVideoItem[]; liveTvConfig: any }> {
   try {
-    const res = await fetch("/api/v1/videos", { next: { revalidate: 60 } });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.videos)) {
-        return { videos: data.videos, liveTvConfig: data.liveTvConfig };
-      }
+    const data = await fetchWithCache<{ success?: boolean; videos?: YouTubeVideoItem[]; liveTvConfig?: any }>("/api/v1/videos", 15000);
+    if (data && data.success && Array.isArray(data.videos)) {
+      return { videos: data.videos, liveTvConfig: data.liveTvConfig };
     }
   } catch (e) {
     console.warn("Failed to fetch central videos from database:", e);
@@ -55,6 +54,7 @@ export async function fetchCentralVideos(): Promise<{ videos: YouTubeVideoItem[]
 
 export async function saveCentralVideos(videos: YouTubeVideoItem[], liveTvConfig?: any) {
   try {
+    clearCacheKey("/api/v1/videos");
     await fetch("/api/v1/videos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -67,6 +67,7 @@ import { fetchCentralVideos } from "@/lib/youtube";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { autoDetectUserCity, getDistrictsForState } from "@/lib/districts";
 import { getSubCategories } from "@/lib/subCategories";
+import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
 
 export default function Header() {
   let pathname = "";
@@ -118,7 +119,7 @@ export default function Header() {
         if (parsed.timeRange) setFilterTimeRange(parsed.timeRange);
         if (parsed.state) setFilterStateFilter(parsed.state);
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const pillNavRef = React.useRef<HTMLDivElement>(null);
@@ -153,7 +154,7 @@ export default function Header() {
     try {
       sessionStorage.setItem("ga_active_filters", JSON.stringify(filtersObj));
       window.dispatchEvent(new Event("ga_filters_changed"));
-    } catch (e) {}
+    } catch (e) { }
     setIsFilterModalOpen(false);
   };
 
@@ -166,7 +167,7 @@ export default function Header() {
     try {
       sessionStorage.removeItem("ga_active_filters");
       window.dispatchEvent(new Event("ga_filters_changed"));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Custom Admin Logo State
@@ -197,11 +198,11 @@ export default function Header() {
             setLang("EN");
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     loadGeoLocation();
-    fetchCentralVideos().catch(() => {});
+    fetchCentralVideos().catch(() => { });
   }, []);
 
   const handleSelectState = (st: IndianState) => {
@@ -219,12 +220,12 @@ export default function Header() {
   };
 
   useEffect(() => {
-    const loadLogo = async () => {
+    const loadLogo = async (forceBypass = false) => {
       try {
-        const res = await fetch("/api/v1/logo-settings");
-        const json = await res.json();
-        if (json.success && json.data) {
-          const data = json.data as Record<string, string>;
+        if (forceBypass) clearCacheKey("/api/v1/logo-settings");
+        const json = await fetchWithCache<{ success?: boolean; data?: Record<string, string> }>("/api/v1/logo-settings", 30000);
+        if (json && json.success && json.data) {
+          const data = json.data;
           if (data.site_logo_url) {
             setCustomLogoUrl(data.site_logo_url);
           } else {
@@ -245,7 +246,7 @@ export default function Header() {
     };
     loadLogo();
     // Re-fetch from DB when admin panel signals an update
-    const handleLogoUpdate = () => { loadLogo(); };
+    const handleLogoUpdate = () => { loadLogo(true); };
     window.addEventListener("ga_logo_updated", handleLogoUpdate);
     return () => {
       window.removeEventListener("ga_logo_updated", handleLogoUpdate);
@@ -254,30 +255,30 @@ export default function Header() {
 
   // Dynamic Social Links State
   const [socialLinks, setSocialLinks] = useState({
-    facebook: "https://facebook.com",
-    twitter: "https://twitter.com",
-    youtube: "https://youtube.com",
-    instagram: "https://instagram.com"
+    facebook: "",
+    twitter: "",
+    youtube: "",
+    instagram: ""
   });
 
-  const loadSocialLinks = useCallback(async () => {
+  const loadSocialLinks = useCallback(async (forceBypass = false) => {
     try {
-      const res = await fetch("/api/v1/social-settings");
-      const json = await res.json();
-      if (json.success && json.data) {
+      if (forceBypass) clearCacheKey("/api/v1/social-settings");
+      const json = await fetchWithCache<{ success?: boolean; data?: any }>("/api/v1/social-settings", 30000);
+      if (json && json.success && json.data) {
         setSocialLinks({
-          facebook: json.data.facebook || "https://facebook.com",
-          twitter: json.data.twitter || "https://twitter.com",
-          youtube: json.data.youtube || "https://youtube.com",
-          instagram: json.data.instagram || "https://instagram.com"
+          facebook: json.data.facebook || "",
+          twitter: json.data.twitter || "",
+          youtube: json.data.youtube || "",
+          instagram: json.data.instagram || ""
         });
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   useEffect(() => {
     loadSocialLinks();
-    const handleSocialUpdate = () => loadSocialLinks();
+    const handleSocialUpdate = () => loadSocialLinks(true);
     window.addEventListener("ga_social_links_updated", handleSocialUpdate);
     return () => {
       window.removeEventListener("ga_social_links_updated", handleSocialUpdate);
@@ -291,8 +292,7 @@ export default function Header() {
     }
 
     const q = searchQuery.toLowerCase().trim();
-    fetch("/api/v1/articles")
-      .then((res) => res.json())
+    fetchWithCache<{ success?: boolean; articles?: any[] }>("/api/v1/articles", 30000)
       .then((json) => {
         if (json && json.success && Array.isArray(json.articles)) {
           const matched = json.articles.filter((a: any) => {
@@ -303,7 +303,7 @@ export default function Header() {
           setSearchResults(matched.slice(0, 6));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [searchQuery]);
 
 
@@ -363,10 +363,10 @@ export default function Header() {
             </nav>
             <span className="top-bar-vdivider">|</span>
             <div className="top-bar-social-icons">
-              <a href={socialLinks.facebook || "#"} target="_blank" rel="noopener noreferrer" aria-label="Facebook"><Facebook size={14} /></a>
-              <a href={socialLinks.twitter || "#"} target="_blank" rel="noopener noreferrer" aria-label="Twitter"><Twitter size={14} /></a>
-              <a href={socialLinks.youtube || "#"} target="_blank" rel="noopener noreferrer" aria-label="YouTube"><Youtube size={14} /></a>
-              <a href={socialLinks.instagram || "#"} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Instagram size={14} /></a>
+              {socialLinks.facebook && <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"><Facebook size={14} /></a>}
+              {socialLinks.twitter && <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter"><Twitter size={14} /></a>}
+              {socialLinks.youtube && <a href={socialLinks.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"><Youtube size={14} /></a>}
+              {socialLinks.instagram && <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><Instagram size={14} /></a>}
             </div>
           </div>
         </div>
@@ -932,21 +932,21 @@ export default function Header() {
         items={
           lang === "HI"
             ? [
-                "वैश्विक बाजार सूचकांक रिकॉर्ड स्तर पर पहुंचा।",
-                "मंगल ग्रह रोवर ने प्राचीन झील के तल में कार्बनिक यौगिकों की खोज की।",
-                "चैम्पियनशिप फाइनल में रोमांचक मुकाबले के बाद फैसला।",
-                "एआई शोध गठबंधन ने नए सुरक्षा सिद्धांतों की घोषणा की।",
-                "भारतीय रिज़र्व बैंक ने आर्थिक विकास दर का नया अनुमान जारी किया।",
-                "अंतरिक्ष केंद्र में नए प्रयोगों की सफल शुरुआत हुई।",
-              ]
+              "वैश्विक बाजार सूचकांक रिकॉर्ड स्तर पर पहुंचा।",
+              "मंगल ग्रह रोवर ने प्राचीन झील के तल में कार्बनिक यौगिकों की खोज की।",
+              "चैम्पियनशिप फाइनल में रोमांचक मुकाबले के बाद फैसला।",
+              "एआई शोध गठबंधन ने नए सुरक्षा सिद्धांतों की घोषणा की।",
+              "भारतीय रिज़र्व बैंक ने आर्थिक विकास दर का नया अनुमान जारी किया।",
+              "अंतरिक्ष केंद्र में नए प्रयोगों की सफल शुरुआत हुई।",
+            ]
             : [
-                "Global Market Index hits record high amid tech expansion.",
-                "Mars mission rover discovers organic compounds in ancient lakebed.",
-                "Championship final goes to penalty shootout in thrilling sports decider.",
-                "Leading AI coalition announces global framework for safety.",
-                "Reserve Bank of India releases revised economic growth forecast.",
-                "Space station launches groundbreaking microgravity experiments.",
-              ]
+              "Global Market Index hits record high amid tech expansion.",
+              "Mars mission rover discovers organic compounds in ancient lakebed.",
+              "Championship final goes to penalty shootout in thrilling sports decider.",
+              "Leading AI coalition announces global framework for safety.",
+              "Reserve Bank of India releases revised economic growth forecast.",
+              "Space station launches groundbreaking microgravity experiments.",
+            ]
         }
         badgeText={t("breakingNews")}
         badgeLink="/breaking"

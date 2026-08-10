@@ -58,13 +58,13 @@ export default function AdminSettingsPage() {
   const [logoInitLoaded, setLogoInitLoaded] = useState(false);
 
   // Social Media Links State
-  const [socialFb, setSocialFb] = useState("https://facebook.com");
-  const [socialTwitter, setSocialTwitter] = useState("https://twitter.com");
-  const [socialYt, setSocialYt] = useState("https://youtube.com");
-  const [socialInsta, setSocialInsta] = useState("https://instagram.com");
-  const [socialLinkedin, setSocialLinkedin] = useState("https://linkedin.com");
-  const [socialWhatsapp, setSocialWhatsapp] = useState("https://wa.me/919876543210");
-  const [socialTelegram, setSocialTelegram] = useState("https://t.me/globalawaaz");
+  const [socialFb, setSocialFb] = useState("");
+  const [socialTwitter, setSocialTwitter] = useState("");
+  const [socialYt, setSocialYt] = useState("");
+  const [socialInsta, setSocialInsta] = useState("");
+  const [socialLinkedin, setSocialLinkedin] = useState("");
+  const [socialWhatsapp, setSocialWhatsapp] = useState("");
+  const [socialTelegram, setSocialTelegram] = useState("");
 
   // Company Footer Links State
   const [companyLinks, setCompanyLinks] = useState<Array<{ id: string; nameHi: string; nameEn: string; href: string }>>([

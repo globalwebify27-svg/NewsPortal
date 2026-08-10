@@ -22,23 +22,8 @@ interface AdProposal {
 function getStoredProposals(): AdProposal[] {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      // Default sample proposals if empty
-      const sampleProposals: AdProposal[] = [
-        {
-          id: "prop_sample_1",
-          brandName: "Acme Retailers Bihar",
-          contactPerson: "Rajesh Kumar",
-          mobileNumber: "+91 98765 43210",
-          email: "rajesh@acme.com",
-          cityState: "Patna, Bihar",
-          adType: "Homepage Leaderboard Banner",
-          campaignDetails: "Diwali Special Retail Promotion Campaign for 15 Days.",
-          status: "PENDING",
-          submittedAt: new Date(Date.now() - 3600000 * 2).toISOString()
-        }
-      ];
-      fs.writeFileSync(DATA_FILE, JSON.stringify(sampleProposals, null, 2), "utf-8");
-      return sampleProposals;
+      fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2), "utf-8");
+      return [];
     }
     const fileData = fs.readFileSync(DATA_FILE, "utf-8");
     return JSON.parse(fileData) as AdProposal[];

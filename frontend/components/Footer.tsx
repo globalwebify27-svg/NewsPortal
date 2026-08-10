@@ -19,6 +19,7 @@ import {
   Linkedin
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
 
 export default function Footer() {
   const { lang, t } = useLanguage();
@@ -27,24 +28,24 @@ export default function Footer() {
   const [subscribed, setSubscribed] = useState(false);
 
   const [socialLinks, setSocialLinks] = useState({
-    facebook: "https://facebook.com",
-    twitter: "https://twitter.com",
-    youtube: "https://youtube.com",
-    instagram: "https://instagram.com",
-    linkedin: "https://linkedin.com"
+    facebook: "",
+    twitter: "",
+    youtube: "",
+    instagram: "",
+    linkedin: ""
   });
 
-  const loadSocialLinks = useCallback(async () => {
+  const loadSocialLinks = useCallback(async (forceBypass = false) => {
     try {
-      const res = await fetch("/api/v1/social-settings");
-      const json = await res.json();
-      if (json.success && json.data) {
+      if (forceBypass) clearCacheKey("/api/v1/social-settings");
+      const json = await fetchWithCache<{ success?: boolean; data?: any }>("/api/v1/social-settings", 30000);
+      if (json && json.success && json.data) {
         setSocialLinks({
-          facebook: json.data.facebook || "https://facebook.com",
-          twitter: json.data.twitter || "https://twitter.com",
-          youtube: json.data.youtube || "https://youtube.com",
-          instagram: json.data.instagram || "https://instagram.com",
-          linkedin: json.data.linkedin || "https://linkedin.com"
+          facebook: json.data.facebook || "",
+          twitter: json.data.twitter || "",
+          youtube: json.data.youtube || "",
+          instagram: json.data.instagram || "",
+          linkedin: json.data.linkedin || ""
         });
       }
     } catch (e) {}
@@ -52,7 +53,7 @@ export default function Footer() {
 
   useEffect(() => {
     loadSocialLinks();
-    const handleSocialUpdate = () => loadSocialLinks();
+    const handleSocialUpdate = () => loadSocialLinks(true);
     window.addEventListener("ga_social_links_updated", handleSocialUpdate);
     return () => {
       window.removeEventListener("ga_social_links_updated", handleSocialUpdate);
@@ -192,12 +193,12 @@ export default function Footer() {
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {[
-                { icon: <Facebook size={15} />, href: socialLinks.facebook || "#" },
-                { icon: <Twitter size={15} />, href: socialLinks.twitter || "#" },
-                { icon: <Instagram size={15} />, href: socialLinks.instagram || "#" },
-                { icon: <Youtube size={15} />, href: socialLinks.youtube || "#" },
-                { icon: <Linkedin size={15} />, href: socialLinks.linkedin || "#" }
-              ].map((s, idx) => (
+                { icon: <Facebook size={15} />, href: socialLinks.facebook },
+                { icon: <Twitter size={15} />, href: socialLinks.twitter },
+                { icon: <Instagram size={15} />, href: socialLinks.instagram },
+                { icon: <Youtube size={15} />, href: socialLinks.youtube },
+                { icon: <Linkedin size={15} />, href: socialLinks.linkedin }
+              ].filter((s) => Boolean(s.href)).map((s, idx) => (
                 <a
                   key={idx}
                   href={s.href}

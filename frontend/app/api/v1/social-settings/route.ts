@@ -17,13 +17,13 @@ export interface SocialLinks {
 }
 
 const DEFAULT_SOCIAL_LINKS: SocialLinks = {
-  facebook: "https://facebook.com",
-  twitter: "https://twitter.com",
-  youtube: "https://youtube.com",
-  instagram: "https://instagram.com",
-  linkedin: "https://linkedin.com",
-  whatsapp: "https://wa.me/919876543210",
-  telegram: "https://t.me/globalawaaz"
+  facebook: "",
+  twitter: "",
+  youtube: "",
+  instagram: "",
+  linkedin: "",
+  whatsapp: "",
+  telegram: ""
 };
 
 function readSocialData(): SocialLinks {
