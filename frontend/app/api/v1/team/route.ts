@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       linkedin,
       facebook,
       instagram,
+      education,
+      experience,
       order,
       isActive,
     } = body;
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
       linkedin: linkedin?.trim() || null,
       facebook: facebook?.trim() || null,
       instagram: instagram?.trim() || null,
+      education: education?.trim() || null,
+      experience: experience?.trim() || null,
       order: Number(order) || 0,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
     };
@@ -96,78 +100,92 @@ export async function POST(request: NextRequest) {
     const dbTeamMember = getTeamModel();
     let member: any;
 
-    if (dbTeamMember) {
-      if (id) {
-        member = await dbTeamMember.update({
-          where: { id },
-          data: payload,
-        });
-      } else {
-        member = await dbTeamMember.create({
-          data: payload,
-        });
-      }
-    } else {
-      // Raw MySQL fallback execution
-      const newId = id || `tm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const saveViaRawSql = async (memberId: string | undefined, data: typeof payload) => {
+      const newId = memberId || `tm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-      if (id) {
+      if (memberId) {
         await prisma.$executeRawUnsafe(
           `UPDATE team_members SET 
             name = ?, nameHi = ?, designation = ?, designationHi = ?, 
             bio = ?, bioHi = ?, avatar = ?, email = ?, phone = ?, 
             twitter = ?, linkedin = ?, facebook = ?, instagram = ?, 
+            education = ?, experience = ?,
             \`order\` = ?, isActive = ?, updatedAt = ? 
            WHERE id = ?`,
-          payload.name,
-          payload.nameHi,
-          payload.designation,
-          payload.designationHi,
-          payload.bio,
-          payload.bioHi,
-          payload.avatar,
-          payload.email,
-          payload.phone,
-          payload.twitter,
-          payload.linkedin,
-          payload.facebook,
-          payload.instagram,
-          payload.order,
-          payload.isActive ? 1 : 0,
+          data.name,
+          data.nameHi,
+          data.designation,
+          data.designationHi,
+          data.bio,
+          data.bioHi,
+          data.avatar,
+          data.email,
+          data.phone,
+          data.twitter,
+          data.linkedin,
+          data.facebook,
+          data.instagram,
+          data.education,
+          data.experience,
+          data.order,
+          data.isActive ? 1 : 0,
           now,
-          id
+          memberId
         );
-        member = { id, ...payload };
+        return { id: memberId, ...data };
       } else {
         await prisma.$executeRawUnsafe(
           `INSERT INTO team_members (
             id, name, nameHi, designation, designationHi, 
             bio, bioHi, avatar, email, phone, 
             twitter, linkedin, facebook, instagram, 
+            education, experience,
             \`order\`, isActive, createdAt, updatedAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           newId,
-          payload.name,
-          payload.nameHi,
-          payload.designation,
-          payload.designationHi,
-          payload.bio,
-          payload.bioHi,
-          payload.avatar,
-          payload.email,
-          payload.phone,
-          payload.twitter,
-          payload.linkedin,
-          payload.facebook,
-          payload.instagram,
-          payload.order,
-          payload.isActive ? 1 : 0,
+          data.name,
+          data.nameHi,
+          data.designation,
+          data.designationHi,
+          data.bio,
+          data.bioHi,
+          data.avatar,
+          data.email,
+          data.phone,
+          data.twitter,
+          data.linkedin,
+          data.facebook,
+          data.instagram,
+          data.education,
+          data.experience,
+          data.order,
+          data.isActive ? 1 : 0,
           now,
           now
         );
-        member = { id: newId, ...payload };
+        return { id: newId, ...data };
       }
+    };
+
+    if (dbTeamMember) {
+      try {
+        if (id) {
+          member = await dbTeamMember.update({
+            where: { id },
+            data: payload,
+          });
+        } else {
+          member = await dbTeamMember.create({
+            data: payload,
+          });
+        }
+      } catch (ormErr: any) {
+        console.warn("Prisma ORM validation warning, saving via Raw SQL fallback:", ormErr?.message);
+        member = await saveViaRawSql(id, payload);
+      }
+    } else {
+      member = await saveViaRawSql(id, payload);
     }
 
     return NextResponse.json({

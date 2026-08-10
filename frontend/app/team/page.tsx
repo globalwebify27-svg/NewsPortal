@@ -17,7 +17,9 @@ import {
   ChevronRight,
   Award,
   Newspaper,
-  UserCheck
+  UserCheck,
+  GraduationCap,
+  Briefcase
 } from "lucide-react";
 
 interface TeamMember {
@@ -35,6 +37,8 @@ interface TeamMember {
   linkedin?: string;
   facebook?: string;
   instagram?: string;
+  education?: string;
+  experience?: string;
   order: number;
 }
 
@@ -175,6 +179,23 @@ export default function PublicTeamPage() {
                           <p className="text-xs font-bold text-red-600 mt-1 uppercase tracking-wider bg-red-50 border border-red-100 px-2.5 py-0.5 rounded-md inline-block">
                             {displayRole}
                           </p>
+
+                          {(member.education || member.experience) && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {member.education && (
+                                <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  <GraduationCap className="w-3 h-3 text-red-600" />
+                                  {member.education}
+                                </span>
+                              )}
+                              {member.experience && (
+                                <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  <Briefcase className="w-3 h-3 text-red-600" />
+                                  {member.experience}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 

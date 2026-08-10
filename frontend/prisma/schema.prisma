@@ -507,6 +507,8 @@ model TeamMember {
   linkedin      String?
   facebook      String?
   instagram     String?
+  education     String?
+  experience    String?
   order         Int      @default(0)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())

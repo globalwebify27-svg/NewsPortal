@@ -24,6 +24,8 @@ import {
   UserCheck,
   ShieldAlert,
   Loader2,
+  GraduationCap,
+  Briefcase,
   X
 } from "lucide-react";
 import { convertImageToWebP } from "@/lib/webpConverter";
@@ -43,6 +45,8 @@ interface TeamMember {
   linkedin?: string;
   facebook?: string;
   instagram?: string;
+  education?: string;
+  experience?: string;
   order: number;
   isActive: boolean;
   createdAt?: string;
@@ -74,6 +78,8 @@ export default function AdminTeamPage() {
     linkedin: "",
     facebook: "",
     instagram: "",
+    education: "",
+    experience: "",
     order: 0,
     isActive: true,
   });
@@ -120,6 +126,8 @@ export default function AdminTeamPage() {
       linkedin: "",
       facebook: "",
       instagram: "",
+      education: "",
+      experience: "",
       order: members.length + 1,
       isActive: true,
     });
@@ -142,6 +150,8 @@ export default function AdminTeamPage() {
       linkedin: member.linkedin || "",
       facebook: member.facebook || "",
       instagram: member.instagram || "",
+      education: member.education || "",
+      experience: member.experience || "",
       order: member.order ?? 0,
       isActive: member.isActive ?? true,
     });
@@ -410,6 +420,24 @@ export default function AdminTeamPage() {
                     )}
                   </div>
 
+                  {/* Education & Experience Badges */}
+                  {(member.education || member.experience) && (
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
+                      {member.education && (
+                        <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-red-600" />
+                          {member.education}
+                        </span>
+                      )}
+                      {member.experience && (
+                        <span className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-red-600" />
+                          {member.experience}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {member.bio && (
                     <p className="text-xs text-slate-600 mt-3 line-clamp-3 leading-relaxed border-t border-slate-100 pt-3">
                       {member.bio}
@@ -573,6 +601,35 @@ export default function AdminTeamPage() {
                 </div>
               </div>
 
+              {/* Education & Experience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Education / Qualifications
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. M.A. Journalism / BJMC"
+                    value={formData.education}
+                    onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-red-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Experience / Background
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 10+ Years in Media & News"
+                    value={formData.experience}
+                    onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-red-500 font-medium"
+                  />
+                </div>
+              </div>
+
               {/* Contact Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -715,3 +772,4 @@ export default function AdminTeamPage() {
     </div>
   );
 }
+

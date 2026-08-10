@@ -87,42 +87,31 @@ export async function POST(request: NextRequest) {
     const dbJob = getJobModel();
     let job: any;
 
-    if (dbJob) {
-      if (id) {
-        job = await dbJob.update({
-          where: { id },
-          data: payload,
-        });
-      } else {
-        job = await dbJob.create({
-          data: payload,
-        });
-      }
-    } else {
-      const newId = id || `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const saveJobViaRawSql = async (jobId: string | undefined, data: typeof payload) => {
+      const newId = jobId || `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-      if (id) {
+      if (jobId) {
         await prisma.$executeRawUnsafe(
           `UPDATE jobs SET 
             title = ?, titleHi = ?, department = ?, location = ?, 
             type = ?, experience = ?, salary = ?, description = ?, 
             requirements = ?, isActive = ?, updatedAt = ? 
            WHERE id = ?`,
-          payload.title,
-          payload.titleHi,
-          payload.department,
-          payload.location,
-          payload.type,
-          payload.experience,
-          payload.salary,
-          payload.description,
-          payload.requirements,
-          payload.isActive ? 1 : 0,
+          data.title,
+          data.titleHi,
+          data.department,
+          data.location,
+          data.type,
+          data.experience,
+          data.salary,
+          data.description,
+          data.requirements,
+          data.isActive ? 1 : 0,
           now,
-          id
+          jobId
         );
-        job = { id, ...payload };
+        return { id: jobId, ...data };
       } else {
         await prisma.$executeRawUnsafe(
           `INSERT INTO jobs (
@@ -131,21 +120,41 @@ export async function POST(request: NextRequest) {
             requirements, isActive, createdAt, updatedAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           newId,
-          payload.title,
-          payload.titleHi,
-          payload.department,
-          payload.location,
-          payload.type,
-          payload.experience,
-          payload.salary,
-          payload.description,
-          payload.requirements,
-          payload.isActive ? 1 : 0,
+          data.title,
+          data.titleHi,
+          data.department,
+          data.location,
+          data.type,
+          data.experience,
+          data.salary,
+          data.description,
+          data.requirements,
+          data.isActive ? 1 : 0,
           now,
           now
         );
-        job = { id: newId, ...payload };
+        return { id: newId, ...data };
       }
+    };
+
+    if (dbJob) {
+      try {
+        if (id) {
+          job = await dbJob.update({
+            where: { id },
+            data: payload,
+          });
+        } else {
+          job = await dbJob.create({
+            data: payload,
+          });
+        }
+      } catch (ormErr: any) {
+        console.warn("Prisma ORM validation warning for jobs, saving via Raw SQL fallback:", ormErr?.message);
+        job = await saveJobViaRawSql(id, payload);
+      }
+    } else {
+      job = await saveJobViaRawSql(id, payload);
     }
 
     return NextResponse.json({
