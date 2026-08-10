@@ -35,7 +35,7 @@ function LoginForm() {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
@@ -49,22 +49,55 @@ function LoginForm() {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const isValidUser = cleanEmail === "global2409" || cleanEmail === "global2409@globalawaaz.com";
-      const isValidPass = password === "Global@#2409";
+    // 1. Super Admin Check
+    const isSuperAdminUser = cleanEmail === "global2409" || cleanEmail === "global2409@globalawaaz.com";
+    const isSuperAdminPass = cleanPassword === "Global@#2409";
 
-      if (isValidUser && isValidPass) {
-        const userEmail = "Global2409";
+    if (isSuperAdminUser && isSuperAdminPass) {
+      const userEmail = "Global Awaaz Admin";
+      localStorage.setItem("ga_admin_logged_in", "true");
+      localStorage.setItem("ga_admin_user", userEmail);
+      localStorage.setItem("ga_actual_role", "super_admin");
+      localStorage.setItem("ga_admin_role", "super_admin");
+      setLoggedInUser(userEmail);
+      setIsSubmitting(false);
+      router.push(redirectUrl);
+      return;
+    }
+
+    // 2. Created Staff Users DB API Check (/api/v1/staff)
+    try {
+      const res = await fetch("/api/v1/staff");
+      const json = await res.json();
+      let staffUsers: any[] = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+      if (!staffUsers || staffUsers.length === 0) {
+        try {
+          staffUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+        } catch (e) {}
+      }
+
+      const matched = staffUsers.find(
+        (u: any) =>
+          (u.email?.toLowerCase() === cleanEmail || (u.name && u.name.toLowerCase() === cleanEmail)) &&
+          u.password === cleanPassword
+      );
+
+      if (matched) {
+        const userName = matched.name || matched.email;
+        const role = (matched.roleSlug || "editor").toLowerCase();
         localStorage.setItem("ga_admin_logged_in", "true");
-        localStorage.setItem("ga_admin_user", userEmail);
-        setLoggedInUser(userEmail);
+        localStorage.setItem("ga_admin_user", userName);
+        localStorage.setItem("ga_actual_role", role);
+        localStorage.setItem("ga_admin_role", role);
+        setLoggedInUser(userName);
         setIsSubmitting(false);
         router.push(redirectUrl);
-      } else {
-        setIsSubmitting(false);
-        setErrorMsg("Authentication failed. Invalid Admin ID or Password.");
+        return;
       }
-    }, 450);
+    } catch (err) {}
+
+    setIsSubmitting(false);
+    setErrorMsg("Authentication failed. Invalid Admin ID or Password.");
   };
 
   const handleFillDemoCredentials = () => {
