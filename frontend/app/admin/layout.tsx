@@ -27,7 +27,8 @@ import {
   Users,
   ShieldAlert,
   History,
-  CheckCircle2
+  CheckCircle2,
+  Briefcase
 } from "lucide-react";
 
 export type AdminRoleSlug = "super_admin" | "chief_editor" | "editor";
@@ -171,6 +172,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Categories", href: "/admin/categories", icon: FolderTree, allowed: ["super_admin", "chief_editor"] },
     { name: "Media Library", href: "/admin/media", icon: ImageIcon, allowed: ["super_admin", "chief_editor", "editor"] },
     { name: "Videos Manager", href: "/admin/videos", icon: Video, allowed: ["super_admin", "chief_editor"] },
+    { name: "Team Management", href: "/admin/team", icon: Users, badge: "TEAM", allowed: ["super_admin", "chief_editor"] },
+    { name: "Careers & Jobs", href: "/admin/careers", icon: Briefcase, badge: "JOBS", allowed: ["super_admin", "chief_editor"] },
     { name: "Advertisements", href: "/admin/ads", icon: Megaphone, badge: "ADS", allowed: ["super_admin"] },
     { name: "About Us Page", href: "/admin/about", icon: BookOpen, badge: "NEW", allowed: ["super_admin", "chief_editor"] },
     { name: "e-Paper Manager", href: "/admin/epaper", icon: Newspaper, badge: "NEW", allowed: ["super_admin", "chief_editor"] },

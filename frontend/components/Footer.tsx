@@ -36,12 +36,14 @@ export default function Footer() {
 
   const [customCompanyLinks, setCustomCompanyLinks] = useState<Array<{ nameHi: string; nameEn: string; href: string }>>([
     { nameHi: "हमारे बारे में", nameEn: "About Us", href: "/about" },
+    { nameHi: "हमारी टीम", nameEn: "Our Team", href: "/team" },
     { nameHi: "करियर", nameEn: "Careers", href: "/#careers" },
     { nameHi: "गोपनीयता नीति", nameEn: "Privacy Policy", href: "/#privacy" },
     { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
     { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/#contact" },
     { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/#advertise" }
   ]);
+
 
   useEffect(() => {
     // Component mounted cleanly

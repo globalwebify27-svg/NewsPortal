@@ -19,7 +19,7 @@
 
   background: var(--admin-offwhite) !important;
   min-height: 100vh !important;
-  padding: 20px !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
   color: var(--admin-black) !important;
   font-family: "Inter", system-ui, -apple-system, sans-serif !important;
@@ -29,50 +29,43 @@
 .admin-container {
   display: flex !important;
   flex-direction: row !important;
-  min-height: calc(100vh - 40px) !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
   margin: 0 auto !important;
   width: 100% !important;
   max-width: 100% !important;
-  border-radius: 16px !important;
   overflow: hidden !important;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06) !important;
-  border: 1px solid var(--admin-border) !important;
   background: var(--admin-white) !important;
   color: var(--admin-black) !important;
 }
 
-/* ─── SIDEBAR ───────────────────────────────────────────────────────────── */
+/* ─── FIXED SIDEBAR ─────────────────────────────────────────────────────── */
 .admin-sidebar-nav {
-  width: 260px !important;
-  min-width: 260px !important;
+  width: 265px !important;
+  min-width: 265px !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
   flex-shrink: 0 !important;
   background: var(--admin-black) !important;
   color: #ffffff !important;
-  padding: 28px 16px !important;
+  padding: 24px 16px !important;
   display: flex !important;
   flex-direction: column !important;
-  border-right: none !important;
-  position: relative !important;
+  border-right: 1px solid rgba(255,255,255,0.08) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
 }
 
-/* Red left border accent on active nav item */
-.admin-sidebar-nav nav button {
-  transition: all 0.2s ease !important;
-  border-left: 3px solid transparent !important;
-}
-
-.admin-sidebar-nav nav button:hover {
-  background: rgba(255,255,255,0.07) !important;
-  color: #ffffff !important;
-  transform: translateX(3px) !important;
-  border-left-color: rgba(229,9,20,0.5) !important;
-}
-
-/* ─── MAIN CONTENT CANVAS ───────────────────────────────────────────────── */
+/* ─── SCROLLABLE MAIN CONTENT CANVAS ───────────────────────────────────── */
 .admin-main-content,
 .admin-main-viewport {
   flex: 1 !important;
   min-width: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
   padding: 32px 36px !important;
   background: var(--admin-white) !important;
   color: var(--admin-black) !important;

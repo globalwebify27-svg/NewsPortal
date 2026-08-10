@@ -446,22 +446,29 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <Link
               href="/admin/ai"
-              style={{ flex: 1, background: "#0f172a", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none" }}
+              style={{ flex: 1, background: "#0f172a", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
             >
               Open AI Copilot
+            </Link>
+            <Link
+              href="/admin/team"
+              style={{ flex: 1, background: "#2563eb", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
+            >
+              Team Management
             </Link>
             {adminRole !== "editor" && (
               <Link
                 href="/admin/settings"
-                style={{ flex: 1, background: "#e50914", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none" }}
+                style={{ flex: 1, background: "#e50914", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
               >
                 Site Branding Settings
               </Link>
             )}
           </div>
+
         </div>
       </div>
 

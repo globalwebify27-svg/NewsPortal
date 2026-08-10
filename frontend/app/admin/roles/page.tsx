@@ -132,7 +132,9 @@ export default function RolesManagementPage() {
         { id: "p15", slug: "users:manage", name: "Manage Users", module: "users", description: "Can view users, assign roles, activate or ban accounts" },
         { id: "p16", slug: "roles:manage", name: "Manage Roles & Permissions", module: "roles", description: "Can create roles and update permission matrix" },
         { id: "p17", slug: "settings:manage", name: "Manage Site Settings", module: "settings", description: "Can update portal configuration and SEO settings" },
-        { id: "p18", slug: "audit_logs:view", name: "View Audit Logs", module: "audit_logs", description: "Can view system activity logs and security audits" }
+        { id: "p18", slug: "team:manage", name: "Manage Team Members", module: "team", description: "Can add, edit, or remove editorial team members" },
+        { id: "p19", slug: "careers:manage", name: "Manage Careers & Resumes", module: "careers", description: "Can post job openings and review candidate CVs/resumes" },
+        { id: "p20", slug: "audit_logs:view", name: "View Audit Logs", module: "audit_logs", description: "Can view system activity logs and security audits" }
       ];
 
       const grouped: Record<string, Permission[]> = {};
@@ -143,7 +145,7 @@ export default function RolesManagementPage() {
 
       const superAdminPerms = [...mockPerms];
       const chiefEditorPerms = mockPerms.filter((p) =>
-        ["articles:view", "articles:create", "articles:edit_own", "articles:edit_any", "articles:delete", "articles:publish", "articles:approve", "articles:reject", "articles:schedule", "articles:restore", "categories:manage", "tags:manage", "media:manage", "comments:manage"].includes(p.slug)
+        ["articles:view", "articles:create", "articles:edit_own", "articles:edit_any", "articles:delete", "articles:publish", "articles:approve", "articles:reject", "articles:schedule", "articles:restore", "categories:manage", "tags:manage", "media:manage", "comments:manage", "team:manage", "careers:manage"].includes(p.slug)
       );
       const editorPerms = mockPerms.filter((p) =>
         ["articles:view", "articles:create", "articles:edit_own", "media:manage"].includes(p.slug)
