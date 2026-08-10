@@ -168,25 +168,30 @@ export default function AdminArticlesPage() {
   };
 
   useEffect(() => {
-    try {
-      let rawRole = localStorage.getItem("ga_admin_role") || "";
-      const user = localStorage.getItem("ga_admin_user") || "Global Admin";
+    async function initArticlesPageRole() {
+      try {
+        let rawRole = localStorage.getItem("ga_admin_role") || "";
+        const user = localStorage.getItem("ga_admin_user") || "Global Admin";
 
-      // Auto-resolve role from ga_created_users for staff accounts (e.g. Amarjeet)
-      if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
-        try {
-          const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-          const found = storedUsers.find((u: any) => u.name === user || u.email === user);
-          if (found && found.roleSlug) {
-            rawRole = found.roleSlug;
-          }
-        } catch (e) {}
-      }
+        if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
+          try {
+            const res = await fetch("/api/v1/staff");
+            const json = await res.json();
+            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+            const found = storedUsers.find((u: any) => u.name === user || u.email === user);
+            if (found && found.roleSlug) {
+              rawRole = found.roleSlug;
+            }
+          } catch (e) {}
+        }
 
-      const role = (rawRole || "super_admin").toLowerCase();
-      setAdminRole(role);
-      setAdminUserName(user);
-    } catch (e) {}
+        const role = (rawRole || "super_admin").toLowerCase();
+        setAdminRole(role);
+        setAdminUserName(user);
+      } catch (e) {}
+    }
+
+    initArticlesPageRole();
 
     async function loadInitialArticles() {
       let combined: AdminArticle[] = [];

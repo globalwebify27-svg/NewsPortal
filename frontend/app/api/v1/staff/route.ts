@@ -7,6 +7,16 @@ const ALT_DB_FILE_PATH = path.join(process.cwd(), "staff_users_db.json");
 
 function getDbPath(): string {
   try {
+    if (fs.existsSync(DB_FILE_PATH)) {
+      return DB_FILE_PATH;
+    }
+  } catch (e) {}
+  try {
+    if (fs.existsSync(ALT_DB_FILE_PATH)) {
+      return ALT_DB_FILE_PATH;
+    }
+  } catch (e) {}
+  try {
     const dir = path.dirname(DB_FILE_PATH);
     if (fs.existsSync(dir)) {
       return DB_FILE_PATH;
@@ -17,30 +27,37 @@ function getDbPath(): string {
 
 function readStaffUsers(): any[] {
   try {
-    const filePath = getDbPath();
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, "utf-8");
-      return JSON.parse(content);
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const content = fs.readFileSync(DB_FILE_PATH, "utf-8");
+      const list = JSON.parse(content);
+      if (Array.isArray(list) && list.length > 0) return list;
     }
-  } catch (e) {
-    console.error("Error reading staff DB file:", e);
-  }
+  } catch (e) {}
+  try {
+    if (fs.existsSync(ALT_DB_FILE_PATH)) {
+      const content = fs.readFileSync(ALT_DB_FILE_PATH, "utf-8");
+      const list = JSON.parse(content);
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+  } catch (e) {}
   return [];
 }
 
 function writeStaffUsers(users: any[]): boolean {
+  let written = false;
   try {
-    const filePath = getDbPath();
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    const dir1 = path.dirname(DB_FILE_PATH);
+    if (!fs.existsSync(dir1)) {
+      fs.mkdirSync(dir1, { recursive: true });
     }
-    fs.writeFileSync(filePath, JSON.stringify(users, null, 2), "utf-8");
-    return true;
-  } catch (e) {
-    console.error("Error writing staff DB file:", e);
-    return false;
-  }
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(users, null, 2), "utf-8");
+    written = true;
+  } catch (e) {}
+  try {
+    fs.writeFileSync(ALT_DB_FILE_PATH, JSON.stringify(users, null, 2), "utf-8");
+    written = true;
+  } catch (e) {}
+  return written;
 }
 
 // GET /api/v1/staff -> Retrieve all staff accounts from central DB

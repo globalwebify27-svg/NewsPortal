@@ -69,12 +69,7 @@ function LoginForm() {
     try {
       const res = await fetch("/api/v1/staff");
       const json = await res.json();
-      let staffUsers: any[] = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-      if (!staffUsers || staffUsers.length === 0) {
-        try {
-          staffUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-        } catch (e) {}
-      }
+      const staffUsers: any[] = (json && json.success && Array.isArray(json.data)) ? json.data : [];
 
       const matched = staffUsers.find(
         (u: any) =>

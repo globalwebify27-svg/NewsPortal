@@ -103,15 +103,8 @@ export default function RolesManagementPage() {
         const json = await res.json();
         if (json && json.success && Array.isArray(json.data)) {
           setCreatedUsersList(json.data);
-          localStorage.setItem("ga_created_users", JSON.stringify(json.data));
-        } else {
-          const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-          setCreatedUsersList(storedUsers);
         }
-      } catch (e) {
-        const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-        setCreatedUsersList(storedUsers);
-      }
+      } catch (e) {}
     }
 
     loadStaffFromDb();
@@ -292,23 +285,25 @@ export default function RolesManagementPage() {
     };
 
     try {
-      await fetch("/api/v1/staff", {
+      const res = await fetch("/api/v1/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUserObj)
       });
+      const json = await res.json();
+      if (json && json.success) {
+        const getRes = await fetch("/api/v1/staff");
+        const getJson = await getRes.json();
+        if (getJson && getJson.success && Array.isArray(getJson.data)) {
+          setCreatedUsersList(getJson.data);
+        } else {
+          setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
+        }
+      } else {
+        setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
+      }
     } catch (e) {
-      console.warn("Failed to POST staff user to DB API:", e);
-    }
-
-    try {
-      const existingUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-      const filtered = existingUsers.filter((u: any) => u.email !== newUserObj.email);
-      const updated = [newUserObj, ...filtered];
-      localStorage.setItem("ga_created_users", JSON.stringify(updated));
-      setCreatedUsersList(updated);
-    } catch (err) {
-      console.error("Failed to save created user:", err);
+      setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
     }
 
     setCreatedCredentialsCard({
@@ -335,16 +330,18 @@ export default function RolesManagementPage() {
       await fetch(`/api/v1/staff?email=${encodeURIComponent(emailToDelete)}`, {
         method: "DELETE"
       });
-    } catch (e) {}
-
-    try {
-      const existing = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-      const updated = existing.filter((u: any) => u.email.toLowerCase() !== emailToDelete.toLowerCase());
-      localStorage.setItem("ga_created_users", JSON.stringify(updated));
-      setCreatedUsersList(updated);
-      setSuccessMsg(`Revoked login credentials for ${emailToDelete}.`);
-      setTimeout(() => setSuccessMsg(""), 4000);
-    } catch (err) {}
+      const getRes = await fetch("/api/v1/staff");
+      const getJson = await getRes.json();
+      if (getJson && getJson.success && Array.isArray(getJson.data)) {
+        setCreatedUsersList(getJson.data);
+      } else {
+        setCreatedUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== emailToDelete.toLowerCase()));
+      }
+    } catch (e) {
+      setCreatedUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== emailToDelete.toLowerCase()));
+    }
+    setSuccessMsg(`Revoked login credentials for ${emailToDelete}.`);
+    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   if (loading) {

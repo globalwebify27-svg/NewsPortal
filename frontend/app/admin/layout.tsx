@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           try {
             const res = await fetch("/api/v1/staff");
             const json = await res.json();
-            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
             const found = storedUsers.find((u: any) => u.name === user || u.email === user);
             if (found && found.roleSlug) {
               savedActual = found.roleSlug as AdminRoleSlug;
@@ -115,10 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     try {
       const res = await fetch("/api/v1/staff");
       const json = await res.json();
-      let storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-      if (!storedUsers || storedUsers.length === 0) {
-        storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-      }
+      const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
       const found = storedUsers.find(
         (u: any) =>
           (u.email.toLowerCase() === userEmail || (u.name && u.name.toLowerCase() === userEmail)) &&
