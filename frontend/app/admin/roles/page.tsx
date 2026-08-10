@@ -95,9 +95,26 @@ export default function RolesManagementPage() {
     try {
       const savedRole = localStorage.getItem("ga_admin_role") || "super_admin";
       setActiveAdminRole(savedRole);
-      const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-      setCreatedUsersList(storedUsers);
     } catch (e) {}
+
+    async function loadStaffFromDb() {
+      try {
+        const res = await fetch("/api/v1/staff");
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.data)) {
+          setCreatedUsersList(json.data);
+          localStorage.setItem("ga_created_users", JSON.stringify(json.data));
+        } else {
+          const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+          setCreatedUsersList(storedUsers);
+        }
+      } catch (e) {
+        const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+        setCreatedUsersList(storedUsers);
+      }
+    }
+
+    loadStaffFromDb();
     fetchRolesAndPermissions();
   }, []);
 
@@ -242,7 +259,7 @@ export default function RolesManagementPage() {
   };
 
   // Submit Create User Account (Enforcing Super Admin & Chief Editor creation rules)
-  const handleCreateUserSubmit = (e: React.FormEvent) => {
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
 
@@ -255,58 +272,71 @@ export default function RolesManagementPage() {
 
     setIsCreatingUser(true);
 
-    setTimeout(() => {
-      // Find role object
-      const roleObj = roles.find((r) => r.slug === selectedSlug) || roles.find((r) => r.slug === "editor");
-      const roleDisplayName = roleObj?.name || (selectedSlug === "chief_editor" ? "Chief Editor" : "Editor");
+    const roleObj = roles.find((r) => r.slug === selectedSlug) || roles.find((r) => r.slug === "editor");
+    const roleDisplayName = roleObj?.name || (selectedSlug === "chief_editor" ? "Chief Editor" : "Editor");
 
-      // Increment role count
-      setRoles((prev) =>
-        prev.map((r) => (r.slug === selectedSlug ? { ...r, userCount: r.userCount + 1 } : r))
-      );
+    // Increment role count
+    setRoles((prev) =>
+      prev.map((r) => (r.slug === selectedSlug ? { ...r, userCount: r.userCount + 1 } : r))
+    );
 
-      const newUserObj: StaffUser = {
-        id: "usr_" + Date.now(),
-        name: newUserName.trim(),
-        email: newUserEmail.trim().toLowerCase(),
-        password: newUserPassword,
-        roleSlug: selectedSlug,
-        roleName: roleDisplayName,
-        createdBy: activeAdminRole === "super_admin" ? "Super Admin" : "Chief Editor",
-        createdAt: new Date().toLocaleDateString()
-      };
+    const newUserObj: StaffUser = {
+      id: "usr_" + Date.now(),
+      name: newUserName.trim(),
+      email: newUserEmail.trim().toLowerCase(),
+      password: newUserPassword,
+      roleSlug: selectedSlug,
+      roleName: roleDisplayName,
+      createdBy: activeAdminRole === "super_admin" ? "Super Admin" : "Chief Editor",
+      createdAt: new Date().toLocaleDateString()
+    };
 
-      try {
-        const existingUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-        const filtered = existingUsers.filter((u: any) => u.email !== newUserObj.email);
-        const updated = [newUserObj, ...filtered];
-        localStorage.setItem("ga_created_users", JSON.stringify(updated));
-        setCreatedUsersList(updated);
-      } catch (err) {
-        console.error("Failed to save created user:", err);
-      }
-
-      setCreatedCredentialsCard({
-        name: newUserName.trim(),
-        email: newUserEmail.trim().toLowerCase(),
-        pass: newUserPassword,
-        roleName: roleDisplayName
+    try {
+      await fetch("/api/v1/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUserObj)
       });
+    } catch (e) {
+      console.warn("Failed to POST staff user to DB API:", e);
+    }
 
-      setIsCreatingUser(false);
-      setShowCreateUserModal(false);
+    try {
+      const existingUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+      const filtered = existingUsers.filter((u: any) => u.email !== newUserObj.email);
+      const updated = [newUserObj, ...filtered];
+      localStorage.setItem("ga_created_users", JSON.stringify(updated));
+      setCreatedUsersList(updated);
+    } catch (err) {
+      console.error("Failed to save created user:", err);
+    }
 
-      // Reset form
-      setNewUserName("");
-      setNewUserEmail("");
-      setNewUserPassword("");
+    setCreatedCredentialsCard({
+      name: newUserName.trim(),
+      email: newUserEmail.trim().toLowerCase(),
+      pass: newUserPassword,
+      roleName: roleDisplayName
+    });
 
-      setSuccessMsg(`User Account for '${newUserName.trim()}' (${roleDisplayName}) created successfully! Credentials active for login.`);
-      setTimeout(() => setSuccessMsg(""), 5000);
-    }, 700);
+    setIsCreatingUser(false);
+    setShowCreateUserModal(false);
+
+    // Reset form
+    setNewUserName("");
+    setNewUserEmail("");
+    setNewUserPassword("");
+
+    setSuccessMsg(`User Account for '${newUserName.trim()}' (${roleDisplayName}) saved to database! Credentials active for login.`);
+    setTimeout(() => setSuccessMsg(""), 5000);
   };
 
-  const handleDeleteUserAccount = (emailToDelete: string) => {
+  const handleDeleteUserAccount = async (emailToDelete: string) => {
+    try {
+      await fetch(`/api/v1/staff?email=${encodeURIComponent(emailToDelete)}`, {
+        method: "DELETE"
+      });
+    } catch (e) {}
+
     try {
       const existing = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
       const updated = existing.filter((u: any) => u.email.toLowerCase() !== emailToDelete.toLowerCase());

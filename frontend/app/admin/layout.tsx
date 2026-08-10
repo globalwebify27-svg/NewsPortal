@@ -51,38 +51,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [actualRole, setActualRole] = useState<AdminRoleSlug>("super_admin");
 
   useEffect(() => {
-    try {
-      const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
-      const user = localStorage.getItem("ga_admin_user");
-      let savedActual = (localStorage.getItem("ga_actual_role") as AdminRoleSlug);
-      let savedRole = (localStorage.getItem("ga_admin_role") as AdminRoleSlug);
+    async function initSession() {
+      try {
+        const isAuth = localStorage.getItem("ga_admin_logged_in") === "true";
+        const user = localStorage.getItem("ga_admin_user");
+        let savedActual = (localStorage.getItem("ga_actual_role") as AdminRoleSlug);
+        let savedRole = (localStorage.getItem("ga_admin_role") as AdminRoleSlug);
 
-      // Auto-resolve role from ga_created_users if logged-in user is a staff account (e.g. Amarjeet)
-      if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
-        try {
-          const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-          const found = storedUsers.find((u: any) => u.name === user || u.email === user);
-          if (found && found.roleSlug) {
-            savedActual = found.roleSlug as AdminRoleSlug;
-            savedRole = found.roleSlug as AdminRoleSlug;
-            localStorage.setItem("ga_actual_role", found.roleSlug);
-            localStorage.setItem("ga_admin_role", found.roleSlug);
-          }
-        } catch (e) {}
+        // Auto-resolve role from central DB API for staff accounts
+        if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
+          try {
+            const res = await fetch("/api/v1/staff");
+            const json = await res.json();
+            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+            const found = storedUsers.find((u: any) => u.name === user || u.email === user);
+            if (found && found.roleSlug) {
+              savedActual = found.roleSlug as AdminRoleSlug;
+              savedRole = found.roleSlug as AdminRoleSlug;
+              localStorage.setItem("ga_actual_role", found.roleSlug);
+              localStorage.setItem("ga_admin_role", found.roleSlug);
+            }
+          } catch (e) {}
+        }
+
+        if (!savedActual) savedActual = "super_admin";
+        if (!savedRole) savedRole = savedActual;
+
+        if (user) setAdminUser(user);
+        setActualRole(savedActual);
+        setAdminRole(savedActual !== "super_admin" ? savedActual : savedRole);
+        setIsAuthenticated(isAuth);
+      } catch (err) {
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingSession(false);
       }
-
-      if (!savedActual) savedActual = "super_admin";
-      if (!savedRole) savedRole = savedActual;
-
-      if (user) setAdminUser(user);
-      setActualRole(savedActual);
-      setAdminRole(savedActual !== "super_admin" ? savedActual : savedRole);
-      setIsAuthenticated(isAuth);
-    } catch (err) {
-      setIsAuthenticated(false);
-    } finally {
-      setIsCheckingSession(false);
     }
+    initSession();
   }, []);
 
   const handleRoleSwitch = (newRole: AdminRoleSlug) => {
@@ -92,64 +97,67 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     localStorage.setItem("ga_admin_role", newRole);
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const userEmail = emailInput.trim().toLowerCase();
-      const pass = passwordInput;
+    const userEmail = emailInput.trim().toLowerCase();
+    const pass = passwordInput;
 
-      // 1. Super Admin Account Match
-      const isSuperAdminMatch =
-        (userEmail === "global2409@globalawaaz.com" || userEmail === "global2409") &&
-        pass === "Global@#2409";
+    // 1. Super Admin Account Match
+    const isSuperAdminMatch =
+      (userEmail === "global2409@globalawaaz.com" || userEmail === "global2409") &&
+      pass === "Global@#2409";
 
-      // 2. Dynamically Created Staff Accounts (Created via Roles & Permissions)
-      let matchedCreatedUser: { name: string; email: string; roleSlug: AdminRoleSlug } | null = null;
-      try {
-        const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
-        const found = storedUsers.find(
-          (u: any) =>
-            (u.email.toLowerCase() === userEmail || (u.name && u.name.toLowerCase() === userEmail)) &&
-            u.password === pass
-        );
-        if (found) {
-          matchedCreatedUser = {
-            name: found.name,
-            email: found.email,
-            roleSlug: (found.roleSlug as AdminRoleSlug) || "editor"
-          };
-        }
-      } catch (err) {}
-
-      if (isSuperAdminMatch) {
-        localStorage.setItem("ga_admin_logged_in", "true");
-        localStorage.setItem("ga_admin_user", "Global Awaaz Admin");
-        localStorage.setItem("ga_actual_role", "super_admin");
-        localStorage.setItem("ga_admin_role", "super_admin");
-        setAdminUser("Global Awaaz Admin");
-        setActualRole("super_admin");
-        setAdminRole("super_admin");
-        setIsAuthenticated(true);
-        setIsSubmitting(false);
-      } else if (matchedCreatedUser) {
-        const role = matchedCreatedUser.roleSlug;
-        localStorage.setItem("ga_admin_logged_in", "true");
-        localStorage.setItem("ga_admin_user", matchedCreatedUser.name || matchedCreatedUser.email);
-        localStorage.setItem("ga_actual_role", role);
-        localStorage.setItem("ga_admin_role", role);
-        setAdminUser(matchedCreatedUser.name || matchedCreatedUser.email);
-        setActualRole(role);
-        setAdminRole(role);
-        setIsAuthenticated(true);
-        setIsSubmitting(false);
-      } else {
-        setLoginError("Invalid Admin credentials. Access denied.");
-        setIsSubmitting(false);
+    // 2. Dynamically Created Staff Accounts (Server Database Endpoint)
+    let matchedCreatedUser: { name: string; email: string; roleSlug: AdminRoleSlug } | null = null;
+    try {
+      const res = await fetch("/api/v1/staff");
+      const json = await res.json();
+      let storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+      if (!storedUsers || storedUsers.length === 0) {
+        storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
       }
-    }, 600);
+      const found = storedUsers.find(
+        (u: any) =>
+          (u.email.toLowerCase() === userEmail || (u.name && u.name.toLowerCase() === userEmail)) &&
+          u.password === pass
+      );
+      if (found) {
+        matchedCreatedUser = {
+          name: found.name,
+          email: found.email,
+          roleSlug: (found.roleSlug as AdminRoleSlug) || "editor"
+        };
+      }
+    } catch (err) {}
+
+    if (isSuperAdminMatch) {
+      localStorage.setItem("ga_admin_logged_in", "true");
+      localStorage.setItem("ga_admin_user", "Global Awaaz Admin");
+      localStorage.setItem("ga_actual_role", "super_admin");
+      localStorage.setItem("ga_admin_role", "super_admin");
+      setAdminUser("Global Awaaz Admin");
+      setActualRole("super_admin");
+      setAdminRole("super_admin");
+      setIsAuthenticated(true);
+      setIsSubmitting(false);
+    } else if (matchedCreatedUser) {
+      const role = matchedCreatedUser.roleSlug;
+      localStorage.setItem("ga_admin_logged_in", "true");
+      localStorage.setItem("ga_admin_user", matchedCreatedUser.name || matchedCreatedUser.email);
+      localStorage.setItem("ga_actual_role", role);
+      localStorage.setItem("ga_admin_role", role);
+      setAdminUser(matchedCreatedUser.name || matchedCreatedUser.email);
+      setActualRole(role);
+      setAdminRole(role);
+      setIsAuthenticated(true);
+      setIsSubmitting(false);
+    } else {
+      setLoginError("Invalid Admin credentials. Access denied.");
+      setIsSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
