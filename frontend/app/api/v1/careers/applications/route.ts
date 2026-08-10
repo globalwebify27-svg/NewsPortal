@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// Safely access jobApplication model
-const dbJobApp = (prisma as any).jobApplication;
+function getJobAppModel() {
+  return (prisma as any).jobApplication || (prisma as any).JobApplication;
+}
 
 // GET /api/v1/careers/applications -> List candidate applications for admin
 export async function GET(request: NextRequest) {
@@ -12,20 +13,32 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get("jobId");
 
-    const where: any = {};
-    if (jobId) {
-      where.jobId = jobId;
-    }
+    const dbJobApp = getJobAppModel();
+    let applications: any[] = [];
 
-    const applications = dbJobApp
-      ? await dbJobApp.findMany({
-          where,
-          orderBy: { appliedAt: "desc" },
-          include: {
-            job: true,
-          },
-        })
-      : [];
+    if (dbJobApp) {
+      const where: any = {};
+      if (jobId) {
+        where.jobId = jobId;
+      }
+
+      applications = await dbJobApp.findMany({
+        where,
+        orderBy: { appliedAt: "desc" },
+        include: {
+          job: true,
+        },
+      });
+    } else {
+      const rawQuery = jobId
+        ? `SELECT a.*, j.title as jobTitle, j.department as jobDepartment FROM job_applications a LEFT JOIN jobs j ON a.jobId = j.id WHERE a.jobId = '${jobId}' ORDER BY a.appliedAt DESC`
+        : `SELECT a.*, j.title as jobTitle, j.department as jobDepartment FROM job_applications a LEFT JOIN jobs j ON a.jobId = j.id ORDER BY a.appliedAt DESC`;
+      const rawRes = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
+      applications = rawRes.map((r) => ({
+        ...r,
+        job: r.jobTitle ? { title: r.jobTitle, department: r.jobDepartment } : null,
+      }));
+    }
 
     return NextResponse.json({
       success: true,
@@ -62,26 +75,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!dbJobApp) {
-      return NextResponse.json(
-        { success: false, message: "Job application model not initialized" },
-        { status: 500 }
-      );
-    }
+    const payload = {
+      jobId,
+      fullName: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      experience: experience?.trim() || "1-3 Years",
+      portfolioUrl: portfolioUrl?.trim() || null,
+      coverLetter: coverLetter?.trim() || null,
+      resumeUrl: resumeUrl.trim(),
+      status: "PENDING",
+    };
 
-    const application = await dbJobApp.create({
-      data: {
-        jobId,
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        experience: experience?.trim() || "1-3 Years",
-        portfolioUrl: portfolioUrl?.trim() || null,
-        coverLetter: coverLetter?.trim() || null,
-        resumeUrl: resumeUrl.trim(),
-        status: "PENDING",
-      },
-    });
+    const dbJobApp = getJobAppModel();
+    let application: any;
+
+    if (dbJobApp) {
+      application = await dbJobApp.create({
+        data: payload,
+      });
+    } else {
+      const newId = `app_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO job_applications (
+          id, jobId, fullName, email, phone, 
+          experience, portfolioUrl, coverLetter, resumeUrl, 
+          status, appliedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        newId,
+        payload.jobId,
+        payload.fullName,
+        payload.email,
+        payload.phone,
+        payload.experience,
+        payload.portfolioUrl,
+        payload.coverLetter,
+        payload.resumeUrl,
+        payload.status,
+        now
+      );
+      application = { id: newId, ...payload, appliedAt: now };
+    }
 
     return NextResponse.json({
       success: true,
@@ -97,7 +133,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/v1/careers/applications -> Update application status (SHORTLISTED, REVIEWED, REJECTED)
+// PATCH /api/v1/careers/applications -> Update application status
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
@@ -110,17 +146,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!dbJobApp) {
-      return NextResponse.json(
-        { success: false, message: "Job application model not available" },
-        { status: 500 }
-      );
-    }
+    const dbJobApp = getJobAppModel();
+    let updated: any;
 
-    const updated = await dbJobApp.update({
-      where: { id },
-      data: { status },
-    });
+    if (dbJobApp) {
+      updated = await dbJobApp.update({
+        where: { id },
+        data: { status },
+      });
+    } else {
+      await prisma.$executeRawUnsafe(`UPDATE job_applications SET status = ? WHERE id = ?`, status, id);
+      updated = { id, status };
+    }
 
     return NextResponse.json({
       success: true,
@@ -149,14 +186,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!dbJobApp) {
-      return NextResponse.json(
-        { success: false, message: "Job application model not available" },
-        { status: 500 }
-      );
+    const dbJobApp = getJobAppModel();
+    if (dbJobApp) {
+      await dbJobApp.delete({ where: { id } });
+    } else {
+      await prisma.$executeRawUnsafe(`DELETE FROM job_applications WHERE id = ?`, id);
     }
-
-    await dbJobApp.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
@@ -170,3 +205,4 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+

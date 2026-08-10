@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// Safely access job model
-const dbJob = (prisma as any).job;
+function getJobModel() {
+  return (prisma as any).job || (prisma as any).Job;
+}
 
 // GET /api/v1/careers/jobs -> List active jobs (or all if admin=true)
 export async function GET(request: NextRequest) {
@@ -12,20 +13,28 @@ export async function GET(request: NextRequest) {
   const admin = searchParams.get("admin") === "true";
 
   try {
-    const where: any = {};
-    if (!admin) {
-      where.isActive = true;
-    }
+    const dbJob = getJobModel();
+    let jobs: any[] = [];
 
-    const jobs = dbJob
-      ? await dbJob.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          include: {
-            applications: admin ? true : false,
-          },
-        })
-      : [];
+    if (dbJob) {
+      const where: any = {};
+      if (!admin) {
+        where.isActive = true;
+      }
+
+      jobs = await dbJob.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          applications: admin ? true : false,
+        },
+      });
+    } else {
+      const rawQuery = admin
+        ? `SELECT * FROM jobs ORDER BY createdAt DESC`
+        : `SELECT * FROM jobs WHERE isActive = 1 ORDER BY createdAt DESC`;
+      jobs = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
+    }
 
     return NextResponse.json({
       success: true,
@@ -62,13 +71,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!dbJob) {
-      return NextResponse.json(
-        { success: false, message: "Job database model is not initialized" },
-        { status: 500 }
-      );
-    }
-
     const payload = {
       title: title.trim(),
       titleHi: titleHi?.trim() || null,
@@ -82,16 +84,68 @@ export async function POST(request: NextRequest) {
       isActive: isActive !== undefined ? Boolean(isActive) : true,
     };
 
-    let job;
-    if (id) {
-      job = await dbJob.update({
-        where: { id },
-        data: payload,
-      });
+    const dbJob = getJobModel();
+    let job: any;
+
+    if (dbJob) {
+      if (id) {
+        job = await dbJob.update({
+          where: { id },
+          data: payload,
+        });
+      } else {
+        job = await dbJob.create({
+          data: payload,
+        });
+      }
     } else {
-      job = await dbJob.create({
-        data: payload,
-      });
+      const newId = id || `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      if (id) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE jobs SET 
+            title = ?, titleHi = ?, department = ?, location = ?, 
+            type = ?, experience = ?, salary = ?, description = ?, 
+            requirements = ?, isActive = ?, updatedAt = ? 
+           WHERE id = ?`,
+          payload.title,
+          payload.titleHi,
+          payload.department,
+          payload.location,
+          payload.type,
+          payload.experience,
+          payload.salary,
+          payload.description,
+          payload.requirements,
+          payload.isActive ? 1 : 0,
+          now,
+          id
+        );
+        job = { id, ...payload };
+      } else {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO jobs (
+            id, title, titleHi, department, location, 
+            type, experience, salary, description, 
+            requirements, isActive, createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          newId,
+          payload.title,
+          payload.titleHi,
+          payload.department,
+          payload.location,
+          payload.type,
+          payload.experience,
+          payload.salary,
+          payload.description,
+          payload.requirements,
+          payload.isActive ? 1 : 0,
+          now,
+          now
+        );
+        job = { id: newId, ...payload };
+      }
     }
 
     return NextResponse.json({
@@ -121,14 +175,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!dbJob) {
-      return NextResponse.json(
-        { success: false, message: "Job model not available" },
-        { status: 500 }
-      );
+    const dbJob = getJobModel();
+    if (dbJob) {
+      await dbJob.delete({ where: { id } });
+    } else {
+      await prisma.$executeRawUnsafe(`DELETE FROM jobs WHERE id = ?`, id);
     }
-
-    await dbJob.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
@@ -142,3 +194,4 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+

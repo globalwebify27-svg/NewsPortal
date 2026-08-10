@@ -3,8 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// Safely access teamMember model even if IDE language server caches stale PrismaClient types
-const dbTeamMember = (prisma as any).teamMember;
+// Helper to get TeamMember model dynamically from Prisma instance
+function getTeamModel() {
+  return (prisma as any).teamMember || (prisma as any).TeamMember;
+}
 
 // GET /api/v1/team -> Retrieve team members
 export async function GET(request: NextRequest) {
@@ -12,17 +14,26 @@ export async function GET(request: NextRequest) {
   const admin = searchParams.get("admin") === "true";
 
   try {
-    const where: any = {};
-    if (!admin) {
-      where.isActive = true;
-    }
+    const dbTeamMember = getTeamModel();
+    let members: any[] = [];
 
-    const members = dbTeamMember
-      ? await dbTeamMember.findMany({
-          where,
-          orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-        })
-      : [];
+    if (dbTeamMember) {
+      const where: any = {};
+      if (!admin) {
+        where.isActive = true;
+      }
+
+      members = await dbTeamMember.findMany({
+        where,
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      });
+    } else {
+      // Direct raw SQL fallback for MySQL
+      const rawQuery = admin
+        ? `SELECT * FROM team_members ORDER BY \`order\` ASC, createdAt ASC`
+        : `SELECT * FROM team_members WHERE isActive = 1 ORDER BY \`order\` ASC, createdAt ASC`;
+      members = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
+    }
 
     return NextResponse.json({
       success: true,
@@ -82,23 +93,81 @@ export async function POST(request: NextRequest) {
       isActive: isActive !== undefined ? Boolean(isActive) : true,
     };
 
-    if (!dbTeamMember) {
-      return NextResponse.json(
-        { success: false, message: "Database model TeamMember not available" },
-        { status: 500 }
-      );
-    }
+    const dbTeamMember = getTeamModel();
+    let member: any;
 
-    let member;
-    if (id) {
-      member = await dbTeamMember.update({
-        where: { id },
-        data: payload,
-      });
+    if (dbTeamMember) {
+      if (id) {
+        member = await dbTeamMember.update({
+          where: { id },
+          data: payload,
+        });
+      } else {
+        member = await dbTeamMember.create({
+          data: payload,
+        });
+      }
     } else {
-      member = await dbTeamMember.create({
-        data: payload,
-      });
+      // Raw MySQL fallback execution
+      const newId = id || `tm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      if (id) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE team_members SET 
+            name = ?, nameHi = ?, designation = ?, designationHi = ?, 
+            bio = ?, bioHi = ?, avatar = ?, email = ?, phone = ?, 
+            twitter = ?, linkedin = ?, facebook = ?, instagram = ?, 
+            \`order\` = ?, isActive = ?, updatedAt = ? 
+           WHERE id = ?`,
+          payload.name,
+          payload.nameHi,
+          payload.designation,
+          payload.designationHi,
+          payload.bio,
+          payload.bioHi,
+          payload.avatar,
+          payload.email,
+          payload.phone,
+          payload.twitter,
+          payload.linkedin,
+          payload.facebook,
+          payload.instagram,
+          payload.order,
+          payload.isActive ? 1 : 0,
+          now,
+          id
+        );
+        member = { id, ...payload };
+      } else {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO team_members (
+            id, name, nameHi, designation, designationHi, 
+            bio, bioHi, avatar, email, phone, 
+            twitter, linkedin, facebook, instagram, 
+            \`order\`, isActive, createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          newId,
+          payload.name,
+          payload.nameHi,
+          payload.designation,
+          payload.designationHi,
+          payload.bio,
+          payload.bioHi,
+          payload.avatar,
+          payload.email,
+          payload.phone,
+          payload.twitter,
+          payload.linkedin,
+          payload.facebook,
+          payload.instagram,
+          payload.order,
+          payload.isActive ? 1 : 0,
+          now,
+          now
+        );
+        member = { id: newId, ...payload };
+      }
     }
 
     return NextResponse.json({
@@ -128,14 +197,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!dbTeamMember) {
-      return NextResponse.json(
-        { success: false, message: "Database model TeamMember not available" },
-        { status: 500 }
-      );
+    const dbTeamMember = getTeamModel();
+    if (dbTeamMember) {
+      await dbTeamMember.delete({ where: { id } });
+    } else {
+      await prisma.$executeRawUnsafe(`DELETE FROM team_members WHERE id = ?`, id);
     }
-
-    await dbTeamMember.delete({ where: { id } });
 
     return NextResponse.json({
       success: true,
@@ -149,4 +216,5 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
 
