@@ -80,8 +80,6 @@ interface AdminArticle {
   customAds?: ArticleAdItem[];
 }
 
-const LOCAL_STORAGE_KEY = "ga_custom_articles";
-
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,11 +153,7 @@ export default function AdminArticlesPage() {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const getStoredArticles = (): AdminArticle[] => {
-    return [];
-  };
-
-  const saveToLocalStorage = async (list: AdminArticle[]) => {
+  const persistArticlesToDatabase = async (list: AdminArticle[]) => {
     try {
       await fetch(API_ENDPOINTS.articles, {
         method: "POST",
@@ -385,7 +379,8 @@ export default function AdminArticlesPage() {
       return;
     }
 
-    const autoSlug = formatArticleSlug({ title: formTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
+    let autoSlugBase = await translateHindiToEnglishSlug(formTitle);
+    const autoSlug = formatArticleSlug({ title: formTitle, slug: autoSlugBase, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
     const finalSlug = editingArticle?.slug
       ? (isSlugCustomized && formSlug.trim() ? formSlug.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : editingArticle.slug)
       : (formSlug.trim() && isSlugCustomized
@@ -641,7 +636,7 @@ export default function AdminArticlesPage() {
       ...(a.id === artId && !a.isHero ? { imageFit: "cover" as const } : {})
     }));
     setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+    persistArticlesToDatabase(updatedList);
     const target = updatedList.find((a) => a.id === artId);
     showToast(target?.isHero ? `🌟 Set "${target.title}" as Main Hero Banner!` : `Hero status removed from "${target?.title}".`);
   };
@@ -651,7 +646,7 @@ export default function AdminArticlesPage() {
       a.id === artId ? { ...a, isSuperfast: !a.isSuperfast } : a
     ));
     setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+    persistArticlesToDatabase(updatedList);
     const target = updatedList.find((a) => a.id === artId);
     showToast(target?.isSuperfast ? `⚡ Set "${target?.title}" in ⚡ सुपरफ़ास्ट NEWS section!` : `Removed "${target?.title}" from Superfast News.`);
   };
@@ -661,7 +656,7 @@ export default function AdminArticlesPage() {
       a.id === artId ? { ...a, isTrending: !a.isTrending } : a
     ));
     setArticles(updatedList);
-    saveToLocalStorage(updatedList);
+    persistArticlesToDatabase(updatedList);
     const target = updatedList.find((a) => a.id === artId);
     showToast(target?.isTrending ? `🔥 Marked "${target?.title}" as Trending / Hot Topic!` : `Unmarked "${target?.title}" from Trending.`);
   };

@@ -52,8 +52,6 @@ interface AdminArticle {
   reviewedBy?: string;
 }
 
-const LOCAL_STORAGE_KEY = "ga_custom_articles";
-
 export default function AdminDashboardPage() {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
   const [adminRole, setAdminRole] = useState<string>("super_admin");
@@ -98,7 +96,7 @@ export default function AdminDashboardPage() {
     initRole();
   }, []);
 
-  const saveToLocalStorage = async (updated: AdminArticle[]) => {
+  const persistArticlesToDatabase = async (updated: AdminArticle[]) => {
     try {
       await fetch(API_ENDPOINTS.articles, {
         method: "POST",

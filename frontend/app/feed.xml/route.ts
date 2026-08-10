@@ -26,10 +26,10 @@ export async function GET() {
       }
     }
   } catch (e) {
-    articles = allDefaultArticles;
+    // DB unavailable — serve empty feed
   }
 
-  if (articles.length === 0) articles = allDefaultArticles;
+  // No hardcoded fallback — all articles come from DB
 
   const rssItems = articles
     .slice(0, 30)

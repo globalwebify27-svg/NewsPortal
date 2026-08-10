@@ -16,10 +16,10 @@ async function getRecentNewsArticles() {
       }
     }
   } catch (e) {
-    list = allDefaultArticles;
+    // DB unavailable — serve empty sitemap
   }
 
-  if (list.length === 0) list = allDefaultArticles;
+  // No hardcoded fallback — all articles come from DB
 
   // Filter articles published within last 48 hours (or fallback to recent ones if mock date)
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);

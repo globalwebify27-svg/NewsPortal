@@ -24,299 +24,177 @@ export interface DefaultArticle {
   imageFit?: "cover" | "contain" | "fill";
 }
 
+/** No hardcoded articles — all content is managed via Admin Panel and served from the database. */
 export const defaultEnglishArticles: DefaultArticle[] = [];
+
+/** No hardcoded articles — all content is managed via Admin Panel and served from the database. */
 export const defaultHindiArticles: DefaultArticle[] = [];
 
-/** All default articles combined */
+/** All default articles combined — empty, DB is the source of truth. */
 export const allDefaultArticles: DefaultArticle[] = [];
 
-/**
- * // ─── Dictionary for Hindi-to-English Clean Keyword Fallback ──────────────────
- */
-const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
-  // Nations, Leaders & Geography
-  "दुनिया": "world", "विश्व": "world", "देश": "country", "विदेश": "foreign",
-  "भारत": "india", "चीन": "china", "अमेरिका": "us", "रूस": "russia",
-  "यूक्रेन": "ukraine", "इजराइल": "israel", "हमास": "hamas", "पाकिस्तान": "pakistan",
-  "पुतिन": "putin", "ट्रंप": "trump", "ऋषि": "rishi", "सुनक": "sunak",
-  "मोदी": "modi", "नरेंद्र": "narendra", "राहुल": "rahul", "गांधी": "gandhi",
-  "अमित": "amit", "शाह": "shah", "केजरीवाल": "kejriwal", "झारखंड": "jharkhand",
-  "बिहार": "bihar", "दिल्ली": "delhi", "रांची": "ranchi", "पटना": "patna",
-  "उत्तर": "north", "प्रदेश": "state", "राजस्थान": "rajasthan", "महाराष्ट्र": "maharashtra",
 
-  // Government, Law & Politics
-  "नेताओं": "leaders", "नेता": "leader", "राष्ट्रपति": "president",
-  "प्रधानमंत्री": "prime-minister", "मुख्यमंत्री": "chief-minister",
-  "मंत्री": "minister", "मंत्रालय": "ministry", "सरकार": "government",
-  "विपक्ष": "opposition", "कांग्रेस": "congress", "भाजपा": "bjp",
-  "सुप्रीम": "supreme", "कोर्ट": "court", "लोकसभा": "lok-sabha",
-  "राज्यसभा": "rajya-sabha", "संसद": "parliament", "फैसला": "verdict",
-  "कानून": "law", "पुलिस": "police", "क्राइम": "crime", "जांच": "probe",
-  "सीबीआई": "cbi", "चुनाव": "election", "मतदान": "voting",
 
-  // Economy, Finance & Business
-  "शेयर": "share", "बाजार": "market", "अर्थव्यवस्था": "economy",
-  "रुपया": "rupee", "डॉलर": "dollar", "बैंक": "bank", "महंगाई": "inflation",
-  "बजट": "budget", "टैक्स": "tax", "सोना": "gold", "चांदी": "silver",
-  "तेल": "oil", "उद्योग": "industry", "व्यापार": "trade", "निवेश": "investment",
 
-  // Energy, Tech & Space
-  "ऊर्जा": "energy", "स्वच्छ": "clean", "मिशन": "mission", "गति": "momentum",
-  "टेक": "tech", "एआई": "ai", "गूगल": "google", "ऐप्पल": "apple",
-  "इसरो": "isro", "नासा": "nasa", "अंतरिक्ष": "space", "रोवर": "rover",
-  "मंगल": "mars", "चांद": "moon", "उपग्रह": "satellite", "स्वास्थ्य": "health",
-  "सीमा": "limits", "मील": "milestones", "पत्थर": "milestone", "सफलता": "success",
 
-  // Consumer, Utilities & Daily Life
-  "उपभोक्ताओं": "consumers", "उपभोक्ता": "consumer", "ग्राहकों": "customers",
-  "ग्राहक": "customer", "बढ़": "increase", "बढ़ने": "increase", "बढ़ती": "rising",
-  "सकती": "may", "सकता": "may", "सकते": "may", "परेशानी": "trouble",
-  "समस्या": "issues", "तारीख": "date", "तिथि": "deadline", "खाता": "account",
-  "खाते": "accounts", "कार्ड": "card", "पैन": "pan", "आधार": "aadhaar",
-  "केवाईसी": "kyc", "सिलेंडर": "cylinder", "गैस": "gas", "कीमत": "price",
-  "कीमतें": "prices", "दाम": "rate", "रेट": "rates", "योजना": "scheme",
-  "सब्सिडी": "subsidy", "बदलाव": "change", "नियम": "rule", "नियमों": "rules",
-
-  // Sports & Entertainment
-  "क्रिकेट": "cricket", "मैच": "match", "टीम": "team", "कप्तान": "captain",
-  "जीत": "win", "हार": "loss", "फाइनल": "final", "विश्वकप": "worldcup",
-  "आईपीएल": "ipl", "फिल्म": "movie", "सिनेमा": "cinema", "बॉलीवुड": "bollywood",
-  "अभिनेता": "actor", "अभिनेत्री": "actress", "स्टार": "star",
-
-  // News Headlines & Descriptors
-  "सबसे": "top", "बड़ी": "big", "बड़ा": "big", "खबर": "news", "समाचार": "news",
-  "ताजा": "latest", "अपडेट": "update", "लिस्ट": "list", "सूची": "list",
-  "सामने": "out", "आई": "out", "आया": "out", "शामिल": "included", "नंबर": "number",
-  "जारी": "released", "घोषणा": "announced", "दावा": "claim", "हमला": "attack",
-  "हादसा": "accident", "मौत": "death", "अलर्ट": "alert", "मौसम": "weather",
-  "बारिश": "rain", "धमाका": "blast", "राहत": "relief",
-
-  // Additional Sports, Numbers & News Keywords
-  "६००": "600", "६": "6", "ज्यादा": "more", "अधिक": "more", "कम": "less",
-  "विकेट": "wickets", "फिर": "still", "इंडिया": "india", "एंट्री": "entry",
-  "नहीं": "no", "कब": "when", "होंगे": "will-be", "होगा": "will-be",
-  "मेहरबान": "kind", "धर्मेंद्रसिंह": "dharmendrasinh", "जडेजा": "jadeja",
-  "सेलेक्टर्स": "selectors", "चयनकर्ता": "selectors", "खिलाड़ी": "player",
-  "खिलाड़ियों": "players", "रन": "runs", "शतक": "century", "अर्धशतक": "fifty",
-  "गेंदबाज": "bowler", "बल्लेबाज": "batsman",
-
-  // Prepositions & Stop Words (omitted for clean English slugs)
-  "के": "", "का": "", "की": "", "को": "", "से": "", "में": "in", "मे": "in",
-  "पर": "", "ने": "", "और": "and", "या": "or", "भी": "", "तक": "by",
-  "हुआ": "", "हुई": "", "है": "", "हैं": "", "था": "", "थी": "", "थे": ""
-};
-
-const CONSONANT_MAP: Record<string, string> = {
-  "क": "ka", "ख": "kha", "ग": "ga", "घ": "gha", "ङ": "nga",
-  "च": "cha", "छ": "cha", "ज": "ja", "झ": "jha", "ञ": "nya",
-  "ट": "ta", "ठ": "tha", "ड": "da", "ढ": "dha", "ण": "na",
-  "त": "ta", "थ": "tha", "द": "da", "ध": "dha", "न": "na",
-  "प": "pa", "फ": "fa", "ब": "ba", "भ": "bha", "म": "ma",
-  "य": "ya", "र": "ra", "ल": "la", "व": "va",
-  "श": "sha", "ष": "sha", "स": "sa", "ह": "ha",
-  "क्ष": "xa", "त्र": "tra", "ज्ञ": "gya", "ड़": "da", "ढ़": "dha"
-};
-
-const MATRA_MAP: Record<string, string> = {
-  "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u", "ृ": "ri",
-  "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ं": "n", "्": ""
-};
-
-const VOWEL_MAP: Record<string, string> = {
-  "अ": "a", "आ": "a", "इ": "i", "ई": "i", "उ": "u", "ऊ": "u", "ऋ": "r",
-  "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "अं": "an"
-};
+// =============================================================================
+// SLUG UTILITIES — Single Source of Truth
+// Always generate slug ONCE at save time. Never re-generate at read time.
+// =============================================================================
 
 /**
- * Convert Devanagari (Hindi) text into clean English words.
- * Uses dictionary translation first, then phonetic transliteration for proper nouns.
+ * Transliterate Devanagari for extreme offline fallback only.
+ * Not used for headline slugs — Google Translate handles that.
  */
 export function transliterateDevanagari(text: string): string {
   if (!text) return "";
-
-  const cleanStr = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
-  const words = cleanStr.split(/\s+/);
-
-  const translatedWords = words.map((w) => {
-    const hindiCharsOnly = w.replace(/[^\u0900-\u097F]/g, "");
-    if (hindiCharsOnly && HINDI_TO_ENGLISH_MAP[hindiCharsOnly] !== undefined) {
-      return HINDI_TO_ENGLISH_MAP[hindiCharsOnly];
-    }
-    if (/^[a-zA-Z0-9]+$/.test(w)) {
-      return w.toLowerCase();
-    }
-    // Phonetic transliteration fallback for unmapped proper nouns / names
-    let res = "";
-    for (let i = 0; i < w.length; i++) {
-      const char = w[i];
-      const nextChar = w[i + 1];
-
-      if (VOWEL_MAP[char]) {
-        res += VOWEL_MAP[char];
-      } else if (CONSONANT_MAP[char]) {
-        const base = CONSONANT_MAP[char];
-        if (nextChar && MATRA_MAP[nextChar] !== undefined) {
-          res += base.slice(0, -1) + MATRA_MAP[nextChar];
-          i++;
-        } else if (i === w.length - 1) {
-          res += base.slice(0, -1);
-        } else {
-          res += base;
-        }
-      } else if (MATRA_MAP[char] !== undefined) {
-        res += MATRA_MAP[char];
-      } else {
-        res += char;
-      }
-    }
-    return res;
-  });
-
-  return translatedWords.filter(Boolean).join(" ");
+  return text
+    .replace(/[\u0900-\u097F]+/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 /**
- * Asynchronously translates Hindi headlines to clean, grammatically natural English slugs.
+ * generateArticleSlug — THE ONLY place slugs are created.
+ *
+ * Strategy (in order):
+ *  1. Google Translate free API  — returns natural grammatical English
+ *  2. MyMemory free API          — another free translation service
+ *  3. Remove non-latin chars     — keeps any existing English words in title
+ *
+ * Format returned: {english-headline}-{dd-mm-yy}-{shortId}
+ *
+ * Call this ONCE at save time. Store the result. Never call again.
  */
-export async function translateHindiToEnglishSlug(text: string): Promise<string> {
-  if (!text || !text.trim()) return "";
-  const hasHindi = /[\u0900-\u097F]/.test(text);
-  if (!hasHindi) {
-    return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/[\s-]+/g, "-");
+export async function generateArticleSlug(
+  title: string,
+  id?: string,
+  dateStr?: string
+): Promise<string> {
+  const suffix = buildSuffix(id, dateStr);
+
+  // If title is already pure English/Latin — just slugify it directly
+  if (!/[\u0900-\u097F]/.test(title)) {
+    const base = slugifyText(title);
+    return base ? `${base}-${suffix}` : `news-${suffix}`;
   }
 
-  // 1. Try Google Translate free API (natural English sentence grammar)
+  // 1. Google Translate (free, no key required)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-    const cleanText = text.replace(/[\n\r]+/g, " ").trim();
-    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=hi&tl=en&dt=t&q=${encodeURIComponent(cleanText)}`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=hi&tl=en&dt=t&q=${encodeURIComponent(title.trim())}`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(t);
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && Array.isArray(data[0])) {
-        const fullTranslation = data[0].map((item: any) => (Array.isArray(item) ? item[0] : "")).join("").trim();
-        if (fullTranslation && !/[\u0900-\u097F]/.test(fullTranslation)) {
-          const cleanSlug = fullTranslation
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .trim()
-            .replace(/[\s-]+/g, "-")
-            .slice(0, 95)
-            .replace(/^-+|-+$/g, "");
-          if (cleanSlug.length > 5) return cleanSlug;
-        }
+      const translated: string = (data?.[0] ?? [])
+        .map((x: any) => (Array.isArray(x) ? x[0] ?? "" : ""))
+        .join("")
+        .trim();
+      if (translated && !/[\u0900-\u097F]/.test(translated)) {
+        const base = slugifyText(translated);
+        if (base.length > 4) return `${base}-${suffix}`;
       }
     }
-  } catch (e) {}
+  } catch (_) {}
 
-  // 2. Fallback: MyMemory API
+  // 2. MyMemory free API
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const cleanText = text.replace(/[,;:.!?\|"'`()\[\]\{\}]/g, " ").trim();
-    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText)}&langpair=hi|en`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const json = await res.json();
-      const translated = json?.responseData?.translatedText;
-      if (translated && typeof translated === "string" && !/[\u0900-\u097F]/.test(translated)) {
-        const cleanSlug = translated
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .trim()
-          .replace(/[\s-]+/g, "-")
-          .slice(0, 95)
-          .replace(/^-+|-+$/g, "");
-        if (cleanSlug.length > 5) return cleanSlug;
+    const ctrl2 = new AbortController();
+    const t2 = setTimeout(() => ctrl2.abort(), 3000);
+    const res2 = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(title.trim())}&langpair=hi|en`,
+      { signal: ctrl2.signal }
+    );
+    clearTimeout(t2);
+    if (res2.ok) {
+      const json = await res2.json();
+      const translated2: string = json?.responseData?.translatedText ?? "";
+      if (translated2 && !/[\u0900-\u097F]/.test(translated2)) {
+        const base = slugifyText(translated2);
+        if (base.length > 4) return `${base}-${suffix}`;
       }
     }
-  } catch (e) {}
+  } catch (_) {}
 
-  // 3. Fallback: Word mapping & phonetic transliteration
-  return transliterateDevanagari(text)
+  // 3. Last-resort: strip Hindi chars, keep any English words
+  const fallback = slugifyText(title.replace(/[\u0900-\u097F]/g, " "));
+  return fallback.length > 2 ? `${fallback}-${suffix}` : `news-${suffix}`;
+}
+
+/** Build the date+id suffix: {dd-mm-yy}-{shortId} */
+function buildSuffix(id?: string, dateIso?: string): string {
+  let dd = "10", mm = "08", yy = "26";
+  try {
+    const d = new Date(dateIso || Date.now());
+    if (!isNaN(d.getTime())) {
+      dd = String(d.getDate()).padStart(2, "0");
+      mm = String(d.getMonth() + 1).padStart(2, "0");
+      yy = String(d.getFullYear()).slice(-2);
+    }
+  } catch (_) {}
+  const shortId = id
+    ? id.replace(/[^a-zA-Z0-9]/g, "").slice(-8)
+    : Math.random().toString(36).substring(2, 8);
+  return `${dd}-${mm}-${yy}-${shortId}`;
+}
+
+/** Convert any text to lowercase hyphen slug (full title, no truncation) */
+function slugifyText(text: string): string {
+  return text
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/[\s-]+/g, "-")
-    .slice(0, 95)
     .replace(/^-+|-+$/g, "");
 }
 
-/** 
- * Format Article Slug in English with Date (dd-mm-yy) and Unique ID:
- * Format: {headline-english-slug}-{dd-mm-yy}-{uniqueId}
+
+/**
+ * translateHindiToEnglishSlug — backward compat alias for generateArticleSlug.
+ * New code should use generateArticleSlug() directly.
  */
-export function formatArticleSlug(article: any): string {
-  if (!article) return "news-07-08-26-000";
-
-  const englishTitle = article.titleEn || article.englishTitle || article.title_en;
-
-  const rawId = (article.id || article.slug || Math.random().toString(36).substring(2, 8)).toString();
-  const cleanId = rawId.replace(/[^a-zA-Z0-9]/g, "").slice(-8) || "001";
-
-  const rawDate = article.createdAt || article.publishedAt || new Date().toISOString();
-  let dateStr = "07-08-26";
-  try {
-    const d = new Date(rawDate);
-    if (!isNaN(d.getTime())) {
-      const dd = String(d.getDate()).padStart(2, "0");
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const yy = String(d.getFullYear()).slice(-2);
-      dateStr = `${dd}-${mm}-${yy}`;
-    }
-  } catch (e) {}
-
-  let rawTitle = (englishTitle || article.title || article.slug || "news")
-    .toString()
-    .replace(/-\d{2}-\d{2}-\d{2}-[a-zA-Z0-9]+$/, "")
-    .replace(/-\d{6}-[a-zA-Z0-9]+$/, "")
-    .replace(/-\d{8}-[a-zA-Z0-9]+$/, "");
-
-  let englishText = transliterateDevanagari(rawTitle);
-
-  let baseTitle = englishText
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/[\s-]+/g, "-")
-    .slice(0, 85)
-    .replace(/^-+|-+$/g, "");
-
-  if (!baseTitle) baseTitle = "news";
-
-  return `${baseTitle}-${dateStr}-${cleanId}`;
+export async function translateHindiToEnglishSlug(text: string): Promise<string> {
+  return generateArticleSlug(text);
 }
 
 /**
- * Format Full Article Path under category tab:
- * Format: /{tab}/{headline-slug}-{DDMMYY}-{uniqueId}
+ * formatArticleSlug — READ ONLY.
+ * Just returns article.slug as stored. Does NOT re-generate.
+ * Slug must have been created via generateArticleSlug() at save time.
+ */
+export function formatArticleSlug(article: any): string {
+  if (!article) return "news";
+  const s = (article.slug ?? article.id ?? "news").toString();
+  return s.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/**
+ * getArticleUrl — Returns the full URL path for an article.
+ * Reads article.slug directly; slug was set once at save time.
  */
 export function getArticleUrl(article: any): string {
-  if (!article) return "/article/news-070826-000";
-  const catSlug = article.category?.slug
-    ? article.category.slug.toLowerCase().trim().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-")
-    : "article";
+  if (!article) return "/article/news";
+  const catSlug = (article.category?.slug || "article")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
   const slug = formatArticleSlug(article);
   return `/${catSlug}/${slug}`;
 }
 
 /** Find a default article by slug or ID */
 export function findDefaultArticle(slug: string, lang?: "EN" | "HI"): DefaultArticle | undefined {
-  const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
-  
-  let found = allDefaultArticles.find(
-    (a) => a.slug === targetSlug || formatArticleSlug(a) === targetSlug
-  );
-
+  const target = decodeURIComponent(slug).trim().toLowerCase();
+  let found = allDefaultArticles.find((a) => (a.slug ?? "").toLowerCase() === target);
   if (!found) {
-    const parts = targetSlug.split("-");
+    const parts = target.split("-");
     const possibleId = parts[parts.length - 1];
     if (possibleId && possibleId.length >= 2) {
       found = allDefaultArticles.find(
@@ -324,9 +202,11 @@ export function findDefaultArticle(slug: string, lang?: "EN" | "HI"): DefaultArt
       );
     }
   }
-
   return found;
 }
+
+
+
 
 /** Helper to strip HTML tags for clean plain text display in cards & previews */
 export function stripHtml(html?: string): string {

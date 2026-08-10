@@ -32,10 +32,11 @@ async function fetchDynamicArticles() {
       }
     }
   } catch (err) {
-    // API unavailable
+    // API unavailable — return empty, no hardcoded fallback
   }
-  return allDefaultArticles;
+  return []; // No hardcoded fallback — all articles from DB
 }
+
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

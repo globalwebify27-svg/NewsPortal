@@ -9,7 +9,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
 
-import { defaultEnglishArticles, defaultHindiArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
+import { defaultEnglishArticles, defaultHindiArticles, allDefaultArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 
 interface Article {
@@ -203,10 +203,18 @@ export default function Home() {
         const json = await res.json();
         if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
           apiList = json.data;
+        } else if (json?.articles && Array.isArray(json.articles) && json.articles.length > 0) {
+          apiList = json.articles;
         }
       } catch (err) {
         console.warn("Using fallback articles data:", err);
       }
+
+      if (!apiList || apiList.length === 0) {
+        // No hardcoded fallback — show empty state until articles are added via Admin Panel
+        apiList = [];
+      }
+
 
       setArticles(apiList);
       setLoading(false);

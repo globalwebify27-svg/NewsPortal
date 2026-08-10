@@ -111,7 +111,27 @@ export async function fetchRealtimeTemperature(lat?: number, lon?: number): Prom
  * Real-time IP / VPN Geolocation detector for User City & District
  */
 export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
-  // Provider 1: ipwho.is (CORS enabled, HTTPS, fast response for VPNs)
+  // Check sessionStorage cache first (speed optimization)
+  if (typeof window !== "undefined") {
+    try {
+      const cached = sessionStorage.getItem("ga_user_geo_location");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (_) {}
+  }
+
+  const result = await detectLocationInternal();
+  if (result && typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem("ga_user_geo_location", JSON.stringify(result));
+    } catch (_) {}
+  }
+  return result;
+}
+
+async function detectLocationInternal(): Promise<DetectedLocation | null> {
+
   try {
     const res = await fetch("https://ipwho.is/", { cache: "no-store" });
     if (res.ok) {

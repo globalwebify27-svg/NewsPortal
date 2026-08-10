@@ -40,7 +40,7 @@ export const DEFAULT_VIDEOS: YouTubeVideoItem[] = [];
 
 export async function fetchCentralVideos(): Promise<{ videos: YouTubeVideoItem[]; liveTvConfig: any }> {
   try {
-    const res = await fetch("/api/v1/videos", { cache: "no-store" });
+    const res = await fetch("/api/v1/videos", { next: { revalidate: 60 } });
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.videos)) {

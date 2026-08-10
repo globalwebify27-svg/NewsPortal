@@ -170,7 +170,8 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
         }
       } catch (e) {}
 
-      if (pool.length === 0) pool = allDefaultArticles;
+      // No hardcoded fallback — related articles come from DB only
+
 
       const filtered = pool.filter((a: any) => a.slug !== slug && a.id !== slug);
       setSideNews(filtered.slice(0, 5));

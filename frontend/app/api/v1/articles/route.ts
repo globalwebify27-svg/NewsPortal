@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   // Public Request (Strictly PUBLISHED articles only)
   const result = await getPublicArticles({ page, limit, category, tag, search });
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     data: result.articles,
     articles: result.articles,
@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(result.total / result.limit) || 1,
     },
   });
+
+  // Enable fast HTTP caching for public requests (60s CDN cache, stale-while-revalidate 300s)
+  response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+  return response;
 }
 
 export async function POST(request: NextRequest) {

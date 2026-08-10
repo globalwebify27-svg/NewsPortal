@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { MediaType } from "@prisma/client";
+import sharp from "sharp";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "No file provided" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const rawBytes = await file.arrayBuffer();
+    let buffer = Buffer.from(rawBytes);
 
-    const fileExt = path.extname(file.name) || ".jpg";
-    const sanitizeName = path.basename(file.name, fileExt).toLowerCase().replace(/[^a-z0-9]/g, "-");
+    let fileExt = path.extname(file.name) || ".jpg";
+    let mimeType = file.type || "image/jpeg";
+    const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|bmp|webp|tiff)$/i.test(file.name);
+
+    // Optimize & Convert Images to WebP using sharp
+    if (isImage && !file.type.includes("svg")) {
+      try {
+        buffer = await sharp(buffer)
+          .resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 80, effort: 4 })
+          .toBuffer();
+
+        fileExt = ".webp";
+        mimeType = "image/webp";
+      } catch (sharpErr) {
+        console.warn("Sharp WebP conversion fallback, using original file:", sharpErr);
+      }
+    }
+
+    const sanitizeName = path.basename(file.name, path.extname(file.name)).toLowerCase().replace(/[^a-z0-9]/g, "-");
     const uniqueFilename = `${sanitizeName}_${Date.now()}${fileExt}`;
 
     let publicUrl = "";
@@ -31,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (hostingerUploadUrl) {
       try {
         const remoteFormData = new FormData();
-        const blob = new Blob([buffer], { type: file.type || "image/jpeg" });
+        const blob = new Blob([buffer], { type: mimeType });
         remoteFormData.append("file", blob, uniqueFilename);
 
         const response = await fetch(hostingerUploadUrl, {
@@ -57,7 +76,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // OPTION B: Fallback Local Disk / Base64 Data URL (when HOSTINGER_UPLOAD_URL is not set or fails)
+    // OPTION B: Fallback Local Disk / Base64 Data URL
     if (!publicUrl) {
       try {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -68,14 +87,13 @@ export async function POST(request: NextRequest) {
         await fs.promises.writeFile(filePath, buffer);
         publicUrl = `/uploads/${uniqueFilename}`;
       } catch (fsErr: any) {
-        console.warn("Local disk write fallback (serverless environment):", fsErr?.message);
+        console.warn("Local disk write fallback:", fsErr?.message);
         const base64 = buffer.toString("base64");
-        const mime = file.type || "image/png";
-        publicUrl = `data:${mime};base64,${base64}`;
+        publicUrl = `data:${mimeType};base64,${base64}`;
       }
     }
 
-    // Save record to database Media table (if DB connected)
+    // Save record to database Media table
     let savedMedia: any = null;
     try {
       savedMedia = await prisma.media.create({
@@ -83,14 +101,14 @@ export async function POST(request: NextRequest) {
           url: publicUrl,
           publicId: uniqueFilename,
           type: file.type.startsWith("video") ? MediaType.VIDEO : file.type.endsWith("pdf") ? MediaType.DOCUMENT : MediaType.IMAGE,
-          mimeType: file.type || "image/jpeg",
-          size: file.size || 0,
+          mimeType: mimeType,
+          size: buffer.length,
           altText: file.name.replace(/\.[^.]+$/, "") || "Uploaded Media",
           folder: "uploads",
         },
       });
     } catch (dbErr: any) {
-      console.warn("Media DB save skipped/fallback:", dbErr?.message);
+      console.warn("Media DB save skipped:", dbErr?.message);
     }
 
     return NextResponse.json({
@@ -99,8 +117,9 @@ export async function POST(request: NextRequest) {
         id: savedMedia?.id ?? `local_${Date.now()}`,
         url: publicUrl,
         publicId: uniqueFilename,
-        size: file.size,
-        mimeType: file.type,
+        size: buffer.length,
+        mimeType: mimeType,
+        format: "webp",
         savedToLibrary: !!savedMedia,
       },
     });

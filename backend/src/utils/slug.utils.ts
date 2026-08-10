@@ -40,6 +40,25 @@ const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
   "मंगल": "mars", "चांद": "moon", "उपग्रह": "satellite", "स्वास्थ्य": "health",
   "सीमा": "limits", "मील": "milestones", "पत्थर": "milestone", "सफलता": "success",
 
+  // Time & Calendar
+  "अगले": "next", "अगला": "next", "महीने": "month", "महीना": "month", "साल": "year",
+  "वर्ष": "year", "दिन": "day", "आज": "today", "कल": "tomorrow", "सप्ताह": "week",
+  "हफ्ते": "week", "माह": "month",
+
+  // Delivery, Rules & Change
+  "डिलीवरी": "delivery", "बदले": "rules-change", "बदलाव": "change", "बदल": "change",
+  "बदलेगा": "will-change", "नियम": "rule", "नियमों": "rules", "शर्तें": "terms",
+  "लागू": "enforced", "अनिवार्य": "mandatory", "जरूरी": "essential",
+
+  // State, City & Crime
+  "तस्कर": "smuggler", "तस्करी": "smuggling", "गिरफ्तार": "arrested", "आरोपी": "accused",
+  "पकड़ा": "caught", "मुठभेड़": "encounter", "हत्या": "murder",
+  "मामला": "case", "कार्रवाई": "action",
+
+  // Culture, Religion & Festivals
+  "पूजा": "pooja", "परंपरा": "tradition", "मंदिर": "temple", "सुरक्षित": "safe",
+  "उद्घाटन": "inauguration", "रोजगार": "jobs", "युवाओं": "youth", "प्रत्यक्ष": "direct",
+
   // Consumer, Utilities & Daily Life
   "उपभोक्ताओं": "consumers", "उपभोक्ता": "consumer", "ग्राहकों": "customers",
   "ग्राहक": "customer", "बढ़": "increase", "बढ़ने": "increase", "बढ़ती": "rising",
@@ -48,7 +67,7 @@ const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
   "खाते": "accounts", "कार्ड": "card", "पैन": "pan", "आधार": "aadhaar",
   "केवाईसी": "kyc", "सिलेंडर": "cylinder", "गैस": "gas", "कीमत": "price",
   "कीमतें": "prices", "दाम": "rate", "रेट": "rates", "योजना": "scheme",
-  "सब्सिडी": "subsidy", "बदलाव": "change", "नियम": "rule", "नियमों": "rules",
+  "सब्सिडी": "subsidy",
 
   // Sports & Entertainment
   "क्रिकेट": "cricket", "मैच": "match", "टीम": "team", "कप्तान": "captain",
@@ -57,7 +76,7 @@ const HINDI_TO_ENGLISH_MAP: Record<string, string> = {
   "अभिनेता": "actor", "अभिनेत्री": "actress", "स्टार": "star",
 
   // News Headlines & Descriptors
-  "सबसे": "top", "बड़ी": "big", "बड़ा": "big", "खबर": "news", "समाचार": "news",
+  "सबसे": "top", "बड़ी": "big", "बड़ा": "big", "خبر": "news", "समाचार": "news",
   "ताजा": "latest", "अपडेट": "update", "लिस्ट": "list", "सूची": "list",
   "सामने": "out", "आई": "out", "आया": "out", "शामिल": "included", "नंबर": "number",
   "जारी": "released", "घोषणा": "announced", "दावा": "claim", "हमला": "attack",
