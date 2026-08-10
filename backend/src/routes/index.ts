@@ -19,6 +19,8 @@ import { seoRouter } from "./seo.routes";
 import { analyticsRouter } from "./analytics.routes";
 import { aiRouter } from "./ai.routes";
 import { notificationsRouter } from "./notifications.routes";
+import { rolesRouter } from "./roles.routes";
+import { twofaRouter } from "./twofa.routes";
 
 export const apiRouter = Router();
 
@@ -27,9 +29,11 @@ apiRouter.get("/", (_req: Request, res: Response) => {
   sendSuccess(res, {
     name: "Global Awaaz CMS API",
     version: "1.0.0",
-    phase: "14 — Live & Real-Time Features (WebSockets & Notifications)",
+    phase: "15 — Enterprise RBAC & 2FA Security",
     endpoints: {
       auth: "/api/v1/auth",
+      twofa: "/api/v1/auth/2fa",
+      roles: "/api/v1/roles",
       articles: "/api/v1/articles",
       categories: "/api/v1/categories",
       tags: "/api/v1/tags",
@@ -51,8 +55,12 @@ apiRouter.get("/", (_req: Request, res: Response) => {
 });
 
 // ─── Module Routes ────────────────────────────────────────────────────────────
-// Phase 3: Auth System
+// Phase 3: Auth System & 2FA
 apiRouter.use("/auth", authRouter);
+apiRouter.use("/auth/2fa", twofaRouter);
+
+// Phase 15: Enterprise RBAC & Roles Engine
+apiRouter.use("/roles", rolesRouter);
 
 // Phase 4: Core Content Engine
 apiRouter.use("/articles", articlesRouter);

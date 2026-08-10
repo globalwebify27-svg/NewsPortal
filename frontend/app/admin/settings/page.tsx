@@ -414,6 +414,31 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
+      {/* 2FA Two-Factor Security Settings Section */}
+      <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "32px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", marginBottom: "32px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(15,23,42,0.2)" }}>
+              <RotateCcw size={22} style={{ transform: "rotate(45deg)" }} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: "1.35rem", fontWeight: 800, margin: 0, color: "#0f172a", letterSpacing: "-0.02em" }}>
+                Two-Factor Authentication (2FA TOTP Security)
+              </h2>
+              <p style={{ margin: "3px 0 0 0", fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>
+                Protect all administrative logins with 256-bit TOTP authenticator apps (Google Authenticator / Authy / 1Password).
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "8px 16px", borderRadius: "9999px", fontSize: "0.8rem", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <Check size={15} /> 2FA Ready (TOTP Protocol)
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Site Logo & Branding Settings Section */}
       <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "32px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", marginBottom: "32px" }}>
         {/* Header */}

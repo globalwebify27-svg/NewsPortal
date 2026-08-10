@@ -12,22 +12,114 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // 1. Create SuperAdmin User
+  // 0. Seed Granular Permissions
+  const permissionsData = [
+    { slug: "articles:view", name: "View Articles", module: "articles", description: "Can view articles queue and content drafts" },
+    { slug: "articles:create", name: "Create Draft", module: "articles", description: "Can create new article drafts" },
+    { slug: "articles:edit_own", name: "Edit Own Drafts", module: "articles", description: "Can edit articles authored by self" },
+    { slug: "articles:edit_any", name: "Edit Any Article", module: "articles", description: "Can edit articles authored by anyone" },
+    { slug: "articles:delete", name: "Delete Articles", module: "articles", description: "Can delete article drafts or records" },
+    { slug: "articles:publish", name: "Publish Articles", module: "articles", description: "Can publish articles directly" },
+    { slug: "articles:approve", name: "Approve Articles", module: "articles", description: "Can approve submitted review articles" },
+    { slug: "articles:reject", name: "Reject Articles", module: "articles", description: "Can reject articles and request revision" },
+    { slug: "articles:schedule", name: "Schedule Articles", module: "articles", description: "Can schedule article publishing date/time" },
+    { slug: "articles:restore", name: "Restore Articles", module: "articles", description: "Can restore archived or deleted articles" },
+    { slug: "categories:manage", name: "Manage Categories", module: "categories", description: "Can create, update, or delete categories" },
+    { slug: "tags:manage", name: "Manage Tags", module: "tags", description: "Can create, update, or delete tags" },
+    { slug: "media:manage", name: "Manage Media Library", module: "media", description: "Can upload, manage, or delete media assets" },
+    { slug: "comments:manage", name: "Moderate Comments", module: "comments", description: "Can approve, reject, or delete user comments" },
+    { slug: "users:manage", name: "Manage Users", module: "users", description: "Can view users, assign roles, activate or ban accounts" },
+    { slug: "roles:manage", name: "Manage Roles & Permissions", module: "roles", description: "Can create roles and update permission matrix" },
+    { slug: "settings:manage", name: "Manage Site Settings", module: "settings", description: "Can update portal configuration and SEO settings" },
+    { slug: "audit_logs:view", name: "View Audit Logs", module: "audit_logs", description: "Can view system activity logs and security audits" }
+  ];
+
+  const dbPermissions: Record<string, string> = {};
+  for (const perm of permissionsData) {
+    const createdPerm = await prisma.permission.upsert({
+      where: { slug: perm.slug },
+      update: { name: perm.name, description: perm.description, module: perm.module },
+      create: perm
+    });
+    dbPermissions[perm.slug] = createdPerm.id;
+  }
+  console.log("✅ Granular permissions seeded:", Object.keys(dbPermissions).length);
+
+  // 0.1 Seed System Default Roles
+  const superAdminRole = await prisma.roleModel.upsert({
+    where: { slug: "super_admin" },
+    update: { name: "Super Admin", description: "Full system control over all modules, users, roles, and settings.", isSystem: true },
+    create: { name: "Super Admin", slug: "super_admin", description: "Full system control over all modules, users, roles, and settings.", isSystem: true }
+  });
+
+  const chiefEditorRole = await prisma.roleModel.upsert({
+    where: { slug: "chief_editor" },
+    update: { name: "Chief Editor", description: "Manage news review, approve, reject, publish, categories, and tags.", isSystem: true },
+    create: { name: "Chief Editor", slug: "chief_editor", description: "Manage news review, approve, reject, publish, categories, and tags.", isSystem: true }
+  });
+
+  const editorRole = await prisma.roleModel.upsert({
+    where: { slug: "editor" },
+    update: { name: "Editor", description: "Create and edit own drafts and submit for review.", isSystem: true },
+    create: { name: "Editor", slug: "editor", description: "Create and edit own drafts and submit for review.", isSystem: true }
+  });
+
+  // Assign permissions to Super Admin (ALL)
+  for (const permId of Object.values(dbPermissions)) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: superAdminRole.id, permissionId: permId } },
+      update: {},
+      create: { roleId: superAdminRole.id, permissionId: permId }
+    });
+  }
+
+  // Assign permissions to Chief Editor
+  const chiefEditorPermSlugs = [
+    "articles:view", "articles:create", "articles:edit_own", "articles:edit_any",
+    "articles:delete", "articles:publish", "articles:approve", "articles:reject",
+    "articles:schedule", "articles:restore", "categories:manage", "tags:manage",
+    "media:manage", "comments:manage"
+  ];
+  for (const slug of chiefEditorPermSlugs) {
+    if (dbPermissions[slug]) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: chiefEditorRole.id, permissionId: dbPermissions[slug] } },
+        update: {},
+        create: { roleId: chiefEditorRole.id, permissionId: dbPermissions[slug] }
+      });
+    }
+  }
+
+  // Assign permissions to Editor
+  const editorPermSlugs = ["articles:view", "articles:create", "articles:edit_own", "media:manage"];
+  for (const slug of editorPermSlugs) {
+    if (dbPermissions[slug]) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: editorRole.id, permissionId: dbPermissions[slug] } },
+        update: {},
+        create: { roleId: editorRole.id, permissionId: dbPermissions[slug] }
+      });
+    }
+  }
+  console.log("✅ Default system roles & permissions matrix seeded");
+
+  // 1. Create SuperAdmin Users
   const adminPassword = await bcrypt.hash("Global@#2409", 12);
   const superAdmin = await prisma.user.upsert({
-    where: { email: "Global2409@globalawaaz.com" },
-    update: { password: adminPassword },
+    where: { email: "global2409@globalawaaz.com" },
+    update: { password: adminPassword, roleId: superAdminRole.id, isVerified: true, isActive: true },
     create: {
       name: "Global Awaaz Admin",
-      email: "Global2409@globalawaaz.com",
+      email: "global2409@globalawaaz.com",
       password: adminPassword,
       role: Role.SUPERADMIN,
+      roleId: superAdminRole.id,
       isVerified: true,
       isActive: true,
       bio: "Chief Editor & Administrator at Global Awaaz.",
     },
   });
-  console.log("✅ SuperAdmin user created:", superAdmin.email);
+  console.log("✅ SuperAdmin user created & linked to Super Admin role:", superAdmin.email);
 
   // 2. Create Default Categories
   const categories = [

@@ -26,6 +26,12 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message: string = "Bad request.") {
+    super(message, 400);
+  }
+}
+
 export class UnauthorizedError extends AppError {
   constructor(message: string = "Unauthorized. Please log in.") {
     super(message, 401);

@@ -91,34 +91,38 @@ enum FactCheckVerdict {
 // =============================================================================
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  password      String?
-  role          Role     @default(READER)
-  avatar        String?
-  bio           String?  @db.Text
-  website       String?
-  twitterHandle String?
-  googleId      String?  @unique
-  facebookId    String?  @unique
-  twoFASecret   String?
-  twoFAEnabled  Boolean  @default(false)
-  isVerified    Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String?
+  role              Role      @default(READER)
+  roleId            String?
+  customRole        RoleModel? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  avatar            String?
+  bio               String?   @db.Text
+  website           String?
+  twitterHandle     String?
+  googleId          String?   @unique
+  facebookId        String?   @unique
+  twoFASecret       String?
+  twoFAEnabled      Boolean   @default(false)
+  twoFABackupCodes  String?   @db.Text
+  twoFAVerifiedAt   DateTime?
+  isVerified        Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  authoredArticles  Article[]      @relation("AuthorArticles")
-  editedArticles    Article[]      @relation("EditorArticles")
-  publishedArticles Article[]      @relation("PublisherArticles")
+  authoredArticles  Article[]       @relation("AuthorArticles")
+  editedArticles    Article[]       @relation("EditorArticles")
+  publishedArticles Article[]       @relation("PublisherArticles")
   comments          Comment[]
   bookmarks         Bookmark[]
   likes             ArticleLike[]
-  following         AuthorFollow[] @relation("Follower")
-  followers         AuthorFollow[] @relation("Following")
+  following         AuthorFollow[]  @relation("Follower")
+  followers         AuthorFollow[]  @relation("Following")
   notifications     Notification[]
   sessions          Session[]
   auditLogs         AuditLog[]
@@ -127,6 +131,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([roleId])
   @@map("users")
 }
 
@@ -145,6 +150,53 @@ model Session {
   @@index([userId])
   @@index([token])
   @@map("sessions")
+}
+
+// =============================================================================
+// DYNAMIC ROLE-BASED ACCESS CONTROL (RBAC)
+// =============================================================================
+
+model RoleModel {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  module      String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  assignedAt   DateTime @default(now())
+
+  role       RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
 }
 
 // =============================================================================

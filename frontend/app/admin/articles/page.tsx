@@ -14,7 +14,10 @@ import {
   Upload,
   Image as ImageIcon2,
   Zap,
-  Megaphone
+  Megaphone,
+  X,
+  AlertCircle,
+  MessageSquare
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 import { getArticleImage, formatArticleSlug, translateHindiToEnglishSlug } from "@/lib/defaultArticles";
@@ -58,6 +61,9 @@ interface AdminArticle {
   state?: string;
   district?: string;
   isTrending?: boolean;
+  reviewComment?: string;
+  reviewedBy?: string;
+  submittedBy?: string;
   // Custom Article-Specific Advertisement
   adTitle?: string;
   adSubtitle?: string;
@@ -77,6 +83,15 @@ export default function AdminArticlesPage() {
   const [languageFilter, setLanguageFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
   const [toastMessage, setToastMessage] = useState("");
+
+  // Role Context
+  const [adminRole, setAdminRole] = useState<string>("super_admin");
+  const [adminUserName, setAdminUserName] = useState<string>("Global Admin");
+
+  // Rejection Feedback Modal State
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectingArticle, setRejectingArticle] = useState<AdminArticle | null>(null);
+  const [rejectComment, setRejectComment] = useState<string>("");
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,6 +133,16 @@ export default function AdminArticlesPage() {
   const [isUploadingAdImage, setIsUploadingAdImage] = useState(false);
   const slugTranslateTimer = useRef<any>(null);
 
+  const isEditor = (role: string) => {
+    const r = (role || "").toLowerCase();
+    return r.includes("editor") && !r.includes("chief");
+  };
+
+  const isChiefOrSuperAdmin = (role: string) => {
+    const r = (role || "").toLowerCase();
+    return r.includes("chief") || r.includes("super") || r.includes("admin");
+  };
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3000);
@@ -143,6 +168,26 @@ export default function AdminArticlesPage() {
   };
 
   useEffect(() => {
+    try {
+      let rawRole = localStorage.getItem("ga_admin_role") || "";
+      const user = localStorage.getItem("ga_admin_user") || "Global Admin";
+
+      // Auto-resolve role from ga_created_users for staff accounts (e.g. Amarjeet)
+      if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
+        try {
+          const storedUsers = JSON.parse(localStorage.getItem("ga_created_users") || "[]");
+          const found = storedUsers.find((u: any) => u.name === user || u.email === user);
+          if (found && found.roleSlug) {
+            rawRole = found.roleSlug;
+          }
+        } catch (e) {}
+      }
+
+      const role = (rawRole || "super_admin").toLowerCase();
+      setAdminRole(role);
+      setAdminUserName(user);
+    } catch (e) {}
+
     async function loadInitialArticles() {
       let combined: AdminArticle[] = [];
       try {
@@ -257,8 +302,8 @@ export default function AdminArticlesPage() {
       setFormCategories(["Top News", "Education"]);
       setFormSubCategory("General");
       setFormState("Jharkhand");
-      setFormAuthor("Global Admin");
-      setFormStatus("PUBLISHED");
+      setFormAuthor(adminUserName || "Editor");
+      setFormStatus(isEditor(adminRole) ? "REVIEW" : "PUBLISHED");
       setFormLanguage("HI");
       setFormSummary("");
       setFormContent("");
@@ -370,6 +415,16 @@ export default function AdminArticlesPage() {
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
     const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
+
+    // Role-Based Status Enforcement:
+    // Editor MUST submit for REVIEW. Chief Editor or Super Admin can publish live.
+    let targetStatus = formStatus;
+    if (isEditor(adminRole)) {
+      targetStatus = "REVIEW";
+    } else if (editingArticle && editingArticle.status === "REVIEW") {
+      targetStatus = formStatus === "DRAFT" ? "DRAFT" : "PUBLISHED";
+    }
+
     const newArt: AdminArticle = {
       id: editingArticle ? editingArticle.id : `art_${Date.now()}`,
       title: formTitle,
@@ -380,8 +435,11 @@ export default function AdminArticlesPage() {
       category: { name: activeCat, slug: activeCat.toLowerCase(), color: getCategoryColor(activeCat), subCategory: formSubCategory },
       categories: formCategories.length > 0 ? formCategories : [activeCat],
       subCategory: formSubCategory,
-      author: { name: formAuthor },
-      status: formStatus,
+      author: { name: editingArticle?.author?.name || `${adminUserName}` },
+      status: targetStatus,
+      submittedBy: isEditor(adminRole) ? adminUserName : editingArticle?.submittedBy,
+      reviewComment: targetStatus === "REVIEW" ? undefined : editingArticle?.reviewComment,
+      reviewedBy: isChiefOrSuperAdmin(adminRole) ? adminUserName : editingArticle?.reviewedBy,
       views: editingArticle ? editingArticle.views : 100,
       readTime: "3 min read",
       publishedAt: editingArticle ? editingArticle.publishedAt : new Date().toISOString(),
@@ -410,16 +468,19 @@ export default function AdminArticlesPage() {
       updatedList = [newArt, ...previousList];
     }
 
-    // 1. Instantly update UI & localStorage (fast, offline-friendly cache)
+    // 1. Instantly update UI & localStorage
     setArticles(updatedList);
     saveToLocalStorage(updatedList);
     setIsModalOpen(false);
+
     showToast(
-      formIsHero
-        ? `Article "${formTitle}" set as Main Hero Banner (Previous Hero unassigned)!`
+      isEditor(adminRole)
+        ? `Article "${formTitle}" submitted for Chief Editor & Super Admin review!`
+        : formIsHero
+        ? `Article "${formTitle}" set as Main Hero Banner!`
         : editingArticle
         ? `Article "${formTitle}" updated!`
-        : `Article "${formTitle}" published!`
+        : `Article "${formTitle}" published live!`
     );
 
     // 2. Persist to real database so it survives page refresh
@@ -430,12 +491,11 @@ export default function AdminArticlesPage() {
         body: JSON.stringify({
           ...newArt,
           slug: newArt.slug,
-          status: newArt.status === "DRAFT" ? "DRAFT" : "PUBLISHED",
+          status: newArt.status === "DRAFT" ? "DRAFT" : newArt.status === "REVIEW" ? "REVIEW" : "PUBLISHED",
         }),
       });
       const json = await res.json();
       if (json?.success && json?.data) {
-        // Update the local article with the real DB id/slug
         const dbArt = { ...newArt, id: json.data.id || newArt.id, slug: json.data.slug || newArt.slug };
         const synced = updatedList.map((a) => (a.id === newArt.id ? dbArt : a));
         setArticles(synced);
@@ -443,8 +503,57 @@ export default function AdminArticlesPage() {
       }
     } catch (err) {
       console.warn("DB save failed – article is kept in localStorage only:", err);
-      showToast(`"${formTitle}" saved locally (DB unreachable).`);
     }
+  };
+
+  // Chief Editor Approval Handler
+  const handleApproveArticle = (art: AdminArticle) => {
+    const updatedList = articles.map((a) =>
+      a.id === art.id
+        ? {
+            ...a,
+            status: "PUBLISHED",
+            publishedAt: new Date().toISOString(),
+            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
+          }
+        : a
+    );
+    setArticles(updatedList);
+    saveToLocalStorage(updatedList);
+    showToast(`✅ Article "${art.title}" approved & published live!`);
+  };
+
+  // Chief Editor Rejection Modal Handlers
+  const handleOpenRejectModal = (art: AdminArticle) => {
+    setRejectingArticle(art);
+    setRejectComment("");
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = () => {
+    if (!rejectingArticle) return;
+    if (!rejectComment.trim()) {
+      showToast("Please enter a feedback comment for the Editor!");
+      return;
+    }
+
+    const updatedList = articles.map((a) =>
+      a.id === rejectingArticle.id
+        ? {
+            ...a,
+            status: "REJECTED",
+            reviewComment: rejectComment.trim(),
+            reviewedBy: `${adminUserName} (${adminRole === "chief_editor" ? "Chief Editor" : "Super Admin"})`
+          }
+        : a
+    );
+
+    setArticles(updatedList);
+    saveToLocalStorage(updatedList);
+    setShowRejectModal(false);
+    setRejectingArticle(null);
+    setRejectComment("");
+    showToast(`❌ Article rejected with feedback comment sent to Editor.`);
   };
 
   const handleDeleteArticle = async (id: string, slug: string, title: string) => {
@@ -541,9 +650,22 @@ export default function AdminArticlesPage() {
 
         <button
           onClick={() => handleOpenModal()}
-          style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "11px 22px", borderRadius: "10px", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(229,9,20,0.3)" }}
+          style={{
+            background: adminRole === "editor" ? "#2563eb" : "#e50914",
+            color: "#ffffff",
+            border: "none",
+            padding: "11px 22px",
+            borderRadius: "10px",
+            fontWeight: 800,
+            fontSize: "0.9rem",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: adminRole === "editor" ? "0 4px 14px rgba(37,99,235,0.3)" : "0 4px 14px rgba(229,9,20,0.3)"
+          }}
         >
-          <Plus size={18} /> Compose New News
+          <Plus size={18} /> {adminRole === "editor" ? "Compose News for Review" : "Compose New News"}
         </button>
       </div>
 
@@ -570,9 +692,10 @@ export default function AdminArticlesPage() {
               style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--color-border)", fontSize: "0.85rem" }}
             >
               <option value="ALL">All Status</option>
-              <option value="PUBLISHED">Published</option>
+              <option value="PUBLISHED">Published (Live)</option>
+              <option value="REVIEW">Pending Review</option>
+              <option value="REJECTED">Needs Revision (Rejected)</option>
               <option value="DRAFT">Draft</option>
-              <option value="ARCHIVED">Archived</option>
             </select>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <input
@@ -611,8 +734,8 @@ export default function AdminArticlesPage() {
                   <th style={{ width: "30%", textAlign: "left" }}>Article Title</th>
                   <th style={{ width: "10%", textAlign: "left" }}>Category</th>
                   <th style={{ width: "10%", textAlign: "left" }}>State</th>
-                  <th style={{ width: "10%", textAlign: "left" }}>Status</th>
-                  <th style={{ width: "40%", textAlign: "right" }}>Actions</th>
+                  <th style={{ width: "12%", textAlign: "left" }}>Review Status</th>
+                  <th style={{ width: "38%", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -633,6 +756,14 @@ export default function AdminArticlesPage() {
                           <span style={{ fontSize: "0.74rem", color: "#64748b", fontWeight: 600 }}>
                             by {art.author?.name || "Global Admin"} • 📅 {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Today"}
                           </span>
+
+                          {/* Rejection Feedback Comment Display for Editor */}
+                          {art.status === "REJECTED" && art.reviewComment && (
+                            <div style={{ marginTop: "6px", background: "#fff1f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "6px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                              <MessageSquare size={13} style={{ flexShrink: 0, color: "#dc2626" }} />
+                              <span><strong>Chief Editor Feedback:</strong> "{art.reviewComment}"</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -652,86 +783,130 @@ export default function AdminArticlesPage() {
                       </span>
                     </td>
                     <td>
-                      <span className={art.status === "PUBLISHED" ? "status-published-pill" : "category-tag-pill"}>
-                        ● {art.status}
-                      </span>
+                      {art.status === "PUBLISHED" ? (
+                        <span style={{ background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          🟢 Published
+                        </span>
+                      ) : art.status === "REVIEW" ? (
+                        <span style={{ background: "#fefce8", color: "#a16207", border: "1px solid #fef08a", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          🟡 Pending Review
+                        </span>
+                      ) : art.status === "REJECTED" ? (
+                        <span style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          🔴 Needs Revision
+                        </span>
+                      ) : (
+                        <span style={{ background: "#f8fafc", color: "#475569", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: "6px", fontWeight: 800, fontSize: "0.74rem", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          ⚪ Draft
+                        </span>
+                      )}
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <div style={{ display: "inline-flex", gap: "6px", justifyContent: "flex-end", flexWrap: "nowrap" }}>
-                        {/* Prominent Edit & Delete Buttons First */}
-                        <button
-                          onClick={() => handleOpenModal(art)}
-                          title="Edit Article"
-                          style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <Edit size={13} /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteArticle(art.id, art.slug, art.title)}
-                          title="Delete Article"
-                          style={{ background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 6px rgba(220,38,38,0.25)" }}
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
+                      <div style={{ display: "inline-flex", gap: "6px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        {/* Chief Editor & Super Admin Approve & Reject Buttons */}
+                        {isChiefOrSuperAdmin(adminRole) && art.status !== "PUBLISHED" && (
+                          <button
+                            onClick={() => handleApproveArticle(art)}
+                            title="Approve Article and Publish Live"
+                            style={{ background: "#10b981", color: "#ffffff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 6px rgba(16,185,129,0.3)" }}
+                          >
+                            <CheckCircle size={13} /> Approve & Publish
+                          </button>
+                        )}
+                        {isChiefOrSuperAdmin(adminRole) && art.status === "REVIEW" && (
+                          <button
+                            onClick={() => handleOpenRejectModal(art)}
+                            title="Reject Article with Revision Feedback"
+                            style={{ background: "#fff1f2", color: "#dc2626", border: "1px solid #fca5a5", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                          >
+                            <X size={13} /> Reject & Comment
+                          </button>
+                        )}
 
-                        {/* Feature Toggles */}
-                        <button
-                          onClick={() => handleToggleHero(art.id)}
-                          title={art.isHero ? "Click to unmark as Hero Banner" : "Set as Main Hero Banner (Top Lead Story)"}
-                          style={{
-                            background: art.isHero ? "#e50914" : "#fff1f2",
-                            color: art.isHero ? "#ffffff" : "#e50914",
-                            border: `1px solid ${art.isHero ? "#e50914" : "#fca5a5"}`,
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            fontSize: "0.76rem",
-                            fontWeight: 800,
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px"
-                          }}
-                        >
-                          <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
-                        </button>
-                        <button
-                          onClick={() => handleToggleSuperfast(art.id)}
-                          title={art.isSuperfast ? "Click to remove from Superfast News section" : "Add to ⚡ सुपरफ़ास्ट NEWS section"}
-                          style={{
-                            background: art.isSuperfast ? "#dc2626" : "#fef2f2",
-                            color: art.isSuperfast ? "#ffffff" : "#dc2626",
-                            border: `1px solid ${art.isSuperfast ? "#dc2626" : "#fca5a5"}`,
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            fontSize: "0.76rem",
-                            fontWeight: 800,
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px"
-                          }}
-                        >
-                          <Zap size={13} /> {art.isSuperfast ? "Superfast ⚡" : "+ Superfast"}
-                        </button>
-                        <button
-                          onClick={() => handleToggleTrending(art.id)}
-                          title={art.isTrending ? "Click to remove from Trending / Hot Topics" : "Mark as 🔥 Trending / Hot Topic"}
-                          style={{
-                            background: art.isTrending ? "#ea580c" : "#fff7ed",
-                            color: art.isTrending ? "#ffffff" : "#ea580c",
-                            border: `1px solid ${art.isTrending ? "#ea580c" : "#ffedd5"}`,
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            fontSize: "0.76rem",
-                            fontWeight: 800,
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px"
-                          }}
-                        >
-                          🔥 {art.isTrending ? "Trending" : "+ Trending"}
-                        </button>
+                        {/* Edit Button: Chief/Super can edit all; Editor can edit own drafts/submissions only */}
+                        {(isChiefOrSuperAdmin(adminRole) || art.submittedBy === adminUserName || art.author?.name === adminUserName || art.author?.name?.toLowerCase() === adminUserName.toLowerCase()) && (
+                          <button
+                            onClick={() => handleOpenModal(art)}
+                            title="Edit Article"
+                            style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                          >
+                            <Edit size={13} /> Edit
+                          </button>
+                        )}
+
+                        {/* Delete Button: Chief Editor & Super Admin Only */}
+                        {isChiefOrSuperAdmin(adminRole) && (
+                          <button
+                            onClick={() => handleDeleteArticle(art.id, art.slug, art.title)}
+                            title="Delete Article"
+                            style={{ background: "#dc2626", color: "#ffffff", border: "1px solid #b91c1c", padding: "6px 12px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 6px rgba(220,38,38,0.25)" }}
+                          >
+                            <Trash2 size={13} /> Delete
+                          </button>
+                        )}
+
+                        {/* Section Feature Toggles: Chief Editor & Super Admin Only */}
+                        {isChiefOrSuperAdmin(adminRole) && (
+                          <>
+                            <button
+                              onClick={() => handleToggleHero(art.id)}
+                              title={art.isHero ? "Click to unmark as Hero Banner" : "Set as Main Hero Banner (Top Lead Story)"}
+                              style={{
+                                background: art.isHero ? "#e50914" : "#fff1f2",
+                                color: art.isHero ? "#ffffff" : "#e50914",
+                                border: `1px solid ${art.isHero ? "#e50914" : "#fca5a5"}`,
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                fontSize: "0.76rem",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                            >
+                              <Sparkles size={13} /> {art.isHero ? "Hero ★" : "Set Hero"}
+                            </button>
+                            <button
+                              onClick={() => handleToggleSuperfast(art.id)}
+                              title={art.isSuperfast ? "Click to remove from Superfast News section" : "Add to ⚡ सुपरफ़ास्ट NEWS section"}
+                              style={{
+                                background: art.isSuperfast ? "#dc2626" : "#fef2f2",
+                                color: art.isSuperfast ? "#ffffff" : "#dc2626",
+                                border: `1px solid ${art.isSuperfast ? "#dc2626" : "#fca5a5"}`,
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                fontSize: "0.76rem",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                            >
+                              <Zap size={13} /> {art.isSuperfast ? "Superfast ⚡" : "+ Superfast"}
+                            </button>
+                            <button
+                              onClick={() => handleToggleTrending(art.id)}
+                              title={art.isTrending ? "Click to remove from Trending / Hot Topics" : "Mark as 🔥 Trending / Hot Topic"}
+                              style={{
+                                background: art.isTrending ? "#ea580c" : "#fff7ed",
+                                color: art.isTrending ? "#ffffff" : "#ea580c",
+                                border: `1px solid ${art.isTrending ? "#ea580c" : "#ffedd5"}`,
+                                padding: "6px 10px",
+                                borderRadius: "6px",
+                                fontSize: "0.76rem",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                            >
+                              🔥 {art.isTrending ? "Trending" : "+ Trending"}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -747,7 +922,9 @@ export default function AdminArticlesPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "20px" }}>
           <div style={{ background: "#ffffff", borderRadius: "20px", width: "100%", maxWidth: "960px", maxHeight: "90vh", overflowY: "auto", padding: "36px", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}>
             <h3 style={{ fontSize: "1.3rem", fontWeight: 800, margin: "0 0 20px 0", color: "#0f172a" }}>
-              {editingArticle ? "Edit Article Details" : "Compose & Publish New Article"}
+              {isEditor(adminRole)
+                ? (editingArticle ? (editingArticle.status === "REJECTED" ? "Revise Rejected Article Draft" : "Edit Article Draft") : "Compose & Submit News for Review")
+                : (editingArticle ? "Edit Article Details" : "Compose & Publish New Article")}
             </h3>
 
             <form onSubmit={handleSaveArticle} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -1341,19 +1518,25 @@ export default function AdminArticlesPage() {
                 )}
               </div>
 
+              {/* Summary Teaser Textarea */}
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Summary Teaser</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
+                  Summary Teaser / संक्षिप्त विवरण (समाचार कार्ड पूर्वावलोकन के लिए)
+                </label>
                 <textarea
-                  rows={2}
-                  placeholder="Brief synopsis for card previews..."
+                  rows={3}
+                  placeholder="Enter brief synopsis for article card previews and news excerpts..."
                   value={formSummary}
                   onChange={(e) => setFormSummary(e.target.value)}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem" }}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", fontWeight: 500 }}
                 />
               </div>
 
+              {/* Full News Text Box / Rich Text Editor */}
               <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Article Body Content</label>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
+                  Article Body Content / मुख्य समाचार पाठ (News Body Content) *
+                </label>
                 <RichTextEditor value={formContent} onChange={setFormContent} />
               </div>
 
@@ -1368,16 +1551,89 @@ export default function AdminArticlesPage() {
                 <button
                   type="submit"
                   disabled={isUploadingImage}
-                  style={{ background: isUploadingImage ? "#94a3b8" : "#e50914", color: "#ffffff", border: "none", padding: "10px 24px", borderRadius: "8px", fontWeight: 800, cursor: isUploadingImage ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "8px" }}
+                  style={{
+                    background: isUploadingImage ? "#94a3b8" : adminRole === "editor" ? "#2563eb" : "#e50914",
+                    color: "#ffffff",
+                    border: "none",
+                    padding: "10px 24px",
+                    borderRadius: "8px",
+                    fontWeight: 800,
+                    cursor: isUploadingImage ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}
                 >
                   {isUploadingImage ? (
                     <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading Image…</>
+                  ) : adminRole === "editor" ? (
+                    editingArticle
+                      ? (editingArticle.status === "REJECTED" ? "Re-submit for Review" : "Update & Submit for Review")
+                      : "Submit Article for Review"
                   ) : (
                     editingArticle ? "Update Article" : "Publish Article"
                   )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Editorial Rejection & Feedback Modal */}
+      {showRejectModal && rejectingArticle && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.7)", backdropFilter: "blur(6px)", zIndex: 10001, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#ffffff", borderRadius: "20px", width: "100%", maxWidth: "520px", padding: "28px", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#fef2f2", color: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AlertCircle size={20} />
+                </div>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
+                  Reject Article & Send Feedback
+                </h3>
+              </div>
+              <button onClick={() => setShowRejectModal(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Article Title:</span>
+              <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>
+                {rejectingArticle.title}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
+                Feedback / Revision Instructions for Editor <span style={{ color: "#dc2626" }}>*</span>
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Specify what needs correction (e.g. headline revision, factual proof, spelling fix, or formatting)..."
+                value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)}
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: "0.88rem", outline: "none" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontWeight: 700, fontSize: "0.86rem", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#dc2626", color: "#ffffff", fontWeight: 800, fontSize: "0.86rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                Reject Article & Send Comment
+              </button>
+            </div>
           </div>
         </div>
       )}

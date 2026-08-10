@@ -51,7 +51,11 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
   const isAdmin = pathname?.startsWith("/admin");
 
   if (isAdmin) {
-    return <div className="admin-page-root">{children}</div>;
+    return (
+      <LanguageProvider>
+        <div className="admin-page-root">{children}</div>
+      </LanguageProvider>
+    );
   }
 
   return (

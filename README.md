@@ -154,8 +154,8 @@ npm start
 
 ## 🏆 Default Admin Credentials (Seeded)
 
-- **Email**: `admin@globalawaaz.com`
-- **Password**: `Admin@GlobalAwaaz2025`
+- **Email**: `global2409@globalawaaz.com` (or username `global2409`)
+- **Password**: `Global@#2409`
 - **Role**: `SUPERADMIN`
 
 ---
