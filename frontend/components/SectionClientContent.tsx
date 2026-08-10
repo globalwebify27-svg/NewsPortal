@@ -149,6 +149,9 @@ export default function SectionClientContent() {
         if (customRaw) {
           const customList: Article[] = JSON.parse(customRaw);
           const matchedCustom = customList.filter((a) => {
+            const st = (a.status || "PUBLISHED").toUpperCase();
+            if (st !== "PUBLISHED") return false;
+
             const catName = (a.category?.name || (a.category as any) || "").toLowerCase().trim();
             const secLower = section.toLowerCase().trim();
             if (secLower === "latest" || secLower === "top news") return true;

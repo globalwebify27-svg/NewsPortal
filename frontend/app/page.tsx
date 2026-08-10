@@ -235,7 +235,10 @@ export default function Home() {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed) && parsed.length > 0) {
             const customMap = new Map(parsed.map((a: Article) => [a.id, a]));
-            const validCustom = parsed.filter((a: Article) => a.status !== "DRAFT");
+            const validCustom = parsed.filter((a: Article) => {
+              const st = (a.status || "PUBLISHED").toUpperCase();
+              return st === "PUBLISHED";
+            });
             const nonCustomApi = apiList.filter((a) => !customMap.has(a.id));
             apiList = [...validCustom, ...nonCustomApi];
           }

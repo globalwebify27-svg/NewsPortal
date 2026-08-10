@@ -123,8 +123,11 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
         if (local) {
           const parsed = JSON.parse(local);
           if (Array.isArray(parsed)) {
-            const found = parsed.find((a: ArticleDetail) => {
+            const found = parsed.find((a: ArticleDetail & { status?: string }) => {
               if (!a) return false;
+              const st = (a.status || "PUBLISHED").toUpperCase();
+              if (st !== "PUBLISHED") return false;
+
               const aSlug = (a.slug || "").trim().toLowerCase();
               const aId = (a.id || "").trim().toLowerCase();
               const cleanId = aId.replace(/^custom-/, "");

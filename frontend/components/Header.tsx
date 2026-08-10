@@ -341,7 +341,11 @@ export default function Header() {
     const storedVideos = getStoredVideos();
 
     const matchedArticles = localArticles
-      .filter((a: any) => a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q))
+      .filter((a: any) => {
+        const st = (a.status || "PUBLISHED").toUpperCase();
+        if (st !== "PUBLISHED") return false;
+        return a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q);
+      })
       .map((a: any) => ({ ...a, resultType: "article" }));
 
     const matchedVideos = storedVideos
