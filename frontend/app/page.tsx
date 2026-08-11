@@ -201,21 +201,22 @@ export default function Home() {
     async function fetchArticles() {
       let apiList: Article[] = [];
       try {
-        const json = await fetchWithCache<any>(API_ENDPOINTS.articles, 30000);
-        if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-          apiList = json.data;
-        } else if (json?.articles && Array.isArray(json.articles) && json.articles.length > 0) {
-          apiList = json.articles;
+        const res = await fetch(API_ENDPOINTS.articles, { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+            apiList = json.data;
+          } else if (json?.articles && Array.isArray(json.articles) && json.articles.length > 0) {
+            apiList = json.articles;
+          }
         }
       } catch (err) {
-        console.warn("Using fallback articles data:", err);
+        console.warn("Error fetching articles from MySQL DB:", err);
       }
 
       if (!apiList || apiList.length === 0) {
-        // No hardcoded fallback — show empty state until articles are added via Admin Panel
         apiList = [];
       }
-
 
       setArticles(apiList);
       setLoading(false);

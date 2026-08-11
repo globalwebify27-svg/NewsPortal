@@ -195,12 +195,11 @@ export async function deleteArticleByIdOrSlug(idOrSlug: string) {
  */
 export async function createOrUpdateArticle(data: any) {
   try {
-    const role = (data.userRole || data.role || "editor").toLowerCase();
-    const isEditorRole = role === "editor" || role.includes("staff");
-    const isChiefOrSuperAdmin = role.includes("chief") || role.includes("super") || role.includes("admin");
+    const role = (data.userRole || data.role || "super_admin").toLowerCase();
+    const isEditorRole = (role === "editor" || role.includes("staff")) && !role.includes("super") && !role.includes("admin") && !role.includes("chief");
 
     const now = new Date();
-    let requestedStatus: WorkflowArticleStatus = (data.status || "DRAFT").toUpperCase() as WorkflowArticleStatus;
+    let requestedStatus: WorkflowArticleStatus = (data.status || "PUBLISHED").toUpperCase() as WorkflowArticleStatus;
 
     if (isEditorRole) {
       if (requestedStatus === "PUBLISHED" || requestedStatus === "APPROVED" || requestedStatus === "PENDING_REVIEW") {
@@ -216,8 +215,19 @@ export async function createOrUpdateArticle(data: any) {
       slug = await generateArticleSlug(data.title || "News Story", data.id, now.toISOString());
     }
 
-    // Category Resolution
-    let catId = data.categoryId;
+    // Category Resolution: check by ID first, then by name or slug
+    let catId: string | null = data.categoryId || null;
+    if (catId) {
+      const existingCat = await prisma.category.findFirst({
+        where: { OR: [{ id: catId }, { name: catId }, { slug: catId.toLowerCase() }] }
+      });
+      if (existingCat) {
+        catId = existingCat.id;
+      } else {
+        catId = null;
+      }
+    }
+
     if (!catId && data.category) {
       const catName = typeof data.category === "string" ? data.category : data.category.name || "General";
       const catSlug = (typeof data.category === "object" && data.category.slug) 
@@ -227,7 +237,7 @@ export async function createOrUpdateArticle(data: any) {
       const cat = await prisma.category.upsert({
         where: { slug: catSlug },
         update: { name: catName },
-        create: { name: catName, slug: catSlug, color: data.category.color || "#e50914" }
+        create: { name: catName, slug: catSlug, color: (typeof data.category === "object" && data.category.color) || "#e50914" }
       });
       catId = cat.id;
     }
@@ -244,9 +254,25 @@ export async function createOrUpdateArticle(data: any) {
       }
     }
 
-    // Author Resolution
-    let authorId = data.authorId;
-    if (!authorId) {
+    // Author Resolution: convert authorId (if string name like "Global Admin") to valid User DB ID
+    let authorId: string | null = data.authorId || null;
+    let validAuthor = null;
+
+    if (authorId) {
+      validAuthor = await prisma.user.findFirst({
+        where: { OR: [{ id: authorId }, { name: authorId }, { email: authorId }] }
+      });
+    }
+
+    if (!validAuthor && data.userName) {
+      validAuthor = await prisma.user.findFirst({
+        where: { OR: [{ name: data.userName }, { email: data.userName }] }
+      });
+    }
+
+    if (validAuthor) {
+      authorId = validAuthor.id;
+    } else {
       const defaultUser = await prisma.user.findFirst({
         where: { role: { in: ["SUPERADMIN", "ADMIN"] } }
       }) || await prisma.user.findFirst();
@@ -258,7 +284,7 @@ export async function createOrUpdateArticle(data: any) {
           data: {
             name: data.userName || "Global Admin",
             email: `admin_${Date.now()}@globalawaaz.com`,
-            role: "ADMIN"
+            role: "SUPERADMIN"
           }
         });
         authorId = createdUser.id;
@@ -281,7 +307,9 @@ export async function createOrUpdateArticle(data: any) {
     };
 
     let articleRecord;
-    if (data.id) {
+    const isTempId = !data.id || (typeof data.id === "string" && data.id.startsWith("art_"));
+
+    if (data.id && !isTempId) {
       articleRecord = await prisma.article.upsert({
         where: { id: data.id },
         update: payload,

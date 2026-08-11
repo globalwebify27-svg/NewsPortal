@@ -502,9 +502,12 @@ export default function AdminArticlesPage() {
       if (json?.success && json?.data) {
         const dbArt = { ...newArt, ...json.data };
         setArticles((prev) => prev.map((a) => (a.id === newArt.id ? dbArt : a)));
+      } else {
+        showToast("⚠️ Save Warning: " + (json?.message || "Failed to persist to database"));
       }
     } catch (err) {
       console.warn("DB save error:", err);
+      showToast("⚠️ Could not connect to server database");
     }
   };
 

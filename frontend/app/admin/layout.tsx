@@ -117,16 +117,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const res = await fetch("/api/v1/staff");
       const json = await res.json();
       const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-      const found = storedUsers.find(
-        (u: any) =>
-          (u.email.toLowerCase() === userEmail || (u.name && u.name.toLowerCase() === userEmail)) &&
-          u.password === pass
-      );
+      const found = storedUsers.find((u: any) => {
+        const emailMatch = u.email && u.email.toLowerCase() === userEmail;
+        const nameMatch = u.name && u.name.toLowerCase() === userEmail;
+        const passMatch = u.password && u.password === pass;
+        return (emailMatch || nameMatch) && passMatch;
+      });
       if (found) {
+        let slug = (found.roleSlug || found.role || "editor").toLowerCase();
+        if (slug.includes("super")) slug = "super_admin";
+        else if (slug.includes("chief")) slug = "chief_editor";
+        else if (slug.includes("admin")) slug = "super_admin";
+        else slug = "editor";
+
         matchedCreatedUser = {
-          name: found.name,
+          name: found.name || found.email,
           email: found.email,
-          roleSlug: (found.roleSlug as AdminRoleSlug) || "editor"
+          roleSlug: slug as AdminRoleSlug
         };
       }
     } catch (err) {}
