@@ -1,6 +1,6 @@
 // =============================================================================
-// app/sitemaps/categories.xml/route.ts — Category Pages Sitemap
-// URL: https://globalawaaz.com/sitemaps/categories.xml
+// app/categories-sitemap.xml/route.ts — Category Pages Sitemap
+// URL: https://globalawaaz.com/categories-sitemap.xml
 //
 // Lists all category section pages.
 //
@@ -9,7 +9,7 @@
 //   2. Merge with any additional category slugs discovered live from the DB
 //      (i.e., categories that actually have published articles).
 //   3. Deduplicate and sort alphabetically.
-//   4. Also include state/region pages (/jharkhand, /bihar, etc.)
+//   4. Also include all Indian state/region pages (/jharkhand, /bihar, etc.)
 //   5. Revalidate every 12 hours.
 // =============================================================================
 
@@ -60,7 +60,6 @@ export async function GET(): Promise<NextResponse> {
 
   // ---------------------------------------------------------------------------
   // 3. State / region pages (e.g. /jharkhand, /bihar, /uttar-pradesh)
-  //    These use the clean URL pattern we introduced
   // ---------------------------------------------------------------------------
   const stateSlugs = INDIAN_STATES.map((st) => st.slug);
 
@@ -89,7 +88,7 @@ export async function GET(): Promise<NextResponse> {
   </url>`;
   });
 
-  const allEntries = [...categoryEntries, ...stateEntries].join("\n");
+  const allEntries = categoryEntries.concat(stateEntries).join("\n");
 
   // ---------------------------------------------------------------------------
   // 5. Assemble XML

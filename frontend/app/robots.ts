@@ -3,7 +3,7 @@
 // URL: https://globalawaaz.com/robots.txt
 //
 // Allows all public pages; blocks admin, API, and CMS internals.
-// References the sitemap index and key sub-sitemaps.
+// References the main sitemap index and active sitemaps.
 // =============================================================================
 
 import { MetadataRoute } from "next";
@@ -15,9 +15,6 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        // -------------------------------------------------------
-        // All crawlers: allow public site, block internal paths
-        // -------------------------------------------------------
         userAgent: "*",
         allow: ["/"],
         disallow: [
@@ -30,19 +27,14 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       {
-        // -------------------------------------------------------
-        // Googlebot: additionally allow sitemaps sub-directory
-        // -------------------------------------------------------
         userAgent: "Googlebot",
-        allow: ["/", "/sitemaps/"],
+        allow: ["/"],
         disallow: ["/admin", "/api/", "/login"],
       },
     ],
-    // Primary sitemap index
     sitemap: [
       `${BASE_URL}/sitemap.xml`,
-      `${BASE_URL}/sitemaps/google-news.xml`,
-      `${BASE_URL}/sitemaps/news-recent.xml`,
+      `${BASE_URL}/news-recent-sitemap.xml`,
     ],
     host: BASE_URL,
   };
