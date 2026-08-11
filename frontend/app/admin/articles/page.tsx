@@ -193,7 +193,7 @@ export default function AdminArticlesPage() {
 
     async function loadInitialArticles() {
       try {
-        const res = await fetch("/api/v1/articles?admin=true");
+        const res = await fetch("/api/v1/articles?admin=true", { cache: "no-store" });
         const json = await res.json();
         if (json && (json.data || json.articles)) {
           const list = json.data || json.articles;
@@ -276,7 +276,7 @@ export default function AdminArticlesPage() {
       setFormSubCategory("General");
       setFormState("Jharkhand");
       setFormAuthor(adminUserName || "Editor");
-      setFormStatus(isEditor(adminRole) ? "REVIEW" : "PUBLISHED");
+      setFormStatus(isEditor(adminRole) ? "PENDING_REVIEW" : "PUBLISHED");
       setFormLanguage("HI");
       setFormSummary("");
       setFormContent("");
@@ -394,8 +394,10 @@ export default function AdminArticlesPage() {
     const isChiefOrAdmin = isChiefOrSuperAdmin(adminRole);
 
     let targetStatus: string = (formStatus || "DRAFT").toUpperCase();
+    if (targetStatus === "REVIEW") targetStatus = "PENDING_REVIEW";
+
     if (isEditorRole) {
-      if (targetStatus === "PUBLISHED" || targetStatus === "APPROVED" || targetStatus === "PENDING_REVIEW") {
+      if (targetStatus === "PUBLISHED" || targetStatus === "APPROVED" || targetStatus === "PENDING_REVIEW" || targetStatus === "REVIEW") {
         targetStatus = "PENDING_REVIEW";
       } else {
         targetStatus = "DRAFT";
@@ -678,10 +680,10 @@ export default function AdminArticlesPage() {
       <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "28px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <div>
           <h2 style={{ fontSize: "1.3rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
-            Editorial Articles Queue ({articles.length})
+            Editorial News Queue ({articles.length})
           </h2>
           <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: "#64748b" }}>
-            Create, publish, edit, or remove articles across English & Hindi portals.
+            Create, publish, edit, or remove news stories across English & Hindi portals.
           </p>
         </div>
 
@@ -717,7 +719,7 @@ export default function AdminArticlesPage() {
               <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--color-secondary)" }} />
               <input
                 type="text"
-                placeholder="Search articles..."
+                placeholder="Search news..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ padding: "8px 12px 8px 36px", borderRadius: "8px", border: "1px solid var(--color-border)", fontSize: "0.85rem" }}
@@ -762,14 +764,14 @@ export default function AdminArticlesPage() {
           </div>
         ) : filteredArticles.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--color-secondary)" }}>
-            No articles match your criteria.
+            No news matches your criteria.
           </div>
         ) : (
           <div style={{ width: "100%", overflowX: "auto", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#ffffff" }}>
             <table className="admin-data-table" style={{ minWidth: "980px", width: "100%" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "30%", textAlign: "left" }}>Article Title</th>
+                  <th style={{ width: "30%", textAlign: "left" }}>News Title</th>
                   <th style={{ width: "10%", textAlign: "left" }}>Category</th>
                   <th style={{ width: "10%", textAlign: "left" }}>State</th>
                   <th style={{ width: "12%", textAlign: "left" }}>Review Status</th>
@@ -1660,7 +1662,7 @@ export default function AdminArticlesPage() {
                   <AlertCircle size={20} />
                 </div>
                 <h3 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
-                  Reject Article & Send Feedback
+                  Reject News & Send Feedback
                 </h3>
               </div>
               <button onClick={() => setShowRejectModal(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
@@ -1669,7 +1671,7 @@ export default function AdminArticlesPage() {
             </div>
 
             <div style={{ marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Article Title:</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>News Title:</span>
               <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>
                 {rejectingArticle.title}
               </div>
@@ -1701,7 +1703,7 @@ export default function AdminArticlesPage() {
                 onClick={handleConfirmReject}
                 style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#dc2626", color: "#ffffff", fontWeight: 800, fontSize: "0.86rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
               >
-                Reject Article & Send Comment
+                Reject News & Send Comment
               </button>
             </div>
           </div>

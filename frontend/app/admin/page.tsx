@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const res = await fetch("/api/v1/articles?admin=true");
+        const res = await fetch("/api/v1/articles?admin=true", { cache: "no-store" });
         const json = await res.json();
         if (json && (json.data || json.articles)) {
           const list = json.data || json.articles;
@@ -258,7 +258,7 @@ export default function AdminDashboardPage() {
             href="/admin/articles"
             style={{ background: "#e50914", color: "#ffffff", padding: "11px 20px", borderRadius: "10px", fontWeight: 800, fontSize: "0.88rem", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", boxShadow: "0 4px 14px rgba(229,9,20,0.3)" }}
           >
-            <Plus size={16} /> {isEditor(adminRole) ? "Compose News for Review" : "Compose Article"}
+            <Plus size={16} /> {isEditor(adminRole) ? "Compose News for Review" : "Compose News"}
           </Link>
           {!isEditor(adminRole) && (
             <Link
@@ -276,7 +276,7 @@ export default function AdminDashboardPage() {
         <Link href="/admin/articles" style={{ textDecoration: "none" }}>
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-              <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 700 }}>Total Articles</span>
+              <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 700 }}>Total News</span>
               <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "#fee2e2", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <FileText size={18} />
               </div>
@@ -406,7 +406,7 @@ export default function AdminDashboardPage() {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-              Recent Articles Queue
+              Recent News Queue
             </h3>
             <Link href="/admin/articles" style={{ fontSize: "0.82rem", fontWeight: 700, color: "#e50914", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
               View All <ArrowUpRight size={14} />
@@ -482,7 +482,7 @@ export default function AdminDashboardPage() {
                   <AlertCircle size={20} />
                 </div>
                 <h3 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
-                  Reject Article & Send Feedback
+                  Reject News & Send Feedback
                 </h3>
               </div>
               <button onClick={() => setShowRejectModal(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
@@ -491,7 +491,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div style={{ marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Article Title:</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>News Title:</span>
               <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>
                 {rejectingArticle.title}
               </div>
@@ -523,7 +523,7 @@ export default function AdminDashboardPage() {
                 onClick={handleConfirmReject}
                 style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#dc2626", color: "#ffffff", fontWeight: 800, fontSize: "0.86rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
               >
-                Reject Article & Send Comment
+                Reject News & Send Comment
               </button>
             </div>
           </div>

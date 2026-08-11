@@ -175,7 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const allNavItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, allowed: ["super_admin", "chief_editor", "editor"] },
-    { name: "Articles Queue", href: "/admin/articles", icon: FileText, allowed: ["super_admin", "chief_editor", "editor"] },
+    { name: "News Queue", href: "/admin/articles", icon: FileText, allowed: ["super_admin", "chief_editor", "editor"] },
     { name: "Categories", href: "/admin/categories", icon: FolderTree, allowed: ["super_admin", "chief_editor"] },
     { name: "Media Library", href: "/admin/media", icon: ImageIcon, allowed: ["super_admin", "chief_editor", "editor"] },
     { name: "Videos Manager", href: "/admin/videos", icon: Video, allowed: ["super_admin", "chief_editor"] },
