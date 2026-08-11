@@ -75,15 +75,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let cleanResumeUrl = resumeUrl.trim();
-    if (!/^https?:\/\//i.test(cleanResumeUrl)) {
-      if (cleanResumeUrl.startsWith("//")) {
-        cleanResumeUrl = `https:${cleanResumeUrl}`;
-      } else if (cleanResumeUrl.startsWith("/")) {
-        cleanResumeUrl = `https://yellowgreen-rook-384455.hostingersite.com${cleanResumeUrl}`;
-      } else {
-        cleanResumeUrl = `https://${cleanResumeUrl}`;
-      }
+    let cleanResumeUrl = resumeUrl.trim().replace(/^(https?[:/]+)+/i, "");
+    if (cleanResumeUrl.startsWith("/")) {
+      cleanResumeUrl = `https://yellowgreen-rook-384455.hostingersite.com${cleanResumeUrl}`;
+    } else {
+      cleanResumeUrl = `https://${cleanResumeUrl}`;
     }
 
     const payload = {

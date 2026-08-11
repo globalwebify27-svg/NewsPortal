@@ -59,17 +59,11 @@ interface CandidateApp {
 
 function formatExternalUrl(url?: string): string {
   if (!url) return "#";
-  let trimmed = url.trim();
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
+  let clean = url.trim().replace(/^(https?[:/]+)+/i, "");
+  if (clean.startsWith("/")) {
+    return `https://yellowgreen-rook-384455.hostingersite.com${clean}`;
   }
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-  if (trimmed.startsWith("/")) {
-    return `https://yellowgreen-rook-384455.hostingersite.com${trimmed}`;
-  }
-  return `https://${trimmed}`;
+  return `https://${clean}`;
 }
 
 export default function AdminCareersPage() {
