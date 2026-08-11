@@ -6,7 +6,7 @@ import { Role } from "@prisma/client";
 function mapRole(roleSlug?: string): Role {
   const r = (roleSlug || "editor").toLowerCase();
   if (r.includes("super")) return Role.SUPERADMIN;
-  if (r.includes("admin")) return Role.ADMIN;
+  if (r.includes("chief") || r.includes("admin")) return Role.ADMIN;
   if (r.includes("publish")) return Role.PUBLISHER;
   if (r.includes("report")) return Role.REPORTER;
   if (r.includes("author")) return Role.AUTHOR;
@@ -35,11 +35,25 @@ export async function GET() {
       }
     });
 
-    const mappedUsers = users.map(u => ({
-      ...u,
-      roleSlug: u.role.toLowerCase(),
-      roleName: u.role,
-    }));
+    const mappedUsers = users.map(u => {
+      let slug = u.role.toLowerCase();
+      let name = u.role as string;
+      if (u.role === Role.ADMIN) {
+        slug = "chief_editor";
+        name = "Chief Editor";
+      } else if (u.role === Role.SUPERADMIN) {
+        slug = "super_admin";
+        name = "Super Admin";
+      } else if (u.role === Role.EDITOR) {
+        name = "Editor";
+      }
+
+      return {
+        ...u,
+        roleSlug: slug,
+        roleName: name,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -83,14 +97,26 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    let resSlug = userRecord.role.toLowerCase();
+    let resName = userRecord.role as string;
+    if (userRecord.role === Role.ADMIN) {
+      resSlug = "chief_editor";
+      resName = "Chief Editor";
+    } else if (userRecord.role === Role.SUPERADMIN) {
+      resSlug = "super_admin";
+      resName = "Super Admin";
+    } else if (userRecord.role === Role.EDITOR) {
+      resName = "Editor";
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         id: userRecord.id,
         name: userRecord.name,
         email: userRecord.email,
-        roleSlug: userRecord.role.toLowerCase(),
-        roleName: userRecord.role,
+        roleSlug: resSlug,
+        roleName: resName,
         createdAt: userRecord.createdAt,
       },
       message: `Staff account for ${userRecord.name} created successfully in MySQL database`,

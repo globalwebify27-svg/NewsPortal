@@ -50,6 +50,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [actualRole, setActualRole] = useState<AdminRoleSlug>("super_admin");
+  const [siteLogo, setSiteLogo] = useState<string>("/global-awaaz-logo.jpg");
+
+  useEffect(() => {
+    fetch("/api/v1/logo-settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json && json.success && json.data && json.data.site_logo_url) {
+          setSiteLogo(json.data.site_logo_url);
+        }
+      })
+      .catch(() => { });
+  }, []);
 
   useEffect(() => {
     async function initSession() {
@@ -72,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               sessionStorage.setItem("ga_actual_role", found.roleSlug);
               sessionStorage.setItem("ga_admin_role", found.roleSlug);
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         if (!savedActual) savedActual = "super_admin";
@@ -136,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           roleSlug: slug as AdminRoleSlug
         };
       }
-    } catch (err) {}
+    } catch (err) { }
 
     if (isSuperAdminMatch) {
       sessionStorage.setItem("ga_admin_logged_in", "true");
@@ -222,102 +234,123 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Professional Enterprise Admin Login Portal when unauthenticated
+  // Clean Light & Pretty Enterprise Admin Login Portal when unauthenticated
   if (isAuthenticated === false) {
     return (
       <div
         style={{
-          minHeight: "90vh",
+          minHeight: "95vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "40px 20px",
-          background: "radial-gradient(circle at 50% 10%, #1e1b4b 0%, #0f172a 50%, #090d16 100%)",
-          color: "#ffffff",
+          background: "#f8fafc",
+          backgroundImage: "radial-gradient(#e2e8f0 1px, transparent 1px), radial-gradient(#e2e8f0 1px, #f8fafc 1px)",
+          backgroundSize: "40px 40px",
+          backgroundPosition: "0 0, 20px 20px",
+          color: "#0f172a",
           position: "relative",
           overflow: "hidden"
         }}
       >
-        <div style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(229,9,20,0.15) 0%, rgba(0,0,0,0) 70%)", pointerEvents: "none" }} />
-        
-        <div style={{ width: "100%", maxWidth: "440px", position: "relative", zIndex: 2 }}>
-          
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div
-              style={{
-                width: "60px",
-                height: "60px",
-                borderRadius: "18px",
-                background: "linear-gradient(135deg, #e50914 0%, #7f1d1d 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 16px auto",
-                fontWeight: 900,
-                color: "#ffffff",
-                fontSize: "1.5rem",
-                letterSpacing: "-0.03em",
-                boxShadow: "0 10px 30px rgba(229,9,20,0.4), inset 0 1px 1px rgba(255,255,255,0.4)"
-              }}
-            >
-              GA
+        {/* Soft Background Accent Circles */}
+        <div style={{ position: "absolute", top: "-10%", right: "-5%", width: "550px", height: "550px", background: "radial-gradient(circle, rgba(229,9,20,0.04) 0%, rgba(255,255,255,0) 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-10%", left: "-5%", width: "550px", height: "550px", background: "radial-gradient(circle, rgba(37,99,235,0.03) 0%, rgba(255,255,255,0) 70%)", pointerEvents: "none" }} />
+
+        <div style={{ width: "100%", position: "relative", zIndex: 2, justifyContent: "center", alignItems: "center", display: "flex", flexDirection: "column" }}>
+
+          {/* Top Brand Header with Large Site Logo */}
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "14px" }}>
+              <img
+                src={siteLogo}
+                alt="Global Awaaz"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = "none";
+                }}
+                style={{
+                  maxHeight: "100px",
+                  maxWidth: "350px",
+                  objectFit: "contain"
+                }}
+              />
             </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#ffffff", margin: "0 0 8px 0", letterSpacing: "-0.02em" }}>
+            <h1 style={{ fontSize: "1.9rem", fontWeight: 900, color: "#0f172a", margin: "0 0 8px 0", letterSpacing: "-0.02em" }}>
               Global Awaaz CMS
             </h1>
-            <p style={{ color: "#94a3b8", fontSize: "0.88rem", margin: 0, fontWeight: 500 }}>
-              Enterprise Editorial Management Console
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+              <span style={{ height: "1px", width: "32px", background: "#e50914" }} />
+              <span style={{ color: "#64748b", fontSize: "0.86rem", fontWeight: 700, letterSpacing: "0.02em" }}>
+                Enterprise Editorial Control Center
+              </span>
+              <span style={{ height: "1px", width: "32px", background: "#e50914" }} />
+            </div>
           </div>
 
+          {/* 950px Width x 470px Height Centered White Card */}
           <div
             style={{
-              background: "rgba(15, 23, 42, 0.75)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
+              width: "50%",
+              minHeight: "470px",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
               borderRadius: "24px",
-              padding: "36px",
-              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.5)"
+              padding: "44px 56px",
+              boxShadow: "0 20px 50px rgba(15, 23, 42, 0.07)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", paddingBottom: "14px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-              <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "#cbd5e1", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Secure Sign In
-              </span>
-              <span style={{ fontSize: "0.74rem", background: "rgba(229,9,20,0.2)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", padding: "3px 8px", borderRadius: "6px", fontWeight: 700 }}>
-                ● RBAC Protected
+            {/* Card Top Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", paddingBottom: "18px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "46px", height: "46px", borderRadius: "14px", background: "#fef2f2", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Lock size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
+                    Sign In to Account
+                  </h3>
+                  <p style={{ margin: "3px 0 0 0", fontSize: "0.84rem", color: "#64748b", fontWeight: 500 }}>
+                    Access your editorial control center
+                  </p>
+                </div>
+              </div>
+              <span style={{ fontSize: "0.78rem", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "5px 12px", borderRadius: "8px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                <CheckCircle2 size={14} style={{ color: "#16a34a" }} /> Security Active
               </span>
             </div>
 
             {loginError && (
-              <div style={{ background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", padding: "12px 14px", borderRadius: "10px", fontSize: "0.84rem", fontWeight: 600, marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
-                <AlertCircle size={17} style={{ flexShrink: 0, color: "#ef4444" }} />
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b", padding: "12px 16px", borderRadius: "12px", fontSize: "0.85rem", fontWeight: 700, marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <AlertCircle size={18} style={{ flexShrink: 0, color: "#dc2626" }} />
                 <span>{loginError}</span>
               </div>
             )}
 
-            <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#94a3b8", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Admin Username / Email
+                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 800, color: "#475569", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  USERNAME / EMAIL
                 </label>
                 <div style={{ position: "relative" }}>
-                  <Mail size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                  <Mail size={18} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                   <input
                     type="text"
-                    placeholder="Enter Admin Username or Email"
+                    placeholder="e.g. Example@gmail.com"
                     value={emailInput}
                     autoComplete="off"
                     onChange={(e) => setEmailInput(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "13px 14px 13px 44px",
-                      borderRadius: "10px",
-                      border: "1px solid #334155",
-                      background: "#090d16",
-                      color: "#ffffff",
-                      fontSize: "0.92rem",
+                      padding: "14px 16px 14px 48px",
+                      borderRadius: "12px",
+                      border: "1px solid #cbd5e1",
+                      background: "#f8fafc",
+                      color: "#0f172a",
+                      fontSize: "0.94rem",
                       fontWeight: 600,
                       outline: "none"
                     }}
@@ -326,24 +359,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#94a3b8", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Security Password
+                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 800, color: "#475569", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  PASSWORD
                 </label>
                 <div style={{ position: "relative" }}>
-                  <Lock size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                  <Lock size={18} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "13px 44px 13px 44px",
-                      borderRadius: "10px",
-                      border: "1px solid #334155",
-                      background: "#090d16",
-                      color: "#ffffff",
-                      fontSize: "0.92rem",
+                      padding: "14px 48px 14px 48px",
+                      borderRadius: "12px",
+                      border: "1px solid #cbd5e1",
+                      background: "#f8fafc",
+                      color: "#0f172a",
+                      fontSize: "0.94rem",
                       fontWeight: 600,
                       outline: "none"
                     }}
@@ -351,11 +384,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", display: "flex", alignItems: "center" }}
+                    style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center" }}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+              </div>
+
+              {/* Options Row */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.86rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#475569", fontWeight: 600 }}>
+                  <input type="checkbox" defaultChecked style={{ width: "16px", height: "16px", accentColor: "#e50914", borderRadius: "4px" }} />
+                  <span>Remember me</span>
+                </label>
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("Contact Super Admin to reset password credentials."); }} style={{ color: "#e50914", fontWeight: 700, textDecoration: "none" }}>
+                  Forgot password?
+                </a>
               </div>
 
               <button
@@ -363,39 +407,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 disabled={isSubmitting}
                 style={{
                   width: "100%",
-                  background: "linear-gradient(135deg, #e50914 0%, #b80710 100%)",
+                  background: "linear-gradient(135deg, #dc2626 0%, #b80710 100%)",
                   color: "#ffffff",
                   border: "none",
-                  padding: "14px",
-                  borderRadius: "10px",
+                  padding: "15px",
+                  borderRadius: "12px",
                   fontWeight: 800,
-                  fontSize: "0.95rem",
+                  fontSize: "0.98rem",
                   cursor: "pointer",
-                  boxShadow: "0 6px 20px rgba(229,9,20,0.35)",
+                  boxShadow: "0 6px 20px rgba(220,38,38,0.25)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  marginTop: "6px"
+                  marginTop: "4px"
                 }}
               >
-                {isSubmitting ? "Authenticating..." : "Sign In to Control Center"}
+                {isSubmitting ? "Signing in..." : "Sign In to Control Center"}
                 <ArrowRight size={18} />
               </button>
             </form>
           </div>
 
-          <div style={{ marginTop: "24px", textAlign: "center", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <Link href="/" style={{ color: "#94a3b8", textDecoration: "none", fontSize: "0.84rem", fontWeight: 600 }}>
+          {/* Bottom Security Footer Links */}
+          <div style={{ marginTop: "26px", textAlign: "center", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <Link href="/" style={{ color: "#64748b", textDecoration: "none", fontSize: "0.86rem", fontWeight: 600, transition: "color 0.2s" }}>
               ← Return to Live Global Awaaz Portal
             </Link>
-            <div style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-              <ShieldCheck size={14} style={{ color: "#10b981" }} /> TLS 256-Bit Encrypted • Granular DB RBAC Active
+            <div style={{ fontSize: "0.78rem", color: "#16a34a", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+              <ShieldCheck size={16} style={{ color: "#16a34a" }} /> TLS 256-Bit Encrypted • Granular DB RBAC Active
             </div>
           </div>
 
         </div>
-      </div>
+      </div >
     );
   }
 

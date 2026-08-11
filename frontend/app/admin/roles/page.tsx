@@ -532,8 +532,8 @@ export default function RolesManagementPage() {
                     <td style={{ padding: "12px 14px", fontWeight: 700, color: "#2563eb" }}>{user.email}</td>
                     <td style={{ padding: "12px 14px", fontWeight: 700, color: "#e50914", fontFamily: "monospace" }}>{user.password || "••••••••"}</td>
                     <td style={{ padding: "12px 14px" }}>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: user.roleSlug === "chief_editor" ? "#dbeafe" : "#dcfce7", color: user.roleSlug === "chief_editor" ? "#1e40af" : "#166534" }}>
-                        {user.roleName}
+                      <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#dbeafe" : "#dcfce7", color: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#1e40af" : "#166534" }}>
+                        {user.roleName === "ADMIN" ? "Chief Editor" : (user.roleName === "SUPERADMIN" ? "Super Admin" : user.roleName)}
                       </span>
                     </td>
                     <td style={{ padding: "12px 14px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{user.createdBy || "Admin"}</td>
