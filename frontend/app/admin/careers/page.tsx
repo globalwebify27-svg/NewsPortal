@@ -53,8 +53,23 @@ interface CandidateApp {
   coverLetter?: string;
   resumeUrl: string;
   status: string;
-  appliedAt: string;
+  appliedAt?: string;
   job?: JobOpening;
+}
+
+function formatExternalUrl(url?: string): string {
+  if (!url) return "#";
+  let trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+  if (trimmed.startsWith("/")) {
+    return `https://yellowgreen-rook-384455.hostingersite.com${trimmed}`;
+  }
+  return `https://${trimmed}`;
 }
 
 export default function AdminCareersPage() {
@@ -509,9 +524,9 @@ export default function AdminCareersPage() {
                         <td className="p-4">
                           {app.resumeUrl ? (
                             <a
-                              href={app.resumeUrl}
+                              href={formatExternalUrl(app.resumeUrl)}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl text-xs font-bold transition"
                             >
                               <Download className="w-3.5 h-3.5" />

@@ -75,6 +75,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let cleanResumeUrl = resumeUrl.trim();
+    if (!/^https?:\/\//i.test(cleanResumeUrl)) {
+      if (cleanResumeUrl.startsWith("//")) {
+        cleanResumeUrl = `https:${cleanResumeUrl}`;
+      } else if (cleanResumeUrl.startsWith("/")) {
+        cleanResumeUrl = `https://yellowgreen-rook-384455.hostingersite.com${cleanResumeUrl}`;
+      } else {
+        cleanResumeUrl = `https://${cleanResumeUrl}`;
+      }
+    }
+
     const payload = {
       jobId,
       fullName: fullName.trim(),
@@ -83,7 +94,7 @@ export async function POST(request: NextRequest) {
       experience: experience?.trim() || "1-3 Years",
       portfolioUrl: portfolioUrl?.trim() || null,
       coverLetter: coverLetter?.trim() || null,
-      resumeUrl: resumeUrl.trim(),
+      resumeUrl: cleanResumeUrl,
       status: "PENDING",
     };
 
