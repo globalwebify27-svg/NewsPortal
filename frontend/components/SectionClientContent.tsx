@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Clock, Calendar, Loader2 } from "lucide-react";
 
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -12,6 +12,18 @@ import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { getDistrictsForState } from "@/lib/districts";
 import { getSubCategories } from "@/lib/subCategories";
+
+// Returns state if section param matches a state slug/code/name, else null
+function detectStateFromSection(section: string): IndianState | null {
+  const lower = section.toLowerCase();
+  return INDIAN_STATES.find(
+    (st) =>
+      st.slug === lower ||
+      st.code.toLowerCase() === lower ||
+      st.nameEn.toLowerCase() === lower ||
+      st.nameEn.toLowerCase().replace(/\s+/g, "-") === lower
+  ) || null;
+}
 
 interface Article {
   id: string;
@@ -55,42 +67,48 @@ function formatCardTime(dateStr?: string) {
   } catch { return "02:15 PM"; }
 }
 
-export default function SectionClientContent() {
+export default function SectionClientContent({ initialSubCat }: { initialSubCat?: string } = {}) {
   const params = useParams();
+  const router = useRouter();
   const rawSection = (params?.section as string) || "india";
   const section = rawSection.toLowerCase();
   const { lang } = useLanguage();
 
+  // Detect if this section param is actually a state slug (e.g. /jharkhand, /bihar)
+  const detectedStateFromPath = detectStateFromSection(section);
+  const isStatePage = !!detectedStateFromPath || section === "india" || section === "state" || section === "states";
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSubCat, setActiveSubCat] = useState<string>("ALL");
+  const [activeSubCat, setActiveSubCat] = useState<string>(initialSubCat || "ALL");
   const [activeDistrict, setActiveDistrict] = useState<string>("ALL");
-  const [selectedState, setSelectedState] = useState<string>("");
+  // Initialize selectedState from path if it's a state page
+  const [selectedState, setSelectedState] = useState<string>(
+    detectedStateFromPath ? detectedStateFromPath.code : ""
+  );
 
   const searchParams = useSearchParams();
   const subParam = searchParams?.get("sub");
-  const stateParam = searchParams?.get("state");
 
   useEffect(() => {
     if (subParam) {
       setActiveSubCat(subParam);
+    } else if (initialSubCat) {
+      setActiveSubCat(initialSubCat);
     }
-  }, [subParam]);
+  }, [subParam, initialSubCat]);
 
+  // Sync selectedState when path changes (e.g. user navigates /jharkhand -> /bihar)
   useEffect(() => {
-    if (stateParam) {
-      if (stateParam.toLowerCase() === "all" || stateParam.toLowerCase() === "national") {
-        setSelectedState("ALL");
-      } else {
-        const st = INDIAN_STATES.find(s => s.slug.toLowerCase() === stateParam.toLowerCase() || s.code.toLowerCase() === stateParam.toLowerCase() || s.nameEn.toLowerCase() === stateParam.toLowerCase());
-        if (st) setSelectedState(st.code);
-      }
+    if (detectedStateFromPath) {
+      setSelectedState(detectedStateFromPath.code);
+    } else if (section === "india") {
+      // Keep existing selected state or ALL for /india
+      const stored = sessionStorage.getItem("ga_selected_state");
+      setSelectedState(stored || "ALL");
     }
-  }, [stateParam]);
-
-  useEffect(() => {
     setActiveDistrict("ALL");
-  }, [selectedState]);
+  }, [section]);
 
   useEffect(() => {
     const handleSubCatChange = (e: Event) => {
@@ -104,31 +122,23 @@ export default function SectionClientContent() {
   }, []);
 
   useEffect(() => {
-    const syncState = () => {
-      const stored = sessionStorage.getItem("ga_selected_state");
-      if (stored) {
-        setSelectedState(stored);
-      } else if (section === "state" || section === "states") {
-        autoDetectUserIndianState().then((detected) => {
-          if (detected?.code) setSelectedState(detected.code);
-        });
-      }
-    };
-    syncState();
-    window.addEventListener("ga_state_changed", syncState);
-    return () => window.removeEventListener("ga_state_changed", syncState);
-  }, [section]);
-
-  useEffect(() => {
     async function fetchSectionArticles() {
       setLoading(true);
       let combined: Article[] = [];
 
       try {
         let fetchUrl = `${API_ENDPOINTS.articles}?category=${section}&limit=50`;
-        if (section === "state" || section === "states") {
-          const stParam = selectedState || "JH";
-          fetchUrl = `${API_ENDPOINTS.articles}?state=${stParam}&limit=50`;
+
+        if (detectedStateFromPath) {
+          // Direct state path like /jharkhand - fetch by state code
+          fetchUrl = `${API_ENDPOINTS.articles}?state=${detectedStateFromPath.code}&limit=50`;
+        } else if (section === "india" || section === "state" || section === "states") {
+          if (selectedState && selectedState !== "ALL") {
+            fetchUrl = `${API_ENDPOINTS.articles}?state=${selectedState}&limit=50`;
+          } else {
+            // All India
+            fetchUrl = `${API_ENDPOINTS.articles}?category=india&limit=50`;
+          }
         }
 
         const res = await fetch(fetchUrl);
@@ -150,8 +160,8 @@ export default function SectionClientContent() {
     fetchSectionArticles();
   }, [section, selectedState]);
 
-  const availableSubCats = getSubCategories(section);
-  const selectedStateObj = INDIAN_STATES.find(s => s.code === selectedState);
+  const availableSubCats = getSubCategories(isStatePage ? "india" : section);
+  const selectedStateObj = detectedStateFromPath || INDIAN_STATES.find(s => s.code === selectedState);
   const stateDistricts = selectedStateObj ? getDistrictsForState(selectedStateObj.code) : [];
 
   const filteredArticles = articles.filter((item) => {
@@ -217,26 +227,24 @@ export default function SectionClientContent() {
     return true;
   });
 
-  const stateMatchedArticles = (selectedState && selectedState !== "ALL" && (section === "india" || section === "state" || section === "states"))
+  // For /india or /jharkhand etc with a state selected, filter client-side too for precision
+  const stateMatchedArticles = (selectedStateObj && selectedState !== "ALL" && isStatePage)
     ? filteredArticles.filter((item) => {
         const stLower = (item.state || "national").toLowerCase().trim();
         if (stLower === "national" || stLower === "all india" || stLower === "all") return true;
-        if (selectedStateObj) {
-          const nameEn = selectedStateObj.nameEn.toLowerCase();
-          const code = selectedStateObj.code.toLowerCase();
-          const slug = selectedStateObj.slug.toLowerCase();
-          return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
-        }
-        return false;
+        const nameEn = selectedStateObj.nameEn.toLowerCase();
+        const code = selectedStateObj.code.toLowerCase();
+        const slug = selectedStateObj.slug.toLowerCase();
+        return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
       })
     : filteredArticles;
 
   const displayArticles = stateMatchedArticles;
 
-  const sectionDisplayName = (section === "state" || section === "states" || section === "india")
-    ? (!selectedState || selectedState === "ALL"
-        ? (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)")
-        : (selectedStateObj ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`) : "भारत समाचार"))
+  const sectionDisplayName = isStatePage
+    ? (selectedStateObj
+        ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`)
+        : (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)"))
     : (section.charAt(0).toUpperCase() + section.slice(1));
 
   return (
@@ -248,7 +256,7 @@ export default function SectionClientContent() {
       </header>
 
       {/* PROFESSIONAL COMPACT DROPDOWN FILTER CONTROL BAR */}
-      {(section === "india" || section === "state" || section === "states") && (
+      {isStatePage && (
         <div
           style={{
             marginBottom: "18px",
@@ -277,9 +285,14 @@ export default function SectionClientContent() {
               value={selectedState || "ALL"}
               onChange={(e) => {
                 const val = e.target.value;
-                setSelectedState(val);
-                sessionStorage.setItem("ga_selected_state", val);
-                window.dispatchEvent(new Event("ga_state_changed"));
+                if (val === "ALL") {
+                  router.push("/india");
+                } else {
+                  const stateObj = INDIAN_STATES.find(s => s.code === val);
+                  if (stateObj) {
+                    router.push(`/${stateObj.slug}`);
+                  }
+                }
               }}
               style={{
                 width: "100%",

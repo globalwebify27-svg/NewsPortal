@@ -27,6 +27,39 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
   return null;
 }
 
+function formatAbsoluteImageUrl(imgUrl?: string): string {
+  if (!imgUrl) return "https://globalawaaz.com/global-awaaz-logo.jpg";
+  if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+    return imgUrl;
+  }
+  const cleanPath = imgUrl.startsWith("/") ? imgUrl : `/${imgUrl}`;
+  return `https://globalawaaz.com${cleanPath}`;
+}
+
+function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
+  const mainTitle = article.title ? article.title.trim() : "";
+  
+  // Convert slug to clean English title words
+  const cleanSlugWords = slug
+    .replace(/-\d+$|-[a-z0-9]{6,}$/i, "")
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+  const isHindi = /[\u0900-\u097F]/.test(mainTitle);
+
+  if (isHindi) {
+    if (cleanSlugWords && cleanSlugWords.length > 3) {
+      return `${mainTitle} - ${cleanSlugWords} | GLOBAL AWAAZ`;
+    }
+    return `${mainTitle} | GLOBAL AWAAZ`;
+  } else {
+    const categoryName = article.category?.name || "मुख्य समाचार";
+    return `${mainTitle} - ${categoryName} | GLOBAL AWAAZ`;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -41,11 +74,11 @@ export async function generateMetadata({
   const slug = decodeURIComponent(rawParam).trim().toLowerCase();
   const article = await getArticleData(slug);
 
-  const canonicalUrl = `https://www.globalawaaz.com/article/${slug}`;
+  const canonicalUrl = `https://globalawaaz.com/article/${slug}`;
 
   if (!article) {
     return {
-      title: "Article Not Found | GLOBAL AWAAZ - LOCAL से GLOBAL तक",
+      title: "Article Not Found | GLOBAL AWAAZ",
       description: "The requested article was not found on GLOBAL AWAAZ.",
       alternates: {
         canonical: canonicalUrl,
@@ -53,36 +86,36 @@ export async function generateMetadata({
       robots: {
         index: false,
         follow: false,
-        nocache: true,
-        googleBot: {
-          index: false,
-          follow: false,
-        },
       },
     };
   }
 
-  const title = article.title;
-  const description = stripHtml(article.summary || article.body?.substring(0, 160) || "");
-  const imageUrl = article.featuredImage || "https://www.globalawaaz.com/logo.png";
+  const seoTitle = buildDualLanguageSeoTitle(article, slug);
+  const rawDesc = stripHtml(article.summary || article.body || "");
+  const description = rawDesc.length > 160
+    ? `${rawDesc.substring(0, 157).trim()}...`
+    : (rawDesc || "ग्लोबल आवाज़ पर पढ़ें देश, राज्य, राजनीति, व्यापार और खेल की ताज़ा निष्पक्ष खबरें।");
+  const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
 
   return {
-    title: `${title} | GLOBAL AWAAZ - LOCAL से GLOBAL तक`,
+    title: seoTitle,
     description: description,
     alternates: {
       canonical: canonicalUrl,
     },
     robots: {
-      index: false,
-      follow: false,
-      nocache: true,
+      index: true,
+      follow: true,
       googleBot: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
     },
     openGraph: {
-      title: `${title} | GLOBAL AWAAZ`,
+      title: seoTitle,
       description: description,
       url: canonicalUrl,
       siteName: "GLOBAL AWAAZ",
@@ -92,7 +125,7 @@ export async function generateMetadata({
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: title,
+          alt: article.title,
         },
       ],
       type: "article",
@@ -100,7 +133,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: title,
+      title: seoTitle,
       description: description,
       images: [imageUrl],
       site: "@globalawaaz",

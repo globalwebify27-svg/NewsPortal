@@ -8,6 +8,13 @@ export default function SeoHeadManager() {
   const pathname = usePathname() || "/";
 
   useEffect(() => {
+    // If on an article reading route, preserve dynamic server-rendered OpenGraph post title, description, and image
+    const pathSegments = pathname.split("/").filter(Boolean);
+    const isArticleRoute = pathname.startsWith("/article/") || (pathSegments.length >= 2 && !["admin", "api", "login", "categories", "epaper", "about", "contact"].includes(pathSegments[0]));
+    if (isArticleRoute) {
+      return;
+    }
+
     async function applySeoMetadata() {
       const config: SeoPageConfig = await getSeoConfigForPath(pathname);
 

@@ -597,7 +597,7 @@ export default function Header() {
                 {INDIAN_STATES.slice(0, 6).map((st) => (
                   <Link
                     key={st.code}
-                    href={`/india?state=${st.slug}`}
+                    href={`/${st.slug}`}
                     onClick={() => handleSelectState(st)}
                   >
                     <span>📍</span>
@@ -649,10 +649,7 @@ export default function Header() {
                   {getSubCategories("education").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/education?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/education/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <BookOpen size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -670,10 +667,7 @@ export default function Header() {
                   {getSubCategories("world").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/world?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/world/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Globe size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -683,12 +677,10 @@ export default function Header() {
               </li>
               <li>
                 <Link
-                  href="/india?state=all"
+                  href="/india"
                   className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
                   onClick={() => {
-                    setSelectedState({ code: "ALL", nameEn: "All India", nameHi: "भारत समाचार", slug: "all" });
-                    sessionStorage.setItem("ga_selected_state", "ALL");
-                    window.dispatchEvent(new Event("ga_state_changed"));
+                    sessionStorage.removeItem("ga_selected_state");
                   }}
                 >
                   <MapPin size={15} />
@@ -709,7 +701,7 @@ export default function Header() {
                     {INDIAN_STATES.map((st) => (
                       <Link
                         key={st.code}
-                        href={`/india?state=${st.slug}`}
+                        href={`/${st.slug}`}
                         onClick={() => handleSelectState(st)}
                         style={{
                           display: "flex",
@@ -742,10 +734,7 @@ export default function Header() {
                   {getSubCategories("business").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/business?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/business/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <TrendingUp size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -763,10 +752,7 @@ export default function Header() {
                   {getSubCategories("technology").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/technology?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/technology/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Cpu size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -784,10 +770,7 @@ export default function Header() {
                   {getSubCategories("sports").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/sports?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/sports/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Trophy size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -805,10 +788,7 @@ export default function Header() {
                   {getSubCategories("entertainment").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/entertainment?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/entertainment/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Film size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -826,10 +806,7 @@ export default function Header() {
                   {getSubCategories("science").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/science?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/science/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Atom size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -847,10 +824,7 @@ export default function Header() {
                   {getSubCategories("health").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/health?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/health/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <HeartPulse size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -868,10 +842,7 @@ export default function Header() {
                   {getSubCategories("opinion").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/opinion?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/opinion/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <MessageSquare size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -889,10 +860,7 @@ export default function Header() {
                   {getSubCategories("videos").map((sub) => (
                     <Link
                       key={sub.en}
-                      href={`/videos?sub=${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      onClick={() => {
-                        window.dispatchEvent(new CustomEvent("ga_subcat_changed", { detail: sub.en }));
-                      }}
+                      href={`/videos/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
                     >
                       <Tv size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
