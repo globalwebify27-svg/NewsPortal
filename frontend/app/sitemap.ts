@@ -1,62 +1,62 @@
+// =============================================================================
+// app/sitemap.ts — Sitemap INDEX
+// URL: https://globalawaaz.com/sitemap.xml
+//
+// Returns a sitemap index that lists all sub-sitemaps:
+//   • Static pages
+//   • Category pages
+//   • Google News sitemap
+//   • Recent news sitemap (last 72 h)
+//   • One monthly sitemap per calendar month that has published articles
+//
+// Revalidated every 6 hours on Vercel Edge.
+// =============================================================================
+
 import { MetadataRoute } from "next";
-import { allDefaultArticles, getArticleUrl } from "@/lib/defaultArticles";
-import { API_ENDPOINTS } from "@/lib/config";
+import {
+  BASE_URL,
+  fetchAllPublishedArticles,
+  groupArticlesByMonth,
+} from "@/lib/sitemap-utils";
 
-const BASE_URL = "https://globalawaaz.com";
-
-const STATIC_SECTIONS = [
-  "",
-  "/education",
-  "/world",
-  "/india",
-  "/business",
-  "/technology",
-  "/sports",
-  "/entertainment",
-  "/science",
-  "/health",
-  "/opinion",
-  "/videos",
-  "/epaper",
-  "/shorts",
-  "/about",
-];
-
-async function fetchDynamicArticles() {
-  try {
-    const res = await fetch(API_ENDPOINTS.articles, { next: { revalidate: 300 } });
-    if (res.ok) {
-      const json = await res.json();
-      if (json?.data && Array.isArray(json.data)) {
-        return json.data;
-      }
-    }
-  } catch (err) {
-    // API unavailable — return empty, no hardcoded fallback
-  }
-  return []; // No hardcoded fallback — all articles from DB
-}
-
+export const revalidate = 21600; // 6 hours
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  // 1. Static Category & Core Pages
-  const staticEntries: MetadataRoute.Sitemap = STATIC_SECTIONS.map((route) => ({
-    url: `${BASE_URL}${route}`,
+  // ---------------------------------------------------------------------------
+  // 1. Sub-sitemap index entries — static sitemaps
+  // ---------------------------------------------------------------------------
+  const staticSitemaps: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/sitemaps/pages.xml`,
+      lastModified: now,
+    },
+    {
+      url: `${BASE_URL}/sitemaps/categories.xml`,
+      lastModified: now,
+    },
+    {
+      url: `${BASE_URL}/sitemaps/google-news.xml`,
+      lastModified: now,
+    },
+    {
+      url: `${BASE_URL}/sitemaps/news-recent.xml`,
+      lastModified: now,
+    },
+  ];
+
+  // ---------------------------------------------------------------------------
+  // 2. Monthly article sitemaps — one entry per calendar month with articles
+  //    e.g. /sitemaps/articles-2026-08.xml
+  // ---------------------------------------------------------------------------
+  const allArticles = await fetchAllPublishedArticles();
+  const months = groupArticlesByMonth(allArticles);
+
+  const monthlySitemaps: MetadataRoute.Sitemap = months.map(({ label }) => ({
+    url: `${BASE_URL}/sitemaps/articles-${label}.xml`,
     lastModified: now,
-    changeFrequency: route === "" ? "always" : "hourly",
-    priority: route === "" ? 1.0 : 0.8,
   }));
 
-  // 2. Dynamic News Articles
-  const articles = await fetchDynamicArticles();
-  const articleEntries: MetadataRoute.Sitemap = articles.map((art: any) => ({
-    url: `${BASE_URL}${getArticleUrl(art)}`,
-    lastModified: art.createdAt ? new Date(art.createdAt) : now,
-    changeFrequency: "daily",
-    priority: 0.9,
-  }));
-
-  return [...staticEntries, ...articleEntries];
+  return [...staticSitemaps, ...monthlySitemaps];
 }

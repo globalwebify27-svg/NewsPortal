@@ -1,20 +1,49 @@
+// =============================================================================
+// app/robots.ts — Dynamic robots.txt
+// URL: https://globalawaaz.com/robots.txt
+//
+// Allows all public pages; blocks admin, API, and CMS internals.
+// References the sitemap index and key sub-sitemaps.
+// =============================================================================
+
 import { MetadataRoute } from "next";
 
-/**
- * Next.js 15 Dynamic Robots.txt Generator
- * URL: https://globalawaaz.com/robots.txt
- */
-export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://www.globalawaaz.com";
+const BASE_URL =
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://globalawaaz.com").replace(/\/$/, "");
 
+export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
+        // -------------------------------------------------------
+        // All crawlers: allow public site, block internal paths
+        // -------------------------------------------------------
         userAgent: "*",
-        disallow: "/",
+        allow: ["/"],
+        disallow: [
+          "/admin",
+          "/admin/",
+          "/api/",
+          "/login",
+          "/_next/",
+          "/static/",
+        ],
+      },
+      {
+        // -------------------------------------------------------
+        // Googlebot: additionally allow sitemaps sub-directory
+        // -------------------------------------------------------
+        userAgent: "Googlebot",
+        allow: ["/", "/sitemaps/"],
+        disallow: ["/admin", "/api/", "/login"],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
+    // Primary sitemap index
+    sitemap: [
+      `${BASE_URL}/sitemap.xml`,
+      `${BASE_URL}/sitemaps/google-news.xml`,
+      `${BASE_URL}/sitemaps/news-recent.xml`,
+    ],
+    host: BASE_URL,
   };
 }
