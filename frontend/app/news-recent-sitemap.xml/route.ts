@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { BASE_URL, buildArticleUrl } from "@/lib/sitemap-utils";
+import { BASE_URL, buildArticleUrl, escapeXml } from "@/lib/sitemap-utils";
 
 export const revalidate = 3600;
 
@@ -16,6 +16,17 @@ function formatImageUrl(rawUrl: string): string {
   }
   const clean = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
   return `${BASE_URL}${clean}`;
+}
+
+/**
+ * Safely clean string content inside CDATA blocks to prevent XML syntax breaks.
+ */
+function cleanCdata(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<[^>]*>/g, "")        // Remove HTML tags
+    .replace(/\]\]>/g, "]]&gt;")    // Prevent premature CDATA termination
+    .trim();
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -46,20 +57,20 @@ export async function GET(): Promise<NextResponse> {
     console.error("[Google News Sitemap] Prisma fetch error:", error);
   }
 
-  // Build <url> entries
+  // Build <url> entries with strict XML entity escaping
   const urlEntries = articles
     .map((art) => {
-      const loc = buildArticleUrl(art);
+      const loc = escapeXml(buildArticleUrl(art));
       const lastmod = (art.updatedAt ? new Date(art.updatedAt) : new Date()).toISOString();
       const pubDate = (art.publishedAt ? new Date(art.publishedAt) : new Date(art.updatedAt || Date.now())).toISOString();
-      const title = art.title || "";
+      const title = cleanCdata(art.title || "");
 
       // Image handling
       const imageUrlRaw = art.image || art.featuredImage;
       const hasImage = Boolean(imageUrlRaw);
-      const imageUrl = hasImage ? formatImageUrl(imageUrlRaw) : "";
-      const imgTitle = art.imageTitle || art.featuredImageAlt || title;
-      const imgCaption = art.imageCaption || art.featuredImageAlt || title;
+      const imageUrl = hasImage ? escapeXml(formatImageUrl(imageUrlRaw)) : "";
+      const imgTitle = cleanCdata(art.imageTitle || art.featuredImageAlt || title);
+      const imgCaption = cleanCdata(art.imageCaption || art.featuredImageAlt || title);
 
       const imageXml = hasImage && imageUrl ? `
     <image:image>
