@@ -13,6 +13,11 @@ export interface SitemapArticle {
   id: string;
   slug: string;
   title: string;
+  featuredImage?: string | null;
+  featuredImageAlt?: string | null;
+  image?: string | null;
+  imageTitle?: string | null;
+  imageCaption?: string | null;
   publishedAt: Date | null;
   updatedAt: Date;
   category: { slug: string } | null;
@@ -96,6 +101,8 @@ const SITEMAP_SELECT = {
   id: true,
   slug: true,
   title: true,
+  featuredImage: true,
+  featuredImageAlt: true,
   publishedAt: true,
   updatedAt: true,
   category: { select: { slug: true } },

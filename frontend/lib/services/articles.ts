@@ -5,6 +5,7 @@
 
 import { prisma } from "../prisma";
 import { generateArticleSlug } from "../defaultArticles";
+import { INDIAN_STATES } from "../states";
 
 export type WorkflowArticleStatus = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "PUBLISHED" | "REJECTED";
 
@@ -17,6 +18,8 @@ export interface ArticleQueryParams {
   status?: string;
   role?: string;
   authorId?: string;
+  state?: string;
+  district?: string;
 }
 
 // Optimized select fields for fast list queries (omits heavy longtext body)
@@ -39,6 +42,8 @@ const ARTICLE_LIST_SELECT = {
   publishedAt: true,
   createdAt: true,
   updatedAt: true,
+  state: true,
+  district: true,
   category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
   author: { select: { id: true, name: true, avatar: true } },
 };
@@ -61,11 +66,29 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
       where.category = { slug: params.category };
     }
 
+    if (params.state && params.state !== "ALL" && params.state !== "all") {
+      const stVal = params.state.trim().toLowerCase();
+      const stateObj = INDIAN_STATES.find(
+        (s) => s.code.toLowerCase() === stVal || s.slug.toLowerCase() === stVal || s.nameEn.toLowerCase() === stVal
+      );
+      const terms = stateObj
+        ? [stateObj.nameEn, stateObj.code, stateObj.nameHi, stateObj.slug, "National", "All"]
+        : [params.state, "National", "All"];
+
+      where.OR = (where.OR || []).concat(
+        terms.map((term) => ({ state: { contains: term } }))
+      );
+    }
+
+    if (params.district && params.district !== "ALL" && params.district !== "all") {
+      where.district = { contains: params.district.trim() };
+    }
+
     if (params.search) {
-      where.OR = [
+      where.OR = (where.OR || []).concat([
         { title: { contains: params.search } },
         { summary: { contains: params.search } },
-      ];
+      ]);
     }
 
     const [articles, total] = await Promise.all([
@@ -304,6 +327,8 @@ export async function createOrUpdateArticle(data: any) {
       publishedAt: requestedStatus === "PUBLISHED" ? (data.publishedAt ? new Date(data.publishedAt) : now) : null,
       categoryId: catId,
       authorId: authorId,
+      state: data.state || "National",
+      district: data.district || "All",
     };
 
     let articleRecord;

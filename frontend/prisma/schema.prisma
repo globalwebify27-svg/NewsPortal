@@ -220,6 +220,8 @@ model Article {
   isFactChecked Boolean      @default(false)
   factCheckVerdict FactCheckVerdict?
   factCheckNote String?      @db.Text
+  state        String?       @db.VarChar(100)
+  district     String?       @db.VarChar(100)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

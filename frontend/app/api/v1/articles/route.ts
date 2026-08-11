@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status") || undefined;
   const role = searchParams.get("role") || undefined;
   const authorId = searchParams.get("authorId") || undefined;
+  const state = searchParams.get("state") || undefined;
+  const district = searchParams.get("district") || undefined;
   const admin = searchParams.get("admin") === "true" || !!role || !!status;
 
   // Admin Request (queue, drafts, pending reviews, approvals, rejections)
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Public Request (Strictly PUBLISHED articles only)
-  const result = await getPublicArticles({ page, limit, category, tag, search });
+  const result = await getPublicArticles({ page, limit, category, tag, search, state, district });
 
   const response = NextResponse.json({
     success: true,

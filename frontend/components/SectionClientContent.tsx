@@ -230,21 +230,21 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
   // For /india or /jharkhand etc with a state selected, filter client-side too for precision
   const stateMatchedArticles = (selectedStateObj && selectedState !== "ALL" && isStatePage)
     ? filteredArticles.filter((item) => {
-        const stLower = (item.state || "national").toLowerCase().trim();
-        if (stLower === "national" || stLower === "all india" || stLower === "all") return true;
-        const nameEn = selectedStateObj.nameEn.toLowerCase();
-        const code = selectedStateObj.code.toLowerCase();
-        const slug = selectedStateObj.slug.toLowerCase();
-        return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
-      })
+      const stLower = (item.state || "national").toLowerCase().trim();
+      if (stLower === "national" || stLower === "all india" || stLower === "all") return true;
+      const nameEn = selectedStateObj.nameEn.toLowerCase();
+      const code = selectedStateObj.code.toLowerCase();
+      const slug = selectedStateObj.slug.toLowerCase();
+      return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
+    })
     : filteredArticles;
 
   const displayArticles = stateMatchedArticles;
 
   const sectionDisplayName = isStatePage
     ? (selectedStateObj
-        ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`)
-        : (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)"))
+      ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`)
+      : (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)"))
     : (section.charAt(0).toUpperCase() + section.slice(1));
 
   return (

@@ -103,7 +103,7 @@ export async function fetchRealtimeTemperature(lat?: number, lon?: number): Prom
         return `${Math.round(data.current_weather.temperature)}°C`;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   return "28°C";
 }
 
@@ -118,14 +118,14 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
       if (cached) {
         return JSON.parse(cached);
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const result = await detectLocationInternal();
   if (result && typeof window !== "undefined") {
     try {
       sessionStorage.setItem("ga_user_geo_location", JSON.stringify(result));
-    } catch (_) {}
+    } catch (_) { }
   }
   return result;
 }
@@ -203,7 +203,7 @@ async function detectLocationInternal(): Promise<DetectedLocation | null> {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // Provider 2: ipapi.co
   try {
@@ -253,7 +253,7 @@ async function detectLocationInternal(): Promise<DetectedLocation | null> {
         };
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // Provider 3: ip-api.com
   try {
@@ -303,7 +303,7 @@ async function detectLocationInternal(): Promise<DetectedLocation | null> {
         };
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // Default fallback: Ranchi, Jharkhand
   return {
