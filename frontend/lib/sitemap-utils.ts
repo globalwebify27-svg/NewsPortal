@@ -1,12 +1,12 @@
 // =============================================================================
-// Global Awaaz — Sitemap Utility Library
-// Shared helpers used across all sitemap route handlers
+// lib/sitemap-utils.ts — Global Awaaz Sitemap Utility Library
+// Helper functions, Prisma query wrappers, XML formatters, and Google Ping tool
 // =============================================================================
 
 import { prisma } from "./prisma";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types & Interfaces
 // ---------------------------------------------------------------------------
 
 export interface SitemapArticle {
@@ -20,27 +20,28 @@ export interface SitemapArticle {
 
 export interface MonthGroup {
   year: number;
-  month: number;          // 1-12
-  label: string;          // "2026-08"
+  month: number;
+  label: string; // Format: "YYYY-MM"
   articleCount: number;
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Configuration Constants
 // ---------------------------------------------------------------------------
 
-export const BASE_URL =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://globalawaaz.com").replace(/\/$/, "");
+export const BASE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || "https://globalawaaz.com"
+).replace(/\/$/, "");
 
 export const SITE_NAME = "Global Awaaz";
 export const SITE_LANGUAGE = "hi";
 
 // ---------------------------------------------------------------------------
-// XML helpers
+// XML Formatting Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Escape all XML special characters so the sitemap remains valid XML.
+ * Escapes XML entity characters to ensure valid XML responses.
  */
 export function escapeXml(raw: string): string {
   return raw
@@ -52,8 +53,8 @@ export function escapeXml(raw: string): string {
 }
 
 /**
- * Build an absolute article URL from the stored slug and its category slug.
- * Pattern: /{categorySlug}/{articleSlug}
+ * Constructs absolute canonical URL for an article item.
+ * Output format: https://globalawaaz.com/{categorySlug}/{articleSlug}
  */
 export function buildArticleUrl(article: SitemapArticle): string {
   const catSlug = (article.category?.slug || "article")
@@ -66,7 +67,7 @@ export function buildArticleUrl(article: SitemapArticle): string {
 }
 
 /**
- * Format a Date to ISO 8601 (W3C datetime) used in lastmod tags.
+ * Converts a Date object or timestamp string to standard W3C ISO-8601 format.
  */
 export function toW3CDate(date: Date | string | null | undefined): string {
   if (!date) return new Date().toISOString();
@@ -74,7 +75,7 @@ export function toW3CDate(date: Date | string | null | undefined): string {
 }
 
 /**
- * Standard XML response headers for all sitemap routes.
+ * Prepares standard HTTP headers for XML sitemap HTTP responses.
  */
 export function xmlHeaders(revalidateSeconds = 3600): Record<string, string> {
   return {
@@ -85,14 +86,10 @@ export function xmlHeaders(revalidateSeconds = 3600): Record<string, string> {
 }
 
 // ---------------------------------------------------------------------------
-// Prisma query helpers
+// Async Prisma Database Queries
 // ---------------------------------------------------------------------------
 
-/**
- * Minimal field projection used by all sitemap queries —
- * intentionally omits heavy body/summary columns for speed.
- */
-const SITEMAP_SELECT = {
+const SITEMAP_ARTICLE_SELECT = {
   id: true,
   slug: true,
   title: true,
@@ -102,24 +99,28 @@ const SITEMAP_SELECT = {
 } as const;
 
 /**
- * Fetch all PUBLISHED articles from the database.
- * Results are ordered newest first.
+ * Fetch all published articles with status = 'PUBLISHED' (or 'published').
  */
 export async function fetchAllPublishedArticles(): Promise<SitemapArticle[]> {
   try {
     return await prisma.article.findMany({
-      where: { status: "PUBLISHED" },
+      where: {
+        OR: [
+          { status: "PUBLISHED" as any },
+          { status: "published" as any },
+        ],
+      },
       orderBy: { publishedAt: "desc" },
-      select: SITEMAP_SELECT,
+      select: SITEMAP_ARTICLE_SELECT,
     });
   } catch (err) {
-    console.error("[Sitemap] fetchAllPublishedArticles error:", err);
+    console.error("[Sitemap Utils] fetchAllPublishedArticles error:", err);
     return [];
   }
 }
 
 /**
- * Fetch PUBLISHED articles published within the last `hours` hours.
+ * Fetch published articles within the last N hours.
  */
 export async function fetchRecentPublishedArticles(
   hours: number
@@ -128,121 +129,120 @@ export async function fetchRecentPublishedArticles(
   try {
     return await prisma.article.findMany({
       where: {
-        status: "PUBLISHED",
+        OR: [
+          { status: "PUBLISHED" as any },
+          { status: "published" as any },
+        ],
         publishedAt: { gte: cutoff },
       },
       orderBy: { publishedAt: "desc" },
-      select: SITEMAP_SELECT,
+      select: SITEMAP_ARTICLE_SELECT,
     });
   } catch (err) {
-    console.error("[Sitemap] fetchRecentPublishedArticles error:", err);
+    console.error("[Sitemap Utils] fetchRecentPublishedArticles error:", err);
     return [];
   }
 }
 
 /**
- * Fetch PUBLISHED articles for a specific calendar month.
- * @param year  Full 4-digit year (e.g. 2026)
- * @param month 1-indexed month (1 = January)
+ * Fetch published articles for a given year and month.
  */
 export async function fetchArticlesByMonth(
   year: number,
   month: number
 ): Promise<SitemapArticle[]> {
-  const from = new Date(year, month - 1, 1);          // 1st day of month
-  const to   = new Date(year, month, 1);               // 1st day of next month
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 1);
   try {
     return await prisma.article.findMany({
       where: {
-        status: "PUBLISHED",
-        publishedAt: { gte: from, lt: to },
+        OR: [
+          { status: "PUBLISHED" as any },
+          { status: "published" as any },
+        ],
+        publishedAt: { gte: startDate, lt: endDate },
       },
       orderBy: { publishedAt: "desc" },
-      select: SITEMAP_SELECT,
+      select: SITEMAP_ARTICLE_SELECT,
     });
   } catch (err) {
-    console.error(`[Sitemap] fetchArticlesByMonth(${year}-${month}) error:`, err);
+    console.error(`[Sitemap Utils] fetchArticlesByMonth(${year}-${month}) error:`, err);
     return [];
   }
 }
 
 /**
- * Fetch PUBLISHED articles for all categories from DB.
- * Returns a deduplicated list of category slugs.
+ * Fetch unique active category slugs containing published articles.
  */
 export async function fetchPublishedCategorySlugs(): Promise<string[]> {
   try {
     const rows = await prisma.article.findMany({
-      where: { status: "PUBLISHED" },
+      where: {
+        OR: [
+          { status: "PUBLISHED" as any },
+          { status: "published" as any },
+        ],
+      },
       select: { category: { select: { slug: true } } },
       distinct: ["categoryId"],
     });
     return Array.from(new Set(rows.map((r) => r.category?.slug).filter(Boolean) as string[]));
   } catch (err) {
-    console.error("[Sitemap] fetchPublishedCategorySlugs error:", err);
+    console.error("[Sitemap Utils] fetchPublishedCategorySlugs error:", err);
     return [];
   }
 }
 
 // ---------------------------------------------------------------------------
-// Month grouping utility
+// Month Grouping & Google Ping Optimization
 // ---------------------------------------------------------------------------
 
 /**
- * Given an array of articles, return a list of unique {year, month} tuples
- * sorted from newest to oldest.  Used by sitemap.ts to generate monthly
- * sitemap index entries without fetching full article bodies.
+ * Groups an array of published articles by month (YYYY-MM).
  */
 export function groupArticlesByMonth(articles: SitemapArticle[]): MonthGroup[] {
-  const map = new Map<string, number>(); // "2026-08" → count
+  const countsMap = new Map<string, number>();
 
   for (const art of articles) {
-    const d = art.publishedAt ? new Date(art.publishedAt) : new Date(art.updatedAt);
-    if (isNaN(d.getTime())) continue;
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const key = `${y}-${String(m).padStart(2, "0")}`;
-    map.set(key, (map.get(key) ?? 0) + 1);
+    const date = art.publishedAt ? new Date(art.publishedAt) : new Date(art.updatedAt);
+    if (isNaN(date.getTime())) continue;
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const key = `${year}-${String(month).padStart(2, "0")}`;
+    countsMap.set(key, (countsMap.get(key) ?? 0) + 1);
   }
 
-  return Array.from(map.entries())
-    .sort((a, b) => b[0].localeCompare(a[0])) // newest first
+  return Array.from(countsMap.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
     .map(([label, articleCount]) => {
-      const [y, m] = label.split("-").map(Number);
-      return { year: y, month: m, label, articleCount };
+      const [year, month] = label.split("-").map(Number);
+      return { year, month, label, articleCount };
     });
 }
 
-// ---------------------------------------------------------------------------
-// Google Ping utility
-// ---------------------------------------------------------------------------
-
 /**
- * Ping Google Search Console with the main sitemap URL.
- *
- * Call this function AFTER a new article is published, e.g.:
- *
- *   // Inside your publish workflow (API route / server action):
- *   import { pingSitemapToGoogle } from "@/lib/sitemap-utils";
- *   await pingSitemapToGoogle();
- *
- * Note: Google deprecated the /ping endpoint in 2023 for standard sitemaps,
- * but it still works for Google News sitemaps via Search Console.
- * The recommended approach is submitting via the Search Console API.
+ * Sends a ping request to Google Search Console to re-crawl the sitemap index.
+ * 
+ * WORKFLOW CALLSITE COMMENT:
+ * Call this function inside your article publish API handler or Server Action:
+ * 
+ *   // app/api/v1/articles/route.ts (or publish action)
+ *   if (article.status === 'PUBLISHED') {
+ *     await pingSitemapToGoogle();
+ *   }
  */
 export async function pingSitemapToGoogle(): Promise<void> {
-  const sitemapUrl = encodeURIComponent(`${BASE_URL}/sitemap.xml`);
-  const pingUrl = `https://www.google.com/ping?sitemap=${sitemapUrl}`;
+  const sitemapIndexUrl = encodeURIComponent(`${BASE_URL}/sitemap.xml`);
+  const googlePingUrl = `https://www.google.com/ping?sitemap=${sitemapIndexUrl}`;
 
   try {
-    const res = await fetch(pingUrl, { method: "GET", cache: "no-store" });
+    const res = await fetch(googlePingUrl, { method: "GET", cache: "no-store" });
     if (res.ok) {
-      console.info("[Sitemap] Successfully pinged Google with sitemap URL.");
+      console.info("[Sitemap Ping] Successfully notified Google of sitemap update.");
     } else {
-      console.warn("[Sitemap] Google ping returned status:", res.status);
+      console.warn("[Sitemap Ping] Google ping responded with status:", res.status);
     }
   } catch (err) {
-    // Non-fatal — do not throw; ping failure should not block publishing
-    console.warn("[Sitemap] Google ping failed (non-fatal):", err);
+    console.warn("[Sitemap Ping] Failed to ping Google (non-fatal):", err);
   }
 }
