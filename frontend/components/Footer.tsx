@@ -415,7 +415,7 @@ export default function Footer() {
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <ShieldCheck size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
-              © 2026 Global Awaaz Media Group. {isHindi ? "सर्वाधिकार सुरक्षित।" : "All Rights Reserved."}
+              © 2026 Global Awaaz. {isHindi ? "सर्वाधिकार सुरक्षित।" : "All Rights Reserved."}
             </span>
           </div>
 
@@ -423,7 +423,7 @@ export default function Footer() {
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <MapPin size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
-              Global Awaaz Media Group — {isHindi ? "नई दिल्ली, भारत" : "New Delhi, India"}
+              Global Awaaz — {isHindi ? "रांची, झारखंड" : "Ranchi, Jharkhand"}
             </span>
           </div>
 

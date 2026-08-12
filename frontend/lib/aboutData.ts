@@ -96,8 +96,8 @@ export const defaultAboutData: AboutPageData = {
     { textHi: "त्रुटि संशोधन की पारदर्शी नीति", textEn: "Transparent Correction Policy" }
   ],
   newsroomEmail: "newsroom@globalawaaz.com",
-  addressHi: "Global Awaaz Media Tower, बाराखंबा रोड, कनाट प्लेस, नई दिल्ली - 110001",
-  addressEn: "Global Awaaz Media Tower, Barakhamba Road, Connaught Place, New Delhi - 110001",
+  addressHi: "Global Awaaz, मेन रोड, रांची, झारखंड - 834001",
+  addressEn: "Global Awaaz, Main Road, Ranchi, Jharkhand - 834001",
   contactEmail1: "contact@globalawaaz.com",
   contactEmail2: "editor@globalawaaz.com",
   phone1: "+91 (011) 4567-8900",

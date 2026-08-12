@@ -30,7 +30,15 @@ const AD_KEYS = [
   "ad_left_grid_subtitle",
   "ad_left_grid_link",
   "ad_left_grid_btn_text",
-  "ad_left_grid_badge"
+  "ad_left_grid_badge",
+  // Ad Portal & WhatsApp Desk Settings Keys
+  "ad_portal_whatsapp",
+  "ad_portal_whatsapp_msg",
+  "ad_portal_live_status",
+  "ad_portal_live_enabled",
+  "ad_portal_email",
+  "ad_portal_location",
+  "ad_portal_turnaround"
 ];
 
 // GET /api/v1/ad-settings — returns all ad settings as a key-value map
@@ -61,7 +69,15 @@ export async function GET() {
       ad_left_grid_subtitle: "Promote your brand to millions of readers across Bihar, Jharkhand & India.",
       ad_left_grid_link: "/advertise",
       ad_left_grid_btn_text: "Advertise With Us",
-      ad_left_grid_badge: "SPONSORED"
+      ad_left_grid_badge: "SPONSORED",
+      // Portal Defaults
+      ad_portal_whatsapp: "+91 98765 43210",
+      ad_portal_whatsapp_msg: "Hello Global Awaaz, I want to inquire about advertising opportunities.",
+      ad_portal_live_status: "Live Ad Desk Active",
+      ad_portal_live_enabled: "true",
+      ad_portal_email: "advertise@globalawaaz.com",
+      ad_portal_location: "Patna, Bihar & Ranchi, Jharkhand",
+      ad_portal_turnaround: "Fast 2-Hour Proposal Turnaround"
     };
 
     for (const s of settings) {

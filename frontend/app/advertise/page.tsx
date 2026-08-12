@@ -50,6 +50,38 @@ export default function AdvertisePage() {
   const [toastMessage, setToastMessage] = useState("");
   const [selectedAdTypeChip, setSelectedAdTypeChip] = useState("");
 
+  const [portalSettings, setPortalSettings] = useState({
+    whatsapp: "+91 98765 43210",
+    whatsappMsg: "Hello Global Awaaz, I want to inquire about advertising opportunities.",
+    liveStatus: "Live Ad Desk Active",
+    liveEnabled: "true",
+    email: "advertise@globalawaaz.com",
+    location: "Patna, Bihar & Ranchi, Jharkhand",
+    turnaround: "Fast 2-Hour Proposal Turnaround"
+  });
+
+  React.useEffect(() => {
+    fetch("/api/v1/ad-settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json && json.success && json.data) {
+          setPortalSettings({
+            whatsapp: json.data.ad_portal_whatsapp || "+91 98765 43210",
+            whatsappMsg: json.data.ad_portal_whatsapp_msg || "Hello Global Awaaz, I want to inquire about advertising opportunities.",
+            liveStatus: json.data.ad_portal_live_status || "Live Ad Desk Active",
+            liveEnabled: json.data.ad_portal_live_enabled ?? "true",
+            email: json.data.ad_portal_email || "advertise@globalawaaz.com",
+            location: json.data.ad_portal_location || "Patna, Bihar & Ranchi, Jharkhand",
+            turnaround: json.data.ad_portal_turnaround || "Fast 2-Hour Proposal Turnaround"
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const cleanWaNumber = (portalSettings.whatsapp || "").replace(/[^0-9]/g, "");
+  const waLink = `https://wa.me/${cleanWaNumber || "919876543210"}?text=${encodeURIComponent(portalSettings.whatsappMsg)}`;
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -153,7 +185,7 @@ export default function AdvertisePage() {
           {/* Action Buttons Row */}
           <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
             <a
-              href="https://wa.me/919876543210?text=Hello%20Global%20Awaaz,%20I%20want%20to%20advertise%20my%20business."
+              href={waLink}
               target="_blank"
               rel="noopener noreferrer"
               className="px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-sm transition shadow-md shadow-emerald-600/20 flex items-center gap-2"
@@ -515,10 +547,12 @@ export default function AdvertisePage() {
           <aside className="lg:col-span-4">
             <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 sticky top-24 shadow-xl space-y-6">
               {/* Active Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span>Live Ad Desk Active</span>
-              </div>
+              {portalSettings.liveEnabled === "true" && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>{portalSettings.liveStatus}</span>
+                </div>
+              )}
 
               <h3 className="text-xl font-black text-white border-b border-slate-800 pb-4">
                 Need Immediate Assistance?
@@ -534,12 +568,12 @@ export default function AdvertisePage() {
                       WhatsApp Ad Desk:
                     </span>
                     <a
-                      href="https://wa.me/919876543210"
+                      href={waLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-white font-bold text-sm hover:text-emerald-400 transition inline-block mt-0.5"
                     >
-                      +91 98765 43210
+                      {portalSettings.whatsapp}
                     </a>
                   </div>
                 </div>
@@ -553,10 +587,10 @@ export default function AdvertisePage() {
                       Email Address:
                     </span>
                     <a
-                      href="mailto:advertise@globalawaaz.com"
+                      href={`mailto:${portalSettings.email}`}
                       className="text-white font-bold text-sm hover:text-red-400 transition inline-block mt-0.5"
                     >
-                      advertise@globalawaaz.com
+                      {portalSettings.email}
                     </a>
                   </div>
                 </div>
@@ -570,7 +604,7 @@ export default function AdvertisePage() {
                       Head Office:
                     </span>
                     <span className="text-white font-bold text-sm block mt-0.5">
-                      Patna, Bihar & Ranchi, Jharkhand
+                      {portalSettings.location}
                     </span>
                   </div>
                 </div>
@@ -578,10 +612,10 @@ export default function AdvertisePage() {
 
               <div className="pt-4 border-t border-slate-800 text-center space-y-3">
                 <span className="text-xs text-slate-400 block font-medium">
-                  Fast 2-Hour Proposal Turnaround
+                  {portalSettings.turnaround}
                 </span>
                 <a
-                  href="https://wa.me/919876543210?text=I%20want%20to%20advertise"
+                  href={waLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2"
