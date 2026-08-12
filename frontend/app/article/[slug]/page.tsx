@@ -6,10 +6,12 @@ import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schem
 
 async function getArticleData(slug: string): Promise<ArticleDetail | null> {
   const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.globalawaaz.com").replace(/\/$/, "");
 
-  // 1. Try backend API
+  // 1. Try backend API with absolute URL for SSR
   try {
-    const res = await fetch(API_ENDPOINTS.articleBySlug(targetSlug), { next: { revalidate: 60 } });
+    const fetchUrl = `${baseUrl}/api/v1/articles/${encodeURIComponent(targetSlug)}`;
+    const res = await fetch(fetchUrl, { next: { revalidate: 60 } });
     if (res.ok) {
       const json = await res.json();
       if (json?.data) return json.data;
@@ -75,14 +77,18 @@ export async function generateMetadata({
 
   if (!article) {
     return {
-      title: "Article Not Found | GLOBAL AWAAZ",
-      description: "The requested article was not found on GLOBAL AWAAZ.",
+      title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking News",
+      description: "देश-दुनिया और आपके अपने क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।",
       alternates: {
         canonical: canonicalUrl,
       },
       robots: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+        },
       },
     };
   }

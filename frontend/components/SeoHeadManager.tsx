@@ -8,6 +8,21 @@ export default function SeoHeadManager() {
   const pathname = usePathname() || "/";
 
   useEffect(() => {
+    // Helper to create or update meta tag
+    const setMetaTag = (attrName: string, attrValue: string, content: string) => {
+      if (!content) return;
+      let element = document.head.querySelector(`meta[${attrName}="${attrValue}"]`);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attrName, attrValue);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", content);
+    };
+
+    // Always enforce index, follow across client DOM
+    setMetaTag("name", "robots", "index, follow");
+
     // If on an article reading route, preserve dynamic server-rendered OpenGraph post title, description, and image
     const pathSegments = pathname.split("/").filter(Boolean);
     const isArticleRoute = pathname.startsWith("/article/") || (pathSegments.length >= 2 && !["admin", "api", "login", "categories", "epaper", "about", "contact"].includes(pathSegments[0]));
