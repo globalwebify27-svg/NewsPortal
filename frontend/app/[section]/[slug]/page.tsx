@@ -80,11 +80,12 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
   const mainTitle = article.title ? article.title.trim() : "";
-  if (mainTitle.length <= 50) {
+  // Brand suffix takes 15 chars: " | GLOBAL AWAAZ"
+  if (mainTitle.length <= 48) {
     return `${mainTitle} | GLOBAL AWAAZ`;
   }
-  if (mainTitle.length > 65) {
-    return `${mainTitle.substring(0, 62).trim()}...`;
+  if (mainTitle.length > 64) {
+    return `${mainTitle.substring(0, 61).trim()}...`;
   }
   return mainTitle;
 }
@@ -136,13 +137,10 @@ export async function generateMetadata({
   }
 
   const seoTitle = buildDualLanguageSeoTitle(article, slug);
-  const rawDesc = stripHtml(article.summary || article.body || "");
+  const rawDesc = stripHtml(article.summary || article.body || article.title || "");
   let description = rawDesc;
-  if (description.length > 160) {
+  if (description.length > 158) {
     description = `${description.substring(0, 155).trim()}...`;
-  } else if (description.length < 140) {
-    const padText = "। ग्लोबल आवाज़ पर पढ़ें देश, राज्य, राजनीति, व्यापार और खेल की ताज़ा निष्पक्ष खबरें।";
-    description = (description + padText).substring(0, 158).trim();
   }
   const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
 
