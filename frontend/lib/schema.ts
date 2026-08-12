@@ -3,10 +3,10 @@
  * Compliant with Google News, Google Search Rich Results, and Schema.org standards.
  */
 
-export const SITE_URL = "https://globalawaaz.com";
+export const SITE_URL = "https://www.globalawaaz.com";
 export const SITE_NAME = "GLOBAL AWAAZ";
 export const SITE_TAGLINE = "LOCAL से GLOBAL तक";
-export const SITE_LOGO = "https://globalawaaz.com/logo.png";
+export const SITE_LOGO = "https://www.globalawaaz.com/logo.png";
 
 export interface SchemaArticle {
   title: string;
@@ -97,8 +97,9 @@ export function generateNewsArticleSchema(article: SchemaArticle) {
       "@type": "WebPage",
       "@id": articleUrl
     },
-    "headline": article.title,
+    "headline": article.title.length > 110 ? article.title.substring(0, 107) + "..." : article.title,
     "description": description,
+    "inLanguage": article.language === "EN" ? "en-IN" : "hi-IN",
     "image": article.featuredImage
       ? [article.featuredImage]
       : [`${SITE_URL}/logo.png`],
@@ -120,7 +121,6 @@ export function generateNewsArticleSchema(article: SchemaArticle) {
         "height": 60
       }
     },
-    "inLanguage": article.language === "HI" ? "hi-IN" : "en-IN",
     "isAccessibleForFree": true,
     "articleSection": article.category?.name || "News"
   };

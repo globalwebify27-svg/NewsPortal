@@ -80,25 +80,13 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
   const mainTitle = article.title ? article.title.trim() : "";
-  
-  const cleanSlugWords = slug
-    .replace(/-\d+$|-[a-z0-9]{6,}$/i, "")
-    .split("-")
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-
-  const isHindi = /[\u0900-\u097F]/.test(mainTitle);
-
-  if (isHindi) {
-    if (cleanSlugWords && cleanSlugWords.length > 3) {
-      return `${mainTitle} - ${cleanSlugWords} | GLOBAL AWAAZ`;
-    }
+  if (mainTitle.length <= 50) {
     return `${mainTitle} | GLOBAL AWAAZ`;
-  } else {
-    const categoryName = article.category?.name || "मुख्य समाचार";
-    return `${mainTitle} - ${categoryName} | GLOBAL AWAAZ`;
   }
+  if (mainTitle.length > 65) {
+    return `${mainTitle.substring(0, 62).trim()}...`;
+  }
+  return mainTitle;
 }
 
 export async function generateMetadata({
@@ -114,7 +102,7 @@ export async function generateMetadata({
       : resolvedParams.slug
     : "article";
   const slug = decodeURIComponent(rawParam).trim().toLowerCase();
-  const canonicalUrl = `https://globalawaaz.com/${section}/${slug}`;
+  const canonicalUrl = `https://www.globalawaaz.com/${section}/${slug}`;
 
   // If this is a sub-category URL like /education/board-exams
   const matchedSubName = isSubCategoryRoute(section, slug);
@@ -149,9 +137,13 @@ export async function generateMetadata({
 
   const seoTitle = buildDualLanguageSeoTitle(article, slug);
   const rawDesc = stripHtml(article.summary || article.body || "");
-  const description = rawDesc.length > 160
-    ? `${rawDesc.substring(0, 157).trim()}...`
-    : (rawDesc || "ग्लोबल आवाज़ पर पढ़ें देश, राज्य, राजनीति, व्यापार और खेल की ताज़ा निष्पक्ष खबरें।");
+  let description = rawDesc;
+  if (description.length > 160) {
+    description = `${description.substring(0, 155).trim()}...`;
+  } else if (description.length < 140) {
+    const padText = "। ग्लोबल आवाज़ पर पढ़ें देश, राज्य, राजनीति, व्यापार और खेल की ताज़ा निष्पक्ष खबरें।";
+    description = (description + padText).substring(0, 158).trim();
+  }
   const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
 
   return {

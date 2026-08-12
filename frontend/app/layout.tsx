@@ -29,8 +29,8 @@ export const metadata: Metadata = {
     "Digital e-Paper",
   ],
   authors: [{ name: "GLOBAL AWAAZ Editorial Team", url: "https://www.globalawaaz.com/about" }],
-  creator: "GLOBAL AWAAZ Media Network",
-  publisher: "GLOBAL AWAAZ Media Network",
+  creator: "GLOBAL AWAAZ",
+  publisher: "GLOBAL AWAAZ",
   formatDetection: {
     email: false,
     address: false,
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://globalawaaz.com/logo.png",
+        url: "https://www.globalawaaz.com/logo.png",
         width: 1200,
         height: 630,
         alt: "GLOBAL AWAAZ — LOCAL से GLOBAL तक",
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
       "ग्लोबल आवाज़ — निष्पक्ष खबरें, सटीक विश्लेषण। ताज़ा हिंदी व अंग्रेज़ी समाचार।",
     site: "@globalawaaz",
     creator: "@globalawaaz",
-    images: ["https://globalawaaz.com/logo.png"],
+    images: ["https://www.globalawaaz.com/logo.png"],
   },
   icons: {
     icon: [

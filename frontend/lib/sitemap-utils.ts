@@ -35,7 +35,7 @@ export interface MonthGroup {
 // ---------------------------------------------------------------------------
 
 export const BASE_URL =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://globalawaaz.com").replace(/\/$/, "");
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.globalawaaz.com").replace(/\/$/, "");
 
 export const SITE_NAME = "Global Awaaz";
 export const SITE_LANGUAGE = "hi";
