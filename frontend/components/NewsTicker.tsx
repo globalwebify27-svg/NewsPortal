@@ -127,6 +127,7 @@ export default function NewsTicker({
             <div
               key={idx}
               className="news-ticker-item"
+              title={text}
               style={{
                 display: "inline-flex",
                 alignItems: "center",

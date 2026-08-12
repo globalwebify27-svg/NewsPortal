@@ -614,8 +614,6 @@ export default function Header() {
                     fontWeight: 800,
                     fontSize: "0.78rem",
                     cursor: "pointer",
-                    padding: "6px 10px",
-                    width: "100%",
                     textAlign: "left"
                   }}
                 >
@@ -628,19 +626,19 @@ export default function Header() {
 
             <ul className="nav-links pill-nav-links" onMouseEnter={() => setIsStateModalOpen(false)}>
               <li>
-                <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`}>
+                <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`} title={lang === "HI" ? "मुख्य पृष्ठ" : "Home"}>
                   <Home size={15} />
                   <span>{t("home")}</span>
                   {isActive("/") && <span className="active-pill-bar"></span>}
                 </Link>
                 <div className="mega-dropdown">
-                  <Link href="/"><Zap size={14} />{lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}</Link>
-                  <Link href="/"><Clock size={14} />{lang === "HI" ? "लाइव समाचार" : "Live Updates"}</Link>
-                  <Link href="/"><Star size={14} />{lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}</Link>
+                  <Link href="/" title={lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}><Zap size={14} />{lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}</Link>
+                  <Link href="/" title={lang === "HI" ? "लाइव समाचार" : "Live Updates"}><Clock size={14} />{lang === "HI" ? "लाइव समाचार" : "Live Updates"}</Link>
+                  <Link href="/" title={lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}><Star size={14} />{lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}</Link>
                 </div>
               </li>
               <li>
-                <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`}>
+                <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`} title={lang === "HI" ? "शिक्षा" : "Education"}>
                   <Zap size={15} />
                   <span>{lang === "HI" ? "शिक्षा" : "Education"}</span>
                   {isActive("/education") && <span className="active-pill-bar"></span>}
@@ -650,6 +648,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/education/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <BookOpen size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -658,7 +657,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`}>
+                <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`} title={lang === "HI" ? "विदेश" : "World"}>
                   <Globe size={15} />
                   <span>{t("world")}</span>
                   {isActive("/world") && <span className="active-pill-bar"></span>}
@@ -668,6 +667,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/world/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Globe size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -679,6 +679,7 @@ export default function Header() {
                 <Link
                   href="/india"
                   className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
+                  title={lang === "HI" ? "भारत" : "India"}
                   onClick={() => {
                     sessionStorage.removeItem("ga_selected_state");
                   }}
@@ -702,6 +703,7 @@ export default function Header() {
                       <Link
                         key={st.code}
                         href={`/${st.slug}`}
+                        title={lang === "HI" ? st.nameHi : st.nameEn}
                         onClick={() => handleSelectState(st)}
                         style={{
                           display: "flex",
@@ -725,7 +727,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/business" className={`nav-link pill-nav-link ${isActive("/business") ? "active" : ""}`}>
+                <Link href="/business" className={`nav-link pill-nav-link ${isActive("/business") ? "active" : ""}`} title={lang === "HI" ? "व्यापार" : "Business"}>
                   <TrendingUp size={15} />
                   <span>{t("business")}</span>
                   {isActive("/business") && <span className="active-pill-bar"></span>}
@@ -735,6 +737,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/business/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <TrendingUp size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -743,7 +746,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/technology" className={`nav-link pill-nav-link ${isActive("/technology") ? "active" : ""}`}>
+                <Link href="/technology" className={`nav-link pill-nav-link ${isActive("/technology") ? "active" : ""}`} title={lang === "HI" ? "तकनीक" : "Technology"}>
                   <Cpu size={15} />
                   <span>{t("technology")}</span>
                   {isActive("/technology") && <span className="active-pill-bar"></span>}
@@ -753,6 +756,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/technology/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Cpu size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -761,7 +765,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/sports" className={`nav-link pill-nav-link ${isActive("/sports") ? "active" : ""}`}>
+                <Link href="/sports" className={`nav-link pill-nav-link ${isActive("/sports") ? "active" : ""}`} title={lang === "HI" ? "खेल" : "Sports"}>
                   <Trophy size={15} />
                   <span>{t("sports")}</span>
                   {isActive("/sports") && <span className="active-pill-bar"></span>}
@@ -771,6 +775,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/sports/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Trophy size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -779,7 +784,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/entertainment" className={`nav-link pill-nav-link ${isActive("/entertainment") ? "active" : ""}`}>
+                <Link href="/entertainment" className={`nav-link pill-nav-link ${isActive("/entertainment") ? "active" : ""}`} title={lang === "HI" ? "मनोरंजन" : "Entertainment"}>
                   <Film size={15} />
                   <span>{t("entertainment")}</span>
                   {isActive("/entertainment") && <span className="active-pill-bar"></span>}
@@ -789,6 +794,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/entertainment/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Film size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -797,7 +803,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`}>
+                <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`} title={lang === "HI" ? "विज्ञान" : "Science"}>
                   <Atom size={15} />
                   <span>{t("science")}</span>
                   {isActive("/science") && <span className="active-pill-bar"></span>}
@@ -807,6 +813,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/science/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Atom size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -815,7 +822,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/health" className={`nav-link pill-nav-link ${isActive("/health") ? "active" : ""}`}>
+                <Link href="/health" className={`nav-link pill-nav-link ${isActive("/health") ? "active" : ""}`} title={lang === "HI" ? "स्वास्थ्य" : "Health"}>
                   <HeartPulse size={15} />
                   <span>{t("health")}</span>
                   {isActive("/health") && <span className="active-pill-bar"></span>}
@@ -825,6 +832,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/health/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <HeartPulse size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -833,7 +841,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/opinion" className={`nav-link pill-nav-link ${isActive("/opinion") ? "active" : ""}`}>
+                <Link href="/opinion" className={`nav-link pill-nav-link ${isActive("/opinion") ? "active" : ""}`} title={lang === "HI" ? "विचार" : "Opinion"}>
                   <MessageSquare size={15} />
                   <span>{t("opinion")}</span>
                   {isActive("/opinion") && <span className="active-pill-bar"></span>}
@@ -843,6 +851,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/opinion/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <MessageSquare size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -851,7 +860,7 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`}>
+                <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`} title={lang === "HI" ? "वीडियो" : "Videos"}>
                   <Tv size={15} />
                   <span>{t("videos")}</span>
                   {isActive("/videos") && <span className="active-pill-bar"></span>}
@@ -861,6 +870,7 @@ export default function Header() {
                     <Link
                       key={sub.en}
                       href={`/videos/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+                      title={lang === "HI" ? sub.hi : sub.en}
                     >
                       <Tv size={14} />
                       {lang === "HI" ? sub.hi : sub.en}
@@ -869,27 +879,26 @@ export default function Header() {
                 </div>
               </li>
               <li>
-                <Link href="/about" className={`nav-link pill-nav-link ${isActive("/about") ? "active" : ""}`}>
+                <Link href="/about" className={`nav-link pill-nav-link ${isActive("/about") ? "active" : ""}`} title={lang === "HI" ? "हमारे बारे में" : "About Us"}>
                   <BookOpen size={15} />
                   <span>{lang === "HI" ? "हमारे बारे में" : "About Us"}</span>
                   {isActive("/about") && <span className="active-pill-bar"></span>}
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className={`nav-link pill-nav-link ${isActive("/careers") ? "active" : ""}`}>
+                <Link href="/careers" className={`nav-link pill-nav-link ${isActive("/careers") ? "active" : ""}`} title={lang === "HI" ? "करियर" : "Careers"}>
                   <Briefcase size={15} />
                   <span>{lang === "HI" ? "करियर" : "Careers"}</span>
                   {isActive("/careers") && <span className="active-pill-bar"></span>}
                 </Link>
               </li>
               <li>
-                <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`}>
+                <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`} title={lang === "HI" ? "विज्ञापन दें" : "Advertise"}>
                   <Megaphone size={15} />
                   <span>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</span>
                   {isActive("/advertise") && <span className="active-pill-bar"></span>}
                 </Link>
               </li>
-
             </ul>
           </div>
         </div>
