@@ -2726,8 +2726,21 @@
 .article-3col-grid {
   display: grid;
   grid-template-columns: 1fr 2.2fr 1fr;
+  grid-template-areas: "left center right";
   gap: 24px;
   align-items: start;
+}
+
+.article-left-col {
+  grid-area: left;
+}
+
+.article-center-col {
+  grid-area: center;
+}
+
+.article-right-col {
+  grid-area: right;
 }
 
 @media (max-width: 1080px) {

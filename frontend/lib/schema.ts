@@ -106,9 +106,9 @@ export function generateNewsArticleSchema(article: SchemaArticle) {
     "datePublished": publishDate,
     "dateModified": modifiedDate,
     "author": {
-      "@type": "Person",
-      "name": article.author?.name || "Global Awaaz Editorial Staff",
-      "jobTitle": article.author?.role || "Journalist"
+      "@type": "Organization",
+      "name": article.author?.name || "GLOBAL AWAAZ",
+      "url": `${SITE_URL}/about`
     },
     "publisher": {
       "@type": "NewsMediaOrganization",
