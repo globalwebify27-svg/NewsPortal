@@ -11,6 +11,19 @@ export const revalidate = 3600;
 
 function formatImageUrl(rawUrl: string): string {
   if (!rawUrl) return "";
+
+  // Rewrite Hostinger media URLs to the main domain so internal
+  // hosting infrastructure is never exposed in the public sitemap.
+  const HOSTINGER_HOST = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL
+    || "https://yellowgreen-rook-384455.hostingersite.com/public";
+  const HOSTINGER_ORIGIN = "https://yellowgreen-rook-384455.hostingersite.com";
+
+  if (rawUrl.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    // Extract the path portion after the Hostinger origin
+    const path = rawUrl.replace(HOSTINGER_ORIGIN, "");
+    return `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  }
+
   if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
     return rawUrl;
   }
