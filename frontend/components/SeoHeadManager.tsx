@@ -50,7 +50,13 @@ export default function SeoHeadManager() {
       // 2. Standard Meta Tags
       setMetaTag("name", "description", config.metaDescription);
       setMetaTag("name", "keywords", config.keywords);
+      setMetaTag("name", "author", "GLOBAL AWAAZ");
+      setMetaTag("name", "publisher", "GLOBAL AWAAZ");
       setMetaTag("name", "robots", config.robots || "index, follow");
+
+      // Remove any link rel="author" to prevent browser extensions from showing URL instead of text name
+      const oldAuthorLink = document.head.querySelector('link[rel="author"]');
+      if (oldAuthorLink) oldAuthorLink.remove();
       
       // Ensure canonicalUrl always has www prefix
       let canonicalUrl = config.canonicalUrl || `https://www.globalawaaz.com${pathname}`;

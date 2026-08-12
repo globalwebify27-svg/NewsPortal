@@ -30,6 +30,19 @@ import { API_ENDPOINTS } from "@/lib/config";
 import { extractYouTubeId } from "@/lib/youtube";
 import { useLanguage } from "@/context/LanguageContext";
 
+/**
+ * Ensures strict SEO heading hierarchy for article body content:
+ * - Demotes any injected <h1> to <h2> so there is strictly ONLY ONE <h1> on the page.
+ * - Fixes heading levels to ensure standard SEO compliance (H1 -> H2 -> H3 -> H4 -> H5 -> H6).
+ */
+function sanitizeSemanticArticleBody(html: string): string {
+  if (!html) return "";
+  let clean = html;
+  // Replace <h1> tags with <h2> to guarantee single H1 on page
+  clean = clean.replace(/<h1(\s|>)/gi, "<h2$1").replace(/<\/h1>/gi, "</h2>");
+  return clean;
+}
+
 export interface ArticleAdItem {
   id: string;
   title?: string;
@@ -393,7 +406,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                   <a href={adItem.link || "/advertise"} target="_blank" rel="noopener noreferrer">
                     {adItem.title || adItem.subtitle ? (
                       <div style={{ marginBottom: "8px" }}>
-                        {adItem.title && <h5 style={{ margin: "0 0 2px 0", fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>{adItem.title}</h5>}
+                        {adItem.title && <h4 style={{ margin: "0 0 2px 0", fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>{adItem.title}</h4>}
                         {adItem.subtitle && <p style={{ margin: 0, fontSize: "0.76rem", color: "#cbd5e1" }}>{adItem.subtitle}</p>}
                       </div>
                     ) : null}
@@ -405,9 +418,9 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                   </a>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <h5 style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
+                    <h4 style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
                       {adItem.title || "GLOBAL AWAAZ SPONSORSHIP"}
-                    </h5>
+                    </h4>
                     <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.4 }}>
                       {adItem.subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
                     </p>
@@ -653,7 +666,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             {article.body && article.body.includes("<") ? (
               <div
                 className="rich-article-body"
-                dangerouslySetInnerHTML={{ __html: article.body }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSemanticArticleBody(article.body) }}
               />
             ) : (
               article.body
@@ -693,9 +706,9 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                           ) : (
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                               <div>
-                                <h4 style={{ margin: "0 0 4px 0", fontSize: "1rem", fontWeight: 800, color: "#ffffff" }}>
+                                <h3 style={{ margin: "0 0 4px 0", fontSize: "1rem", fontWeight: 800, color: "#ffffff" }}>
                                   {currentAd.title || "GLOBAL AWAAZ DIGITAL SPONSORSHIP"}
-                                </h4>
+                                </h3>
                                 <p style={{ margin: 0, fontSize: "0.82rem", color: "#cbd5e1" }}>
                                   {currentAd.subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
                                 </p>
@@ -731,6 +744,96 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               &quot;The convergence of information, technology, and global transparency represents the foundation of responsible journalism.&quot;
             </blockquote>
           </div>
+
+          {/* Related Articles Section (H2 Header -> H3 per Story Title) */}
+          {sideNews.length > 0 && (
+            <section style={{ margin: "32px 0 24px 0" }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: "2px solid #e50914",
+                paddingBottom: "10px",
+                marginBottom: "16px"
+              }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: "1.15rem",
+                  fontWeight: 900,
+                  color: "var(--color-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <BookOpen size={18} style={{ color: "#e50914" }} />
+                  {lang === "HI" ? "संबंधित प्रमुख खबरें एवं ताज़ा अपडेट्स" : "Related News Coverage & Analysis"}
+                </h2>
+                <Link
+                  href={`/${article.category?.slug || ""}`}
+                  style={{ fontSize: "0.78rem", color: "#e50914", fontWeight: 800, textDecoration: "none" }}
+                >
+                  {lang === "HI" ? "सभी संबंधित खबरें देखें →" : "View All Stories →"}
+                </Link>
+              </div>
+
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "16px"
+              }}>
+                {sideNews.slice(0, 3).map((relItem, relIdx) => (
+                  <article
+                    key={relItem.id || relIdx}
+                    style={{
+                      background: "var(--color-card-bg, #ffffff)",
+                      border: "1px solid var(--color-border, #e2e8f0)",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      boxShadow: "var(--shadow-sm)",
+                      display: "flex",
+                      flexDirection: "column"
+                    }}
+                  >
+                    <Link href={getArticleUrl(relItem)} style={{ textDecoration: "none", color: "inherit" }}>
+                      <div style={{ height: "120px", overflow: "hidden", position: "relative", background: "#0f172a" }}>
+                        <img
+                          src={getArticleImage(relItem, relIdx)}
+                          alt={relItem.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                        <span style={{
+                          position: "absolute", top: "8px", left: "8px",
+                          background: "#e50914", color: "#ffffff",
+                          fontSize: "0.62rem", fontWeight: 800,
+                          padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase"
+                        }}>
+                          {relItem.category?.name || "NEWS"}
+                        </span>
+                      </div>
+                      <div style={{ padding: "12px" }}>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: "0.92rem",
+                          fontWeight: 800,
+                          lineHeight: 1.4,
+                          color: "var(--color-text, #0f172a)",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden"
+                        }}>
+                          {relItem.title}
+                        </h3>
+                        <span style={{ fontSize: "0.74rem", color: "var(--color-secondary)", marginTop: "6px", display: "inline-block" }}>
+                          {formatDate(relItem.createdAt)}
+                        </span>
+                      </div>
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Bottom Social Media Share Bar */}
           <div style={{

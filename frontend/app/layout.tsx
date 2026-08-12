@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     "Hindi News Channel",
     "Digital e-Paper",
   ],
-  authors: [{ name: "GLOBAL AWAAZ Editorial Team", url: "https://www.globalawaaz.com/about" }],
+  authors: [{ name: "GLOBAL AWAAZ" }],
   creator: "GLOBAL AWAAZ",
   publisher: "GLOBAL AWAAZ",
   formatDetection: {
