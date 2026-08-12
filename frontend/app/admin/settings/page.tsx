@@ -599,7 +599,7 @@ export default function AdminSettingsPage() {
                     <Link2 size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
                     <input
                       type="text"
-                      placeholder="https://yellowgreen-rook-384455.hostingersite.com/public/uploads/logo.png"
+                      placeholder="https://globalawaaz.com/public/uploads/logo.png"
                       value={logoInputUrl}
                       onChange={(e) => setLogoInputUrl(e.target.value)}
                       style={{ width: "100%", padding: "9px 10px 9px 32px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff", color: "#0f172a" }}

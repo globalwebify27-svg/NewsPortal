@@ -64,7 +64,11 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           const resJson = await response.json();
           if (resJson.success && resJson.url) {
-            publicUrl = resJson.url;
+            // Rewrite Hostinger internal URL to main domain before storing
+            publicUrl = (resJson.url as string).replace(
+              "https://yellowgreen-rook-384455.hostingersite.com",
+              "https://globalawaaz.com"
+            );
           } else {
             console.warn("Hostinger bridge returned non-success:", resJson);
           }

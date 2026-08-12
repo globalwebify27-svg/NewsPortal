@@ -61,7 +61,7 @@ function formatExternalUrl(url?: string): string {
   if (!url) return "#";
   let clean = url.trim().replace(/^(https?[:/]+)+/i, "");
   if (clean.startsWith("/")) {
-    return `https://yellowgreen-rook-384455.hostingersite.com${clean}`;
+    return `https://globalawaaz.com${clean}`;
   }
   return `https://${clean}`;
 }

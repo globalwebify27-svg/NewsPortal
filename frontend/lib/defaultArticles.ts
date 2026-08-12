@@ -225,6 +225,7 @@ export function stripHtml(html?: string): string {
 /** 
  * Strict Admin Image Resolver.
  * Resolves relative /uploads/ paths to full Hostinger storage URL in production and local paths in dev mode.
+ * Also rewrites any Hostinger internal URLs to the main domain so they are never exposed publicly.
  */
 export function getArticleImage(article: any, index: number = 0): string {
   let img = "";
@@ -241,6 +242,13 @@ export function getArticleImage(article: any, index: number = 0): string {
     img = img.replace("https//", "https://");
   } else if (img.startsWith("http//")) {
     img = img.replace("http//", "http://");
+  }
+
+  // Rewrite Hostinger internal URLs to main domain
+  const HOSTINGER_ORIGIN = "https://yellowgreen-rook-384455.hostingersite.com";
+  if (img.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const pathPart = img.replace(HOSTINGER_ORIGIN, "");
+    return `https://globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
   }
 
   // If full HTTP/HTTPS URL or Data URL, return as-is
@@ -260,7 +268,7 @@ export function getArticleImage(article: any, index: number = 0): string {
       }
     }
 
-    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://yellowgreen-rook-384455.hostingersite.com/public";
+    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://globalawaaz.com/public";
     return `${hostingerBase}${cleanPath}`;
   }
 

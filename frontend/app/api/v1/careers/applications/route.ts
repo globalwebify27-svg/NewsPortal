@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     let cleanResumeUrl = resumeUrl.trim().replace(/^(https?[:/]+)+/i, "");
     if (cleanResumeUrl.startsWith("/")) {
-      cleanResumeUrl = `https://yellowgreen-rook-384455.hostingersite.com${cleanResumeUrl}`;
+      cleanResumeUrl = `https://globalawaaz.com${cleanResumeUrl}`;
     } else {
       cleanResumeUrl = `https://${cleanResumeUrl}`;
     }
