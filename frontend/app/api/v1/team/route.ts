@@ -8,6 +8,26 @@ function getTeamModel() {
   return (prisma as any).teamMember || (prisma as any).TeamMember;
 }
 
+function cleanImageUrl(imgUrl?: string | null): string | null {
+  if (!imgUrl) return null;
+  let url = imgUrl.trim();
+
+  // Fix malformed protocol (https// -> https:// or http// -> http://)
+  if (url.startsWith("https//")) url = url.replace("https//", "https://");
+  if (url.startsWith("http//")) url = url.replace("http//", "http://");
+
+  // Rewrite Hostinger internal hostname to main domain
+  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const pathPart = url
+      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("//yellowgreen-rook-384455.hostingersite.com", "");
+    url = `https://www.globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
+  }
+
+  return url;
+}
+
 // GET /api/v1/team -> Retrieve team members
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -35,9 +55,14 @@ export async function GET(request: NextRequest) {
       members = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
     }
 
+    const sanitizedMembers = (members || []).map((m: any) => ({
+      ...m,
+      avatar: cleanImageUrl(m.avatar)
+    }));
+
     return NextResponse.json({
       success: true,
-      data: members,
+      data: sanitizedMembers,
     });
   } catch (error: any) {
     console.error("Error fetching team members:", error);
@@ -84,7 +109,7 @@ export async function POST(request: NextRequest) {
       designationHi: designationHi?.trim() || null,
       bio: bio || null,
       bioHi: bioHi || null,
-      avatar: avatar || null,
+      avatar: cleanImageUrl(avatar),
       email: email?.trim() || null,
       phone: phone?.trim() || null,
       twitter: twitter?.trim() || null,

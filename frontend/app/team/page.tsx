@@ -46,6 +46,21 @@ interface TeamMember {
   order: number;
 }
 
+function formatAvatarUrl(imgUrl?: string): string {
+  if (!imgUrl) return "";
+  let url = imgUrl.trim();
+  if (url.startsWith("https//")) url = url.replace("https//", "https://");
+  if (url.startsWith("http//")) url = url.replace("http//", "http://");
+  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const pathPart = url
+      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("//yellowgreen-rook-384455.hostingersite.com", "");
+    url = `https://www.globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
+  }
+  return url;
+}
+
 export default function PublicTeamPage() {
   const { lang } = useLanguage();
   const isHi = lang === "HI";
@@ -152,7 +167,7 @@ export default function PublicTeamPage() {
                     <div className="relative w-full aspect-[4/3.8] overflow-hidden bg-slate-100">
                       {member.avatar ? (
                         <img
-                          src={member.avatar}
+                          src={formatAvatarUrl(member.avatar)}
                           alt={displayName}
                           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         />

@@ -52,6 +52,21 @@ interface TeamMember {
   createdAt?: string;
 }
 
+function formatAvatarUrl(imgUrl?: string): string {
+  if (!imgUrl) return "";
+  let url = imgUrl.trim();
+  if (url.startsWith("https//")) url = url.replace("https//", "https://");
+  if (url.startsWith("http//")) url = url.replace("http//", "http://");
+  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const pathPart = url
+      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("//yellowgreen-rook-384455.hostingersite.com", "");
+    url = `https://www.globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
+  }
+  return url;
+}
+
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,7 +380,7 @@ export default function AdminTeamPage() {
                     <div className="relative">
                       {member.avatar ? (
                         <img
-                          src={member.avatar}
+                          src={formatAvatarUrl(member.avatar)}
                           alt={member.name}
                           className="w-16 h-16 rounded-2xl object-cover ring-2 ring-slate-100 group-hover:ring-red-100"
                         />
@@ -508,7 +523,7 @@ export default function AdminTeamPage() {
                 <div className="flex items-center gap-4">
                   {formData.avatar ? (
                     <img
-                      src={formData.avatar}
+                      src={formatAvatarUrl(formData.avatar)}
                       alt="Preview"
                       className="w-16 h-16 rounded-2xl object-cover ring-2 ring-red-500/50"
                     />
