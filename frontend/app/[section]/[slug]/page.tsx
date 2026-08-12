@@ -62,15 +62,19 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
 
 function formatAbsoluteImageUrl(imgUrl?: string): string {
   if (!imgUrl) return "https://globalawaaz.com/global-awaaz-logo.jpg";
+  // Fix malformed protocols from database (https// → https://)
+  let url = imgUrl;
+  if (url.startsWith("https//")) url = url.replace("https//", "https://");
+  if (url.startsWith("http//")) url = url.replace("http//", "http://");
   // Rewrite Hostinger internal URLs to main domain
-  if (imgUrl.includes("yellowgreen-rook-384455.hostingersite.com")) {
-    const path = imgUrl.replace("https://yellowgreen-rook-384455.hostingersite.com", "");
+  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const path = url.replace("https://yellowgreen-rook-384455.hostingersite.com", "");
     return `https://globalawaaz.com${path.startsWith("/") ? path : `/${path}`}`;
   }
-  if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
-    return imgUrl;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
   }
-  const cleanPath = imgUrl.startsWith("/") ? imgUrl : `/${imgUrl}`;
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return `https://globalawaaz.com${cleanPath}`;
 }
 
