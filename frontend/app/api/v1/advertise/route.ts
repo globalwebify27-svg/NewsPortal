@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,47 +20,59 @@ interface AdProposal {
   submittedAt: string;
 }
 
-function getStoredProposals(): AdProposal[] {
+async function getStoredProposals(): Promise<AdProposal[]> {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      // Default sample proposals if empty
-      const sampleProposals: AdProposal[] = [
-        {
-          id: "prop_sample_1",
-          brandName: "Acme Retailers Bihar",
-          contactPerson: "Rajesh Kumar",
-          mobileNumber: "+91 75639 01100",
-          email: "rajesh@acme.com",
-          cityState: "Ranchi, Jharkhand ",
-          adType: "Homepage Leaderboard Banner",
-          campaignDetails: "Diwali Special Retail Promotion Campaign for 15 Days.",
-          status: "PENDING",
-          submittedAt: new Date(Date.now() - 3600000 * 2).toISOString()
-        }
-      ];
-      fs.writeFileSync(DATA_FILE, JSON.stringify(sampleProposals, null, 2), "utf-8");
-      return sampleProposals;
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "ad_proposals_list" }
+    });
+    if (setting && setting.value) {
+      const parsed = JSON.parse(setting.value) as AdProposal[];
+      if (Array.isArray(parsed)) return parsed;
     }
-    const fileData = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(fileData) as AdProposal[];
   } catch (err) {
-    console.error("Error reading ad proposals storage:", err);
-    return [];
+    console.error("Error reading ad proposals from Prisma database:", err);
   }
+
+  // Fallback to local JSON file
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const fileData = fs.readFileSync(DATA_FILE, "utf-8");
+      const parsed = JSON.parse(fileData) as AdProposal[];
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error("Error reading ad proposals local fallback file:", err);
+  }
+
+  return [];
 }
 
-function saveProposals(proposals: AdProposal[]) {
+async function saveProposals(proposals: AdProposal[]) {
+  const jsonStr = JSON.stringify(proposals);
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(proposals, null, 2), "utf-8");
+    await prisma.siteSetting.upsert({
+      where: { key: "ad_proposals_list" },
+      update: { value: jsonStr },
+      create: {
+        key: "ad_proposals_list",
+        value: jsonStr,
+        label: "Advertising Proposals Storage",
+        group: "advertisements"
+      }
+    });
   } catch (err) {
-    console.error("Error saving ad proposals storage:", err);
+    console.error("Error saving ad proposals to Prisma database:", err);
   }
+
+  try {
+    fs.writeFileSync(DATA_FILE, jsonStr, "utf-8");
+  } catch (err) {}
 }
 
 // GET /api/v1/advertise -> Admin lists all received advertising proposal inquiries
 export async function GET(request: NextRequest) {
   try {
-    const proposals = getStoredProposals();
+    const proposals = await getStoredProposals();
     return NextResponse.json({
       success: true,
       data: proposals,
@@ -86,7 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const proposals = getStoredProposals();
+    const proposals = await getStoredProposals();
     const newProposal: AdProposal = {
       id: `prop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       brandName: String(brandName).trim(),
@@ -101,7 +114,7 @@ export async function POST(request: NextRequest) {
     };
 
     proposals.unshift(newProposal);
-    saveProposals(proposals);
+    await saveProposals(proposals);
 
     return NextResponse.json({
       success: true,
@@ -130,7 +143,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    let proposals = getStoredProposals();
+    let proposals = await getStoredProposals();
     let found = false;
 
     proposals = proposals.map((p) => {
@@ -145,7 +158,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Proposal not found" }, { status: 404 });
     }
 
-    saveProposals(proposals);
+    await saveProposals(proposals);
 
     return NextResponse.json({
       success: true,
@@ -169,9 +182,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Proposal ID required" }, { status: 400 });
     }
 
-    let proposals = getStoredProposals();
+    let proposals = await getStoredProposals();
     proposals = proposals.filter((p) => p.id !== id);
-    saveProposals(proposals);
+    await saveProposals(proposals);
 
     return NextResponse.json({
       success: true,
@@ -184,3 +197,4 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
