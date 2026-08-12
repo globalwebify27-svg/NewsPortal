@@ -1,15 +1,12 @@
 // =============================================================================
 // app/robots.ts — Dynamic robots.txt
-// URL: https://globalawaaz.com/robots.txt
-//
-// Allows all public pages; blocks admin, API, and CMS internals.
-// References the main sitemap index and active sitemaps.
+// URL: https://www.globalawaaz.com/robots.txt
 // =============================================================================
 
 import { MetadataRoute } from "next";
 
 const BASE_URL =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://globalawaaz.com").replace(/\/$/, "");
+  (process.env.NEXT_PUBLIC_SITE_URL || "https://www.globalawaaz.com").replace(/\/$/, "");
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -34,6 +31,8 @@ export default function robots(): MetadataRoute.Robots {
     ],
     sitemap: [
       `${BASE_URL}/sitemap.xml`,
+      `${BASE_URL}/pages-sitemap.xml`,
+      `${BASE_URL}/categories-sitemap.xml`,
       `${BASE_URL}/news-recent-sitemap.xml`,
     ],
     host: BASE_URL,

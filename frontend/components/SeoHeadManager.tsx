@@ -51,13 +51,19 @@ export default function SeoHeadManager() {
       setMetaTag("name", "description", config.metaDescription);
       setMetaTag("name", "keywords", config.keywords);
       setMetaTag("name", "robots", config.robots || "index, follow");
-      setLinkTag("canonical", config.canonicalUrl || `https://globalawaaz.com${pathname}`);
+      
+      // Ensure canonicalUrl always has www prefix
+      let canonicalUrl = config.canonicalUrl || `https://www.globalawaaz.com${pathname}`;
+      if (canonicalUrl.startsWith("https://globalawaaz.com")) {
+        canonicalUrl = canonicalUrl.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
+      }
+      setLinkTag("canonical", canonicalUrl);
 
       // 3. Open Graph Tags
       setMetaTag("property", "og:title", config.ogTitle || config.metaTitle);
       setMetaTag("property", "og:description", config.ogDescription || config.metaDescription);
       setMetaTag("property", "og:image", config.ogImage);
-      setMetaTag("property", "og:url", config.canonicalUrl || `https://globalawaaz.com${pathname}`);
+      setMetaTag("property", "og:url", canonicalUrl);
       setMetaTag("property", "og:type", config.ogType || "website");
       setMetaTag("property", "og:site_name", "GLOBAL AWAAZ");
 
@@ -82,8 +88,8 @@ export default function SeoHeadManager() {
           "@context": "https://schema.org",
           "@type": "NewsMediaOrganization",
           "name": "GLOBAL AWAAZ",
-          "url": "https://globalawaaz.com",
-          "logo": "https://globalawaaz.com/logo.png",
+          "url": "https://www.globalawaaz.com",
+          "logo": "https://www.globalawaaz.com/logo.png",
           "sameAs": [
             "https://facebook.com/globalawaaz",
             "https://twitter.com/globalawaaz",
@@ -96,11 +102,11 @@ export default function SeoHeadManager() {
           "@type": config.jsonLdType || "WebPage",
           "name": config.metaTitle,
           "description": config.metaDescription,
-          "url": config.canonicalUrl || `https://globalawaaz.com${pathname}`,
+          "url": canonicalUrl,
           "publisher": {
             "@type": "Organization",
             "name": "GLOBAL AWAAZ",
-            "logo": "https://globalawaaz.com/logo.png"
+            "logo": "https://www.globalawaaz.com/logo.png"
           }
         };
       }
