@@ -13,19 +13,32 @@ export async function generateMetadata({
   const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
   const canonicalUrl = `https://www.globalawaaz.com/${section}`;
 
+  const sectionKeywords = [
+    `${formattedTitle} News`,
+    `${formattedTitle} समाचार`,
+    `${formattedTitle} ख़बरें`,
+    "GLOBAL AWAAZ",
+    "ग्लोबल आवाज़",
+    "Breaking News Hindi",
+    "Latest Updates"
+  ];
+
   return {
     title: `${formattedTitle} News - GLOBAL AWAAZ | ताज़ा ख़बरें`,
     description: `Latest ${formattedTitle} news, editorials, analysis, and updates on GLOBAL AWAAZ.`,
+    keywords: sectionKeywords,
     alternates: {
       canonical: canonicalUrl,
     },
     robots: {
-      index: false,
-      follow: false,
-      nocache: true,
+      index: true,
+      follow: true,
       googleBot: {
-        index: false,
-        follow: false,
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
     },
     openGraph: {

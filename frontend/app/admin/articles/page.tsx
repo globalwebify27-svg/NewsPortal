@@ -78,6 +78,12 @@ interface AdminArticle {
   adImage?: string;
   adBadge?: string;
   customAds?: ArticleAdItem[];
+  // Search Engine Optimization (SEO) Fields
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  canonicalUrl?: string;
+  focusKeyword?: string;
 }
 
 export default function AdminArticlesPage() {
@@ -137,6 +143,26 @@ export default function AdminArticlesPage() {
   const [formCustomAds, setFormCustomAds] = useState<ArticleAdItem[]>([]);
   const [isUploadingAdImage, setIsUploadingAdImage] = useState(false);
   const slugTranslateTimer = useRef<any>(null);
+
+  // Search Engine Optimization (SEO) Form States & Auto-Sync Flags
+  const [formSeoTitle, setFormSeoTitle] = useState("");
+  const [formSeoDescription, setFormSeoDescription] = useState("");
+  const [formSeoKeywords, setFormSeoKeywords] = useState("");
+  const [formCanonicalUrl, setFormCanonicalUrl] = useState("");
+  const [formFocusKeyword, setFormFocusKeyword] = useState("");
+  const [isSeoTitleCustomized, setIsSeoTitleCustomized] = useState(false);
+  const [isSeoDescCustomized, setIsSeoDescCustomized] = useState(false);
+
+  const autoGenerateSeoFields = (title: string, summary: string, category: string, stateName: string) => {
+    setFormSeoTitle(title);
+    setFormSeoDescription(summary);
+    setIsSeoTitleCustomized(false);
+    setIsSeoDescCustomized(false);
+    
+    const kwParts = [category, stateName !== "National" ? stateName : "", "Global Awaaz", "Hindi News"].filter(Boolean);
+    setFormSeoKeywords(kwParts.join(", "));
+    setFormFocusKeyword(`${category} ${stateName !== "National" ? stateName : ""}`.trim());
+  };
 
   const isEditor = (role: string) => {
     const r = (role || "").toLowerCase();
@@ -266,6 +292,15 @@ export default function AdminArticlesPage() {
       }
       setFormImageFit(art.imageFit || "cover");
       setFormVideoUrl(art.videoUrl || "");
+
+      // SEO Fields Prefill (Auto-synced if not customized)
+      setIsSeoTitleCustomized(!!art.seoTitle);
+      setIsSeoDescCustomized(!!art.seoDescription);
+      setFormSeoTitle(art.seoTitle || art.title);
+      setFormSeoDescription(art.seoDescription || art.summary || "");
+      setFormSeoKeywords(art.seoKeywords || `${art.category?.name || "Education"}, ${art.state || "Jharkhand"}, Global Awaaz, Hindi News`);
+      setFormCanonicalUrl(art.canonicalUrl || "");
+      setFormFocusKeyword(art.focusKeyword || `${art.category?.name || "Education"} ${art.state || ""}`.trim());
     } else {
       setEditingArticle(null);
       setFormTitle("");
@@ -291,6 +326,15 @@ export default function AdminArticlesPage() {
       setFormCustomHeight("");
       setFormImageFit("cover");
       setFormVideoUrl("");
+
+      // SEO Fields Reset
+      setIsSeoTitleCustomized(false);
+      setIsSeoDescCustomized(false);
+      setFormSeoTitle("");
+      setFormSeoDescription("");
+      setFormSeoKeywords("Education, Global Awaaz, Hindi News");
+      setFormCanonicalUrl("");
+      setFormFocusKeyword("Education");
 
       setFormAdTitle("");
       setFormAdSubtitle("");
@@ -465,7 +509,13 @@ export default function AdminArticlesPage() {
       adLink: formAdLink,
       adImage: formAdImage,
       adBadge: formAdBadge,
-      customAds: formCustomAds
+      customAds: formCustomAds,
+      // SEO Metadata Payload
+      seoTitle: formSeoTitle.trim() || undefined,
+      seoDescription: formSeoDescription.trim() || undefined,
+      seoKeywords: formSeoKeywords.trim() || undefined,
+      canonicalUrl: formCanonicalUrl.trim() || undefined,
+      focusKeyword: formFocusKeyword.trim() || undefined,
     };
 
     let updatedList: AdminArticle[];
@@ -1009,6 +1059,9 @@ export default function AdminArticlesPage() {
                   onChange={(e) => {
                     const newTitle = e.target.value;
                     setFormTitle(newTitle);
+                    if (!isSeoTitleCustomized) {
+                      setFormSeoTitle(newTitle);
+                    }
                     if (!isSlugCustomized) {
                       const instantSlug = formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
                       setFormSlug(instantSlug);
@@ -1599,9 +1652,164 @@ export default function AdminArticlesPage() {
                   rows={3}
                   placeholder="Enter brief synopsis for article card previews and news excerpts..."
                   value={formSummary}
-                  onChange={(e) => setFormSummary(e.target.value)}
+                  onChange={(e) => {
+                    const newSummary = e.target.value;
+                    setFormSummary(newSummary);
+                    if (!isSeoDescCustomized) {
+                      setFormSeoDescription(newSummary);
+                    }
+                  }}
                   style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", fontWeight: 500 }}
                 />
+              </div>
+
+              {/* SEARCH ENGINE OPTIMIZATION (SEO) & GOOGLE INDEXING METADATA CARD */}
+              <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "20px", marginTop: "10px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Search size={18} style={{ color: "#2563eb" }} />
+                    <span style={{ fontWeight: 900, color: "#0f172a", fontSize: "0.95rem" }}>
+                      🔍 Search Engine Optimization (SEO) & Google Search Settings
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        autoGenerateSeoFields(formTitle, formSummary, formCategory, formState);
+                        showToast("⚡ Auto-synced SEO Title, Description & Keywords from news content!");
+                      }}
+                      style={{
+                        background: "#eff6ff",
+                        color: "#2563eb",
+                        border: "1px solid #bfdbfe",
+                        padding: "4px 12px",
+                        borderRadius: "8px",
+                        fontSize: "0.75rem",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      ⚡ Auto-Fill SEO from News
+                    </button>
+                    <span style={{ fontSize: "0.74rem", fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", padding: "3px 10px", borderRadius: "12px" }}>
+                      Google News Indexing
+                    </span>
+                  </div>
+                </div>
+
+                {/* Real-time Google Search Result Preview Box */}
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                    🌐 Google Search Result Live Preview (गूगल खोज परिणाम पूर्वावलोकन)
+                  </span>
+                  <div style={{ fontFamily: "arial, sans-serif" }}>
+                    <div style={{ fontSize: "0.8rem", color: "#202124", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <img src="/favicon.ico" alt="" style={{ width: 14, height: 14 }} />
+                      <span>GLOBAL AWAAZ</span>
+                      <span style={{ color: "#5f6368" }}>https://www.globalawaaz.com › {(formCategory || "top-news").toLowerCase()} › {formSlug || "news-article-slug"}</span>
+                    </div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 400, color: "#1a0dab", marginTop: "2px", textDecoration: "none", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {formSeoTitle || formTitle || "Article Headline Title Goes Here | GLOBAL AWAAZ"}
+                    </div>
+                    <div style={{ fontSize: "0.86rem", color: "#4d5156", marginTop: "4px", lineHeight: "1.4" }}>
+                      {formSeoDescription || formSummary || "Add a brief search snippet description to show in Google Search Engine results..."}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "12px" }}>
+                  {/* Custom Meta Title */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 800, color: "#334155" }}>
+                        Meta Title / SEO शीर्षक Tag {!isSeoTitleCustomized && <span style={{ color: "#2563eb", fontSize: "0.7rem" }}>(⚡ Auto-synced with Title)</span>}
+                      </label>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: (formSeoTitle.length > 60 ? "#dc2626" : "#16a34a") }}>
+                        {formSeoTitle.length} / 60 chars
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Custom Meta Title for Search Engines..."
+                      value={formSeoTitle}
+                      onChange={(e) => {
+                        setFormSeoTitle(e.target.value);
+                        setIsSeoTitleCustomized(true);
+                      }}
+                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: isSeoTitleCustomized ? 700 : 500 }}
+                    />
+                  </div>
+
+                  {/* Primary Focus Keyword */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
+                      Primary Focus Keyword / मुख्य कीवर्ड
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Jharkhand Board Exam 2026, JPSC Result"
+                      value={formFocusKeyword}
+                      onChange={(e) => setFormFocusKeyword(e.target.value)}
+                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Custom Meta Description */}
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <label style={{ fontSize: "0.8rem", fontWeight: 800, color: "#334155" }}>
+                      Meta Description / विवरण Tag (Snippet for Google & Social Media) {!isSeoDescCustomized && <span style={{ color: "#2563eb", fontSize: "0.7rem" }}>(⚡ Auto-synced with Summary)</span>}
+                    </label>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: (formSeoDescription.length > 160 ? "#dc2626" : "#16a34a") }}>
+                      {formSeoDescription.length} / 160 chars
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Enter SEO Meta Description snippet for search engines..."
+                    value={formSeoDescription}
+                    onChange={(e) => {
+                      setFormSeoDescription(e.target.value);
+                      setIsSeoDescCustomized(true);
+                    }}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: isSeoDescCustomized ? 700 : 500 }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "14px" }}>
+                  {/* Target SEO Keywords & Tags */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
+                      Target SEO Keywords / टैग (Comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Ranchi News, Jharkhand Jobs, Hemant Soren"
+                      value={formSeoKeywords}
+                      onChange={(e) => setFormSeoKeywords(e.target.value)}
+                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+
+                  {/* Canonical URL Override */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
+                      Canonical Link URL (Optional Override)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Default: https://www.globalawaaz.com/..."
+                      value={formCanonicalUrl}
+                      onChange={(e) => setFormCanonicalUrl(e.target.value)}
+                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Full News Text Box / Rich Text Editor */}

@@ -148,6 +148,46 @@ export async function generateMetadata({
     };
   }
 
+function extractDynamicArticleKeywords(article: any, sectionName: string): string[] {
+  const keywordsSet = new Set<string>();
+
+  // 1. Admin custom SEO keywords if present
+  if (article?.seoKeywords && typeof article.seoKeywords === "string" && article.seoKeywords.trim()) {
+    article.seoKeywords.split(",").map((k: string) => k.trim()).filter(Boolean).forEach((k: string) => keywordsSet.add(k));
+  }
+
+  // 2. Add Focus Keyword
+  if (article?.focusKeyword && typeof article.focusKeyword === "string" && article.focusKeyword.trim()) {
+    keywordsSet.add(article.focusKeyword.trim());
+  }
+
+  // 3. Extract headline entities & words
+  if (article?.title) {
+    const rawTitle = article.title.trim();
+    keywordsSet.add(rawTitle);
+    const stopWords = new Set(["और", "का", "की", "के", "में", "पर", "ने", "से", "को", "यह", "वह", "साथ", "हो", "है", "हैं", "था", "थे", "गया", "कर", "बोले", "कहा", "दिए", "रहा", "रहे", "news", "with", "from", "that", "this", "have", "said", "after"]);
+    const cleanTitle = rawTitle.replace(/[^\w\s\u0900-\u097F]/gi, " ");
+    const tokens = cleanTitle.split(/\s+/).filter((t: string) => t.length > 2 && !stopWords.has(t.toLowerCase()));
+    tokens.forEach((t: string) => keywordsSet.add(t));
+  }
+
+  // 4. Category & Location tags
+  const cat = article?.category?.name || sectionName || "Top News";
+  keywordsSet.add(`${cat} समाचार`);
+  if (article?.subCategory && article.subCategory !== "General") keywordsSet.add(article.subCategory);
+  if (article?.state && article.state !== "National" && article.state !== "All") {
+    keywordsSet.add(`${article.state} News`);
+    keywordsSet.add(`${article.state} समाचार`);
+  }
+  if (article?.district && article.district !== "All") keywordsSet.add(`${article.district} खबर`);
+
+  // 5. Brand tags
+  keywordsSet.add("GLOBAL AWAAZ");
+  keywordsSet.add("ग्लोबल आवाज़");
+
+  return Array.from(keywordsSet).slice(0, 15);
+}
+
   const seoTitle = buildDualLanguageSeoTitle(article, slug);
   const rawDesc = stripHtml(article.summary || article.body || article.title || "");
   let description = rawDesc;
@@ -155,10 +195,12 @@ export async function generateMetadata({
     description = `${description.substring(0, 155).trim()}...`;
   }
   const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
+  const articleKeywords = extractDynamicArticleKeywords(article, section);
 
   return {
     title: seoTitle,
     description: description,
+    keywords: articleKeywords,
     alternates: { canonical: canonicalUrl },
     robots: {
       index: true,
