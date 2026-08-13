@@ -463,7 +463,12 @@ export default function Header() {
 
             {/* Right Side: Utilities */}
             <div className="header-right">
-              <button className="lang-toggle-btn" onClick={toggleLang} title={lang === "EN" ? "Switch to Hindi" : "Switch to English"}>
+              <button
+                className="lang-toggle-btn"
+                onClick={toggleLang}
+                title={lang === "EN" ? "Switch to Hindi" : "Switch to English"}
+                aria-label={lang === "EN" ? "Switch to Hindi language" : "Switch to English language"}
+              >
                 <Globe size={15} />
                 <span className="lang-text-desktop">{lang === "EN" ? "हिंदी" : "English"}</span>
                 <span className="lang-text-mobile">{lang === "EN" ? "हि" : "EN"}</span>
@@ -472,10 +477,14 @@ export default function Header() {
                 className="icon-btn search-trigger"
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 title={lang === "HI" ? "समाचार खोजें" : "Search News"}
+                aria-label={lang === "HI" ? "समाचार खोजें" : "Search News"}
               >
                 <Search size={20} />
               </button>
-              <button className="icon-btn notification-btn">
+              <button
+                className="icon-btn notification-btn"
+                aria-label={lang === "HI" ? "अधिसूचनाएं" : "Notifications"}
+              >
                 <Bell size={18} />
                 <span className="notification-badge"></span>
               </button>

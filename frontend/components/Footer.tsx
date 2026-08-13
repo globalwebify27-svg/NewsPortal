@@ -191,17 +191,18 @@ export default function Footer() {
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {[
-                { icon: <Facebook size={15} />, href: socialLinks.facebook },
-                { icon: <Twitter size={15} />, href: socialLinks.twitter },
-                { icon: <Instagram size={15} />, href: socialLinks.instagram },
-                { icon: <Youtube size={15} />, href: socialLinks.youtube },
-                { icon: <Linkedin size={15} />, href: socialLinks.linkedin }
+                { name: "Facebook", icon: <Facebook size={15} />, href: socialLinks.facebook },
+                { name: "Twitter", icon: <Twitter size={15} />, href: socialLinks.twitter },
+                { name: "Instagram", icon: <Instagram size={15} />, href: socialLinks.instagram },
+                { name: "YouTube", icon: <Youtube size={15} />, href: socialLinks.youtube },
+                { name: "LinkedIn", icon: <Linkedin size={15} />, href: socialLinks.linkedin }
               ].filter((s) => Boolean(s.href)).map((s, idx) => (
                 <a
                   key={idx}
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={s.name}
                   style={{
                     width: "34px",
                     height: "34px",
@@ -362,6 +363,7 @@ export default function Footer() {
                   <input
                     type="email"
                     required
+                    aria-label="Email address for newsletter subscription"
                     placeholder={isHindi ? "आपका ईमेल..." : "Enter email..."}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -377,6 +379,7 @@ export default function Footer() {
                   />
                   <button
                     type="submit"
+                    aria-label="Subscribe to newsletter"
                     style={{
                       background: "#e50914",
                       color: "#ffffff",
