@@ -22,55 +22,41 @@ export interface SchemaArticle {
 }
 
 /**
- * Generate NewsMediaOrganization Schema
+ * Generate Organization Schema
  */
 export function generateNewsOrganizationSchema() {
   return {
     "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    "@id": `${SITE_URL}/#organization`,
-    "name": SITE_NAME,
-    "alternateName": ["Global Awaaz News", "ग्लोबल आवाज़"],
-    "url": SITE_URL,
-    "logo": {
-      "@type": "ImageObject",
-      "url": SITE_LOGO,
-      "width": 600,
-      "height": 60
-    },
-    "slogan": SITE_TAGLINE,
+    "@type": "Organization",
+    "name": "Global Awaaz",
+    "alternateName": "Global Awaaz Hindi News",
+    "url": "https://www.globalawaaz.com/",
+    "logo": "https://www.globalawaaz.com/uploads/logo--2-_1785996238254.png",
     "sameAs": [
-      "https://facebook.com/globalawaaz",
-      "https://twitter.com/globalawaaz",
-      "https://instagram.com/globalawaaz",
-      "https://youtube.com/@globalawaaz"
-    ],
-    "knowsLanguage": ["hi", "en"],
-    "publishingPrinciples": `${SITE_URL}/about`
+      "https://www.facebook.com/GlobalAwaaz/",
+      "https://www.instagram.com/global.awaaz",
+      "https://www.youtube.com/@globalawaaz-q7z",
+      "https://www.linkedin.com/company/global-awaaz/"
+    ]
   };
 }
 
 /**
- * Generate WebSite Schema with Sitelinks Searchbox
+ * Generate WebSite Schema with SearchAction
  */
 export function generateWebSiteSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${SITE_URL}/#website`,
-    "url": SITE_URL,
-    "name": SITE_NAME,
-    "alternateName": `${SITE_NAME} - ${SITE_TAGLINE}`,
-    "publisher": {
-      "@id": `${SITE_URL}/#organization`
-    },
-    "inLanguage": ["hi", "en"],
+    "name": "Global Awaaz",
+    "alternateName": [
+      "Global Awaaz News",
+      "Global Awaaz Hindi News"
+    ],
+    "url": "https://www.globalawaaz.com/",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${SITE_URL}/?search={search_term_string}`
-      },
+      "target": "https://www.globalawaaz.com/search?search_term_string={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };

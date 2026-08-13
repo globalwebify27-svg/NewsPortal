@@ -118,14 +118,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="alternate" type="application/rss+xml" title="GLOBAL AWAAZ RSS Feed" href="https://globalawaaz.com/feed.xml" />
         <script
-          id="jsonld-organization"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
-        <script
           id="jsonld-website"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema, null, 2) }}
+        />
+        <script
+          id="jsonld-organization"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema, null, 2) }}
         />
       </head>
       <body suppressHydrationWarning>
