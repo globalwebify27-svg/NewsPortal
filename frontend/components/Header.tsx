@@ -170,10 +170,14 @@ export default function Header() {
     } catch (e) { }
   };
 
-  // Custom Admin Logo State
+  // Custom Admin Logo & Header GIF Background State
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
   const [customLogoSize, setCustomLogoSize] = useState<number>(56);
   const [customLogoMarginLeft, setCustomLogoMarginLeft] = useState<number>(75);
+  const [headerBgGif, setHeaderBgGif] = useState<string | null>(null);
+  const [headerBgHeight, setHeaderBgHeight] = useState<number>(110);
+  const [headerBgSizeFit, setHeaderBgSizeFit] = useState<string>("cover");
+  const [headerBgOverlayOpacity, setHeaderBgOverlayOpacity] = useState<number>(0.12);
 
   useEffect(() => {
     // 1. Physical Geo-Location Tracker for Top Utility Bar (Weather & Geo Date)
@@ -237,11 +241,27 @@ export default function Header() {
           if (data.site_logo_margin) {
             setCustomLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
           }
+          if (data.header_bg_gif) {
+            setHeaderBgGif(data.header_bg_gif);
+          } else {
+            setHeaderBgGif(null);
+          }
+          if (data.header_bg_height) {
+            setHeaderBgHeight(parseInt(data.header_bg_height, 10) || 110);
+          }
+          if (data.header_bg_size_fit) {
+            setHeaderBgSizeFit(data.header_bg_size_fit);
+          }
+          if (data.header_bg_overlay_opacity !== undefined) {
+            setHeaderBgOverlayOpacity(parseFloat(data.header_bg_overlay_opacity) ?? 0.12);
+          }
         } else {
           setCustomLogoUrl(null);
+          setHeaderBgGif(null);
         }
       } catch (e) {
         setCustomLogoUrl(null);
+        setHeaderBgGif(null);
       }
     };
     loadLogo();
@@ -374,66 +394,92 @@ export default function Header() {
 
       {/* Sticky Header */}
       <header className="sticky-header">
-        <div className="header-top container">
-          {/* Left Side: Logo Emblem + Weather + Live Badge */}
-          <div className="header-left">
-            <button
-              id="mobileMenuBtn"
-              className="icon-btn mobile-menu-btn"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle Navigation"
-            >
-              <Menu size={22} />
-            </button>
+        <div
+          className="header-top-banner-wrapper"
+          style={{
+            backgroundImage: headerBgGif ? `url("${headerBgGif}")` : undefined,
+            backgroundSize: headerBgSizeFit === "stretch" ? "100% 100%" : headerBgSizeFit === "repeat" ? "auto" : headerBgSizeFit,
+            backgroundPosition: "center",
+            backgroundRepeat: headerBgSizeFit === "repeat" ? "repeat" : "no-repeat",
+            minHeight: headerBgGif ? `${headerBgHeight}px` : undefined,
+            display: "flex",
+            alignItems: "center",
+            position: "relative",
+            transition: "all 0.3s ease"
+          }}
+        >
+          {headerBgGif && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `rgba(255, 255, 255, ${headerBgOverlayOpacity})`,
+                pointerEvents: "none",
+                zIndex: 1
+              }}
+            />
+          )}
+          <div className="header-top container" style={{ position: "relative", zIndex: 2 }}>
+            {/* Left Side: Logo Emblem + Weather + Live Badge */}
+            <div className="header-left">
+              <button
+                id="mobileMenuBtn"
+                className="icon-btn mobile-menu-btn"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle Navigation"
+              >
+                <Menu size={22} />
+              </button>
 
-            {/* Custom Admin Logo — only shown when set by admin */}
-            {customLogoUrl && (
-              <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
-                <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
-                  <img src={customLogoUrl} alt="Site Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              {/* Custom Admin Logo — only shown when set by admin */}
+              {customLogoUrl && (
+                <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
+                  <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
+                    <img src={customLogoUrl} alt="Site Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </div>
+                </Link>
+              )}
+            </div>
+
+            {/* Center: Site Logo Title and Tagline */}
+            <div className="header-logo-container">
+              <Link href="/" className="site-logo-wrap" style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "14px" }}>
+                {/* Title and Dual-Color Accent Tagline */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <span className="site-logo">
+                    <span className="site-logo-black">GLOBAL </span>
+                    <span className="site-logo-red">AWAAZ</span>
+                  </span>
+                  <div className="site-tagline-wrap">
+                    <span className="tagline-dash tagline-dash-red"></span>
+                    <span className="site-tagline-text">
+                      LOCAL <span style={{ color: "#e50914", fontWeight: 900 }}>से</span> GLOBAL <span style={{ color: "#e50914", fontWeight: 900 }}>तक</span>
+                    </span>
+                    <span className="tagline-dash tagline-dash-red"></span>
+                  </div>
                 </div>
               </Link>
-            )}
-          </div>
+            </div>
 
-          {/* Center: Site Logo Title and Tagline */}
-          <div className="header-logo-container">
-            <Link href="/" className="site-logo-wrap" style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "14px" }}>
-              {/* Title and Dual-Color Accent Tagline */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span className="site-logo">
-                  <span className="site-logo-black">GLOBAL </span>
-                  <span className="site-logo-red">AWAAZ</span>
-                </span>
-                <div className="site-tagline-wrap">
-                  <span className="tagline-dash tagline-dash-red"></span>
-                  <span className="site-tagline-text">
-                    LOCAL <span style={{ color: "#e50914", fontWeight: 900 }}>से</span> GLOBAL <span style={{ color: "#e50914", fontWeight: 900 }}>तक</span>
-                  </span>
-                  <span className="tagline-dash tagline-dash-red"></span>
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          {/* Right Side: Utilities */}
-          <div className="header-right">
-            <button className="lang-toggle-btn" onClick={toggleLang} title={lang === "EN" ? "Switch to Hindi" : "Switch to English"}>
-              <Globe size={15} />
-              <span className="lang-text-desktop">{lang === "EN" ? "हिंदी" : "English"}</span>
-              <span className="lang-text-mobile">{lang === "EN" ? "हि" : "EN"}</span>
-            </button>
-            <button
-              className="icon-btn search-trigger"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              title={lang === "HI" ? "समाचार खोजें" : "Search News"}
-            >
-              <Search size={20} />
-            </button>
-            <button className="icon-btn notification-btn">
-              <Bell size={18} />
-              <span className="notification-badge"></span>
-            </button>
+            {/* Right Side: Utilities */}
+            <div className="header-right">
+              <button className="lang-toggle-btn" onClick={toggleLang} title={lang === "EN" ? "Switch to Hindi" : "Switch to English"}>
+                <Globe size={15} />
+                <span className="lang-text-desktop">{lang === "EN" ? "हिंदी" : "English"}</span>
+                <span className="lang-text-mobile">{lang === "EN" ? "हि" : "EN"}</span>
+              </button>
+              <button
+                className="icon-btn search-trigger"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                title={lang === "HI" ? "समाचार खोजें" : "Search News"}
+              >
+                <Search size={20} />
+              </button>
+              <button className="icon-btn notification-btn">
+                <Bell size={18} />
+                <span className="notification-badge"></span>
+              </button>
+            </div>
           </div>
         </div>
 

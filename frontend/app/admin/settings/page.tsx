@@ -80,6 +80,14 @@ export default function AdminSettingsPage() {
   const [newLinkEn, setNewLinkEn] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
 
+  // Header Background GIF States
+  const [headerBgGif, setHeaderBgGif] = useState("");
+  const [headerBgGifInput, setHeaderBgGifInput] = useState("");
+  const [headerBgHeight, setHeaderBgHeight] = useState<number>(110);
+  const [headerBgSizeFit, setHeaderBgSizeFit] = useState<string>("cover");
+  const [headerBgOverlayOpacity, setHeaderBgOverlayOpacity] = useState<number>(0.12);
+  const [isUploadingHeaderGif, setIsUploadingHeaderGif] = useState(false);
+
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
     setToastType(type);
@@ -104,6 +112,19 @@ export default function AdminSettingsPage() {
         }
         if (data.site_logo_margin) {
           setLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
+        }
+        if (data.header_bg_gif) {
+          setHeaderBgGif(data.header_bg_gif);
+          setHeaderBgGifInput(data.header_bg_gif);
+        }
+        if (data.header_bg_height) {
+          setHeaderBgHeight(parseInt(data.header_bg_height, 10) || 110);
+        }
+        if (data.header_bg_size_fit) {
+          setHeaderBgSizeFit(data.header_bg_size_fit);
+        }
+        if (data.header_bg_overlay_opacity !== undefined) {
+          setHeaderBgOverlayOpacity(parseFloat(data.header_bg_overlay_opacity) ?? 0.12);
         }
       }
     } catch (e) {
@@ -397,6 +418,82 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleHeaderGifFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingHeaderGif(true);
+    showToast("⏳ Uploading Header Background GIF to Hostinger Storage...");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const json = await res.json();
+      if (json.success && json.data?.url) {
+        const gifUrl = json.data.url;
+        await saveLogoSetting("header_bg_gif", gifUrl);
+        setHeaderBgGif(gifUrl);
+        setHeaderBgGifInput(gifUrl);
+        showToast("✅ Header Background GIF uploaded and applied globally!");
+      } else {
+        showToast("❌ Upload failed: " + (json.message || "Unknown error"), "error");
+      }
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || ""), "error");
+    } finally {
+      setIsUploadingHeaderGif(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSaveHeaderGifUrl = async (customUrl?: string) => {
+    const targetUrl = typeof customUrl === "string" ? customUrl : headerBgGifInput.trim();
+    if (!targetUrl) {
+      handleRemoveHeaderGif();
+      return;
+    }
+    setIsUploadingHeaderGif(true);
+    try {
+      await saveLogoSetting("header_bg_gif", targetUrl);
+      setHeaderBgGif(targetUrl);
+      setHeaderBgGifInput(targetUrl);
+      showToast("✅ Header Background GIF saved and applied globally!");
+    } catch (err: any) {
+      showToast("❌ Save failed: " + (err?.message || ""), "error");
+    } finally {
+      setIsUploadingHeaderGif(false);
+    }
+  };
+
+  const handleRemoveHeaderGif = async () => {
+    setIsUploadingHeaderGif(true);
+    try {
+      await saveLogoSetting("header_bg_gif", "");
+      setHeaderBgGif("");
+      setHeaderBgGifInput("");
+      showToast("✓ Header Background GIF removed.");
+    } catch (err: any) {
+      showToast("❌ Removal failed", "error");
+    } finally {
+      setIsUploadingHeaderGif(false);
+    }
+  };
+
+  const handleUpdateHeaderBgHeight = async (newHeight: number) => {
+    setHeaderBgHeight(newHeight);
+    await saveLogoSetting("header_bg_height", newHeight.toString());
+  };
+
+  const handleUpdateHeaderBgSizeFit = async (newFit: string) => {
+    setHeaderBgSizeFit(newFit);
+    await saveLogoSetting("header_bg_size_fit", newFit);
+  };
+
+  const handleUpdateHeaderBgOverlayOpacity = async (newOpacity: number) => {
+    setHeaderBgOverlayOpacity(newOpacity);
+    await saveLogoSetting("header_bg_overlay_opacity", newOpacity.toString());
+  };
+
   const handleSaveSocialLinks = async () => {
     try {
       const payload = {
@@ -512,6 +609,11 @@ export default function AdminSettingsPage() {
               <span style={{ background: "rgba(255,255,255,0.1)", color: "#e2e8f0", padding: "4px 10px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 700 }}>
                 Position: <strong style={{ color: "#f87171" }}>{logoMarginLeft}px</strong>
               </span>
+              {headerBgGif && (
+                <span style={{ background: "rgba(37,99,235,0.2)", color: "#60a5fa", padding: "4px 10px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 700 }}>
+                  Header Height: <strong style={{ color: "#60a5fa" }}>{headerBgHeight}px</strong>
+                </span>
+              )}
             </div>
           </div>
 
@@ -521,9 +623,26 @@ export default function AdminSettingsPage() {
             <div style={{ height: "4px", background: "linear-gradient(90deg, #e50914 0%, #16a34a 50%, #e50914 100%)" }} />
 
             {/* Simulated Header Main Content */}
-            <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "nowrap", overflowX: "auto" }}>
+            <div style={{
+              padding: "16px 20px",
+              minHeight: headerBgGif ? `${headerBgHeight}px` : undefined,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "nowrap",
+              overflowX: "auto",
+              backgroundImage: headerBgGif ? `url("${headerBgGif}")` : undefined,
+              backgroundSize: headerBgSizeFit === "stretch" ? "100% 100%" : headerBgSizeFit === "repeat" ? "auto" : headerBgSizeFit,
+              backgroundPosition: "center",
+              backgroundRepeat: headerBgSizeFit === "repeat" ? "repeat" : "no-repeat",
+              position: "relative",
+              transition: "all 0.25s ease"
+            }}>
+              {headerBgGif && (
+                <div style={{ position: "absolute", inset: 0, background: `rgba(255,255,255,${headerBgOverlayOpacity})`, pointerEvents: "none", zIndex: 1 }} />
+              )}
               {/* Dynamic Logo & Title Group */}
-              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: `${Math.min(logoMarginLeft, 220)}px`, transition: "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px", marginLeft: `${Math.min(logoMarginLeft, 220)}px`, transition: "margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", zIndex: 2 }}>
                 {siteLogoUrl && (
                   <div style={{ width: `${logoSize}px`, height: `${logoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)" }}>
                     <img src={siteLogoUrl} alt="Live Logo Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
@@ -540,7 +659,7 @@ export default function AdminSettingsPage() {
               </div>
 
               {/* Simulated Navigation items */}
-              <div style={{ display: "flex", alignItems: "center", gap: "18px", opacity: 0.5, pointerEvents: "none", fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "18px", opacity: 0.8, pointerEvents: "none", fontSize: "0.82rem", fontWeight: 700, color: "#334155", position: "relative", zIndex: 2 }}>
                 <span>HOME</span>
                 <span>INDIA</span>
                 <span>WORLD</span>
@@ -803,6 +922,199 @@ export default function AdminSettingsPage() {
                     {p.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Header Background GIF Settings */}
+          <div style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", borderRadius: "16px", padding: "22px", gridColumn: "span 3", marginTop: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <ImageIcon2 size={18} style={{ color: "#e50914" }} /> 🎞️ Header Background GIF & Animated Banner Settings
+                </h4>
+                <p style={{ margin: "4px 0 0 0", fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>
+                  Set an animated GIF or background image for the main header banner section behind your logo and title.
+                </p>
+              </div>
+              {headerBgGif && (
+                <button
+                  type="button"
+                  onClick={handleRemoveHeaderGif}
+                  disabled={isUploadingHeaderGif}
+                  style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5", padding: "6px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 800, cursor: isUploadingHeaderGif ? "not-allowed" : "pointer" }}
+                >
+                  Remove GIF
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "20px", alignItems: "center" }}>
+              {/* File Upload Box */}
+              <div style={{ border: "2px dashed #cbd5e1", borderRadius: "12px", padding: "16px", textAlign: "center", background: "#ffffff" }}>
+                <p style={{ margin: "0 0 10px 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
+                  Upload animated .GIF file from your computer to Hostinger Storage
+                </p>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: isUploadingHeaderGif ? "#64748b" : "#e50914", color: "#ffffff", padding: "9px 18px", borderRadius: "8px", fontWeight: 800, fontSize: "0.84rem", cursor: isUploadingHeaderGif ? "not-allowed" : "pointer", boxShadow: "0 4px 12px rgba(229,9,20,0.25)" }}>
+                  {isUploadingHeaderGif ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={16} />}
+                  {isUploadingHeaderGif ? "Uploading GIF..." : "Upload .GIF File"}
+                  <input type="file" accept="image/gif,image/*" onChange={handleHeaderGifFileUpload} disabled={isUploadingHeaderGif} style={{ display: "none" }} />
+                </label>
+              </div>
+
+              {/* GIF URL & Presets */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 800, color: "#475569", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                  Or Paste GIF URL / Choose 1-Click Presets:
+                </label>
+                <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <Link2 size={15} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                    <input
+                      type="text"
+                      placeholder="https://media.giphy.com/media/.../giphy.gif"
+                      value={headerBgGifInput}
+                      onChange={(e) => setHeaderBgGifInput(e.target.value)}
+                      style={{ width: "100%", padding: "9px 10px 9px 32px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff", color: "#0f172a" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveHeaderGifUrl()}
+                    disabled={isUploadingHeaderGif}
+                    style={{ background: isUploadingHeaderGif ? "#64748b" : "#0f172a", color: "#ffffff", border: "none", padding: "9px 16px", borderRadius: "8px", fontWeight: 800, fontSize: "0.82rem", cursor: isUploadingHeaderGif ? "not-allowed" : "pointer" }}
+                  >
+                    Save GIF
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "#64748b" }}>Quick Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveHeaderGifUrl("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3h0Y3J1YndlMGlyeWJuOGE0MHFudmdsZnN1dmpyMDFpd2F1a21qdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oKIPnAiaMCws8nOsE/giphy.gif")}
+                    style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "5px 10px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", color: "#0f172a" }}
+                  >
+                    🌐 Animated Globe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveHeaderGifUrl("https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHJscXN5Y3dneHdzZW8xODlmdmR5azlveXhkaWhpdzlsZjZsdDFjMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L2Qu6B59vgW3ZTX65s/giphy.gif")}
+                    style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "5px 10px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", color: "#0f172a" }}
+                  >
+                    🌊 Tech Wave
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* NEW CONTROLS: Height, Fit Mode, and Transparency */}
+            <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px dashed #cbd5e1", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+              {/* Height Control */}
+              <div style={{ background: "#ffffff", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>
+                    📏 Header Height
+                  </label>
+                  <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "2px 8px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 800 }}>
+                    {headerBgHeight}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="80"
+                  max="250"
+                  step="5"
+                  value={headerBgHeight}
+                  onChange={(e) => handleUpdateHeaderBgHeight(parseInt(e.target.value, 10))}
+                  style={{ width: "100%", accentColor: "#e50914", cursor: "pointer", height: "6px" }}
+                />
+                <div style={{ display: "flex", gap: "4px", marginTop: "8px", flexWrap: "wrap" }}>
+                  {[
+                    { label: "Compact", h: 95 },
+                    { label: "Standard", h: 120 },
+                    { label: "Tall", h: 150 },
+                    { label: "Banner", h: 200 }
+                  ].map((p) => (
+                    <button
+                      key={p.h}
+                      type="button"
+                      onClick={() => handleUpdateHeaderBgHeight(p.h)}
+                      style={{
+                        background: headerBgHeight === p.h ? "#0f172a" : "#f1f5f9",
+                        color: headerBgHeight === p.h ? "#ffffff" : "#475569",
+                        border: "none",
+                        padding: "3px 8px",
+                        borderRadius: "5px",
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fit Mode Control */}
+              <div style={{ background: "#ffffff", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", marginBottom: "8px" }}>
+                  🖼️ Background Fit Mode
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+                  {[
+                    { label: "Cover (Fill)", val: "cover" },
+                    { label: "Contain (Fit)", val: "contain" },
+                    { label: "Stretch 100%", val: "stretch" },
+                    { label: "Tile Repeat", val: "repeat" }
+                  ].map((m) => (
+                    <button
+                      key={m.val}
+                      type="button"
+                      onClick={() => handleUpdateHeaderBgSizeFit(m.val)}
+                      style={{
+                        background: headerBgSizeFit === m.val ? "#e50914" : "#f8fafc",
+                        color: headerBgSizeFit === m.val ? "#ffffff" : "#334155",
+                        border: headerBgSizeFit === m.val ? "1px solid #e50914" : "1px solid #cbd5e1",
+                        padding: "5px 6px",
+                        borderRadius: "6px",
+                        fontSize: "0.71rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Overlay Opacity Control */}
+              <div style={{ background: "#ffffff", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "0.76rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase" }}>
+                    🎚️ Overlay Tint Opacity
+                  </label>
+                  <span style={{ background: "#fef3c7", color: "#92400e", padding: "2px 8px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 800 }}>
+                    {Math.round(headerBgOverlayOpacity * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="0.8"
+                  step="0.05"
+                  value={headerBgOverlayOpacity}
+                  onChange={(e) => handleUpdateHeaderBgOverlayOpacity(parseFloat(e.target.value))}
+                  style={{ width: "100%", accentColor: "#e50914", cursor: "pointer", height: "6px" }}
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginTop: "6px" }}>
+                  <span>0% (Vibrant)</span>
+                  <span>40%</span>
+                  <span>80% (Faded)</span>
+                </div>
               </div>
             </div>
           </div>

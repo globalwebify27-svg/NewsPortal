@@ -6,7 +6,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-const LOGO_KEYS = ["site_logo_url", "site_logo_size", "site_logo_margin"];
+const LOGO_KEYS = [
+  "site_logo_url",
+  "site_logo_size",
+  "site_logo_margin",
+  "header_bg_gif",
+  "header_bg_height",
+  "header_bg_size_fit",
+  "header_bg_overlay_opacity"
+];
 
 // GET /api/v1/logo-settings — returns all logo-related settings as a map
 export async function GET() {
