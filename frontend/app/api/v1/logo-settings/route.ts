@@ -18,7 +18,13 @@ const LOGO_KEYS = [
   "sidebar_video_ad_title",
   "sidebar_video_ad_target_link",
   "sidebar_video_ad_enabled",
-  "sidebar_video_ads_list"
+  "sidebar_video_ads_list",
+  "spotlight_col1_ad_url",
+  "spotlight_col1_ad_link",
+  "spotlight_col1_ad_title",
+  "spotlight_col2_ad_url",
+  "spotlight_col2_ad_link",
+  "spotlight_col2_ad_title"
 ];
 
 // GET /api/v1/logo-settings — returns all logo-related settings as a map

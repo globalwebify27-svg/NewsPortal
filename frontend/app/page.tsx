@@ -141,6 +141,8 @@ export default function Home() {
   ]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [videoAdEnabled, setVideoAdEnabled] = useState(true);
+  const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
+  const [spotlightCol2Ad, setSpotlightCol2Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
 
   const loadVideoAdSettings = useCallback(async () => {
     try {
@@ -148,6 +150,20 @@ export default function Home() {
       const json = await res.json();
       if (json && json.success && json.data) {
         setVideoAdEnabled(json.data.sidebar_video_ad_enabled !== "false");
+        if (json.data.spotlight_col1_ad_url) {
+          setSpotlightCol1Ad({
+            url: json.data.spotlight_col1_ad_url,
+            targetLink: json.data.spotlight_col1_ad_link || "/advertise",
+            title: json.data.spotlight_col1_ad_title || "ग्लोबल आवाज़ विज्ञापन"
+          });
+        }
+        if (json.data.spotlight_col2_ad_url) {
+          setSpotlightCol2Ad({
+            url: json.data.spotlight_col2_ad_url,
+            targetLink: json.data.spotlight_col2_ad_link || "/advertise",
+            title: json.data.spotlight_col2_ad_title || "ग्लोबल आवाज़ डिजिटल पार्टनर"
+          });
+        }
         if (json.data.sidebar_video_ads_list) {
           try {
             const parsed = JSON.parse(json.data.sidebar_video_ads_list);
@@ -942,7 +958,7 @@ export default function Home() {
               return (
                 <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", position: "relative" }}>
                   {/* Video Player Box with Autoplay & Auto-Next on End */}
-                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ position: "relative", width: "100%", height: "320px", minHeight: "320px", background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {activeAd?.url ? (
                       activeAd.url.includes("embed/") || activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") ? (
                         <iframe
@@ -979,6 +995,38 @@ export default function Home() {
                           {lang === "HI" ? "अपना ब्रांड या बिज़नेस यहाँ प्रमोट करें" : "Promote your brand or business here"}
                         </span>
                       </div>
+                    )}
+
+                    {/* Floating Target Action Link overlay over video */}
+                    {activeAd?.targetLink && (
+                      <a
+                        href={activeAd.targetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          position: "absolute",
+                          bottom: "12px",
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          zIndex: 4,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "5px",
+                          background: "#e50914",
+                          color: "#ffffff",
+                          borderRadius: "6px",
+                          padding: "6px 16px",
+                          textDecoration: "none",
+                          fontSize: "0.76rem",
+                          fontWeight: 800,
+                          boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        <span>{lang === "HI" ? "अभी जानें / संपर्क करें" : "Learn More / Visit Site"}</span>
+                        <ExternalLink size={12} />
+                      </a>
                     )}
 
                     {/* Left & Right Slide Controls */}
@@ -1033,34 +1081,6 @@ export default function Home() {
                       </>
                     )}
                   </div>
-
-                  {/* Target Action Link */}
-                  {activeAd?.targetLink && (
-                    <div style={{ padding: "8px 12px", background: "#111827" }}>
-                      <a
-                        href={activeAd.targetLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "6px",
-                          background: "#e50914",
-                          color: "#ffffff",
-                          borderRadius: "8px",
-                          padding: "7px 12px",
-                          textDecoration: "none",
-                          fontSize: "0.78rem",
-                          fontWeight: 800,
-                          transition: "background 0.2s ease"
-                        }}
-                      >
-                        <span>{lang === "HI" ? "अभी जानें / संपर्क करें" : "Learn More / Visit Site"}</span>
-                        <ExternalLink size={13} />
-                      </a>
-                    </div>
-                  )}
                 </div>
               );
             })()}

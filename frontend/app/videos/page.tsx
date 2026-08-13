@@ -27,6 +27,7 @@ import {
   fetchCentralVideos,
   DEFAULT_VIDEOS
 } from "@/lib/youtube";
+import SocialShareButtons from "@/components/SocialShareButtons";
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<YouTubeVideoItem[]>([]);
@@ -301,13 +302,17 @@ export default function VideosPage() {
                     Next Video <SkipForward size={15} />
                   </button>
 
-                  <button
-                    onClick={handleShare}
-                    style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}
-                  >
-                    {copied ? <CheckCircle2 size={15} style={{ color: "#16a34a" }} /> : <Share2 size={15} />}
-                    {copied ? "Copied!" : "Share"}
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b" }}>Share Video:</span>
+                    <SocialShareButtons
+                      title={activeVideo.title}
+                      slug={`videos?v=${activeVideo.youtubeId}`}
+                      categorySlug="videos"
+                      image={`https://img.youtube.com/vi/${activeVideo.youtubeId}/hqdefault.jpg`}
+                      summary={activeVideo.description}
+                      size="sm"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
