@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send } from "lucide-react";
+import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -140,6 +140,7 @@ export default function Home() {
     }
   ]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [trendingSlideIndex, setTrendingSlideIndex] = useState(0);
   const [videoAdEnabled, setVideoAdEnabled] = useState(true);
   const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
   const [spotlightCol2Ad, setSpotlightCol2Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
@@ -455,13 +456,15 @@ export default function Home() {
   const explicitHero = activeArticles.find((a) => a.isHero && a.status !== "DRAFT") || activeArticles.find((a) => a.isHero);
 
   const mainHero = cityHero || stateHero || explicitHero || displayList[0];
+  const trendingSliderArticles = displayList.length > 0 ? displayList.slice(0, 10) : [mainHero].filter(Boolean);
+
   const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
   const topStories = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
 
   const superfastArticles = displayList.filter((a) => a.isSuperfast);
   const superfastList = superfastArticles.length > 0
     ? superfastArticles.slice(0, 5)
-    : displayList.filter((a) => a.id !== mainHero?.id).slice(0, 5);
+    : displayList.slice(0, 5);
   
   const locationNews = geoMatchedList.length > 0 ? geoMatchedList : displayList.filter((a) => a.id !== mainHero?.id);
   const stateArticles = locationNews.slice(0, 6);
@@ -783,172 +786,187 @@ export default function Home() {
           </div>
         )}
 
-        {/* 3-Column Spotlight News Feed Grid (Image 2 Style) */}
+        {/* 3-Column Spotlight News Feed Grid (Matched Equal Heights) */}
         <div className="spotlight-3col-grid" style={{
           display: "grid",
           gridTemplateColumns: "1.2fr 1fr 0.9fr",
           gap: "20px",
-          alignItems: "start"
+          alignItems: "stretch"
         }}>
-          {/* Column 1: Primary Big News Story / Video Lead (Geo-Targeted Local Lead / Admin Hero Story) */}
-          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "fit-content" }}>
-            {mainHero && (() => {
-              const isExactCity = mainHero.district && (mainHero.district.toLowerCase().includes(userCityLower) || userCityLower.includes(mainHero.district.toLowerCase()));
-              const isSameState = mainHero.state && mainHero.state.toLowerCase().trim() === userStateLower;
-              
-              let badgeLabel = "🔥 TRENDING TOP STORY";
-              if (isExactCity) {
-                badgeLabel = `📍 ${userCity.toUpperCase()} LOCAL LEAD STORY`;
-              } else if (isSameState) {
-                badgeLabel = `📍 NEAREST LOCAL STORY (${mainHero.district || mainHero.state})`;
-              } else if (mainHero.district) {
-                badgeLabel = `📍 ${mainHero.district.split("/")[0].trim().toUpperCase()} STORY`;
-              }
-
-              return (
-                <Link href={getArticleUrl(mainHero)} title={mainHero.title} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
-                    <span style={{
-                      background: isExactCity ? "#e50914" : isSameState ? "#2563eb" : "#0f172a",
-                      color: "#ffffff",
-                      fontSize: "0.68rem",
-                      fontWeight: 900,
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.03em"
-                    }}>
-                      {badgeLabel}
-                    </span>
-                    {mainHero.isHero && (
-                      <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.65rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>
-                        🌟 SPOTLIGHT
-                      </span>
-                    )}
-                  </div>
-                <h2 title={mainHero.title} style={{ fontSize: "1.2rem", fontWeight: 800, lineHeight: 1.4, margin: "0 0 12px", color: "var(--color-text, #0f172a)" }}>
-                  {mainHero.title}
-                </h2>
-                <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
-                  <img
-                    src={getArticleImage(mainHero, 0)}
-                    alt={mainHero.title}
-                    title={mainHero.title}
-                    // @ts-ignore
-                    fetchPriority="high"
-                    decoding="async"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                  {mainHero.videoUrl && (
-                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
-                      <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(229,9,20,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-                        <Play size={22} style={{ marginLeft: "3px" }} />
-                      </div>
-                    </div>
-                  )}
+          {/* Column 1: TRENDING NEWS (Manual Arrow Slider - Matched Height) */}
+          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "100%", position: "relative", boxSizing: "border-box", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <TrendingUp size={18} style={{ color: "#e50914" }} />
+                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
+                    {lang === "HI" ? "ट्रेंडिंग न्यूज" : "TRENDING NEWS"}
+                  </h3>
                 </div>
-                <p style={{ fontSize: "0.86rem", color: "var(--color-secondary, #64748b)", margin: "12px 0 0", lineHeight: 1.5 }}>
-                  {stripHtml(mainHero.summary)}
-                </p>
-                <div style={{ marginTop: "10px" }}>
-                  <span style={{ fontSize: "0.86rem", color: "#e50914", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    {lang === "HI" ? "और भी ▶" : "Read More ▶"}
+                
+                {/* Manual Slider Left/Right Navigation Arrows */}
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 800, marginRight: "4px" }}>
+                    {trendingSlideIndex + 1} / {trendingSliderArticles.length || 1}
                   </span>
-                </div>
-              </Link>
-            );
-          })()}
-        </div>
-
-          {/* Column 2: "सुपरफ़ास्ट NEWS" Real-Time Feed (Admin Superfast Articles) */}
-          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "fit-content" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <Zap size={18} style={{ color: "#e50914", fill: "#e50914" }} />
-                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
-                  {lang === "HI" ? "सुपरफ़ास्ट NEWS" : "SUPERFAST NEWS"}
-                </h3>
-              </div>
-              <span style={{ fontSize: "0.72rem", color: "var(--color-secondary)", fontWeight: 600 }}>
-                {lang === "HI" ? "सबसे कम समय में सबसे ज़्यादा ख़बरें..." : "Fastest News Stream"}
-              </span>
-            </div>
-
-            {superfastList.map((item, idx) => (
-              <article key={item.id} style={{ borderBottom: idx < superfastList.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "10px 0" }}>
-                <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
-                  <div style={{ width: "70px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
-                    <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4 title={item.title} style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
-                      {item.title}
-                    </h4>
-                    {idx === 0 && (
-                      <span style={{ fontSize: "0.72rem", color: "#e50914", fontWeight: 700, marginTop: "4px", display: "inline-block" }}>
-                        {lang === "HI" ? "और भी ▶" : "Read More ▶"}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              </article>
-            ))}
-          </div>
-
-          {/* Column 3: Live TV Stream Player & Social Follow Pills */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Live Broadcast Card Player */}
-            <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
-              <div style={{ display: "flex", background: "#1e293b", borderBottom: "1px solid #334155" }}>
-                <button style={{ flex: 1, padding: "8px", background: "#e50914", color: "#fff", border: "none", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
-                  {lang === "HI" ? "ग्लोबल आवाज़ LIVE" : "LIVE TV"}
-                </button>
-                <button style={{ flex: 1, padding: "8px", background: "transparent", color: "#94a3b8", border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
-                  NEWS LIVE
-                </button>
-              </div>
-
-              {isPlayingLive && liveTvConfig.streamUrl ? (
-                <div style={{ position: "relative", aspectRatio: "16/9", background: "#000" }}>
-                  <iframe
-                    src={liveTvConfig.streamUrl.includes("embed/") ? liveTvConfig.streamUrl : `https://www.youtube.com/embed/${extractYouTubeId(liveTvConfig.streamUrl)}?autoplay=1`}
-                    title={liveTvConfig.channelTitle}
-                    style={{ width: "100%", height: "100%", border: "none" }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                <div style={{ position: "relative", aspectRatio: "16/9", background: "linear-gradient(135deg, #090d16 0%, #1e1b4b 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px", textAlign: "center" }}>
-                  <div style={{ position: "absolute", top: "10px", left: "10px", background: "#e50914", color: "#fff", fontSize: "0.65rem", fontWeight: 900, padding: "2px 8px", borderRadius: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff", animation: "pulse 1.5s infinite" }} />
-                    LIVE
-                  </div>
                   <button
-                    onClick={() => setIsPlayingLive(true)}
-                    style={{ border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center" }}
+                    onClick={() => setTrendingSlideIndex((prev) => (prev - 1 + (trendingSliderArticles.length || 1)) % (trendingSliderArticles.length || 1))}
+                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f1f5f9", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#0f172a", fontWeight: 900 }}
+                    title="Previous Trending News"
                   >
-                    <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "rgba(229, 9, 20, 0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", boxShadow: "0 4px 18px rgba(229,9,20,0.5)", marginBottom: "10px", transition: "transform 0.2s ease" }}>
-                      <Play size={24} style={{ marginLeft: "3px" }} />
-                    </div>
-                    <span style={{ color: "#ffffff", fontWeight: 800, fontSize: "0.88rem", letterSpacing: "0.02em" }}>
-                      {liveTvConfig.channelTitle}
-                    </span>
-                    <span style={{ color: "#94a3b8", fontSize: "0.74rem", marginTop: "2px" }}>
-                      {liveTvConfig.subtitle}
-                    </span>
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    onClick={() => setTrendingSlideIndex((prev) => (prev + 1) % (trendingSliderArticles.length || 1))}
+                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e50914", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ffffff", fontWeight: 900 }}
+                    title="Next Trending News"
+                  >
+                    <ChevronRight size={16} />
                   </button>
                 </div>
-              )}
-
-              <div style={{ background: "#b91c1c", color: "#ffffff", padding: "6px 12px", fontSize: "0.75rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#fff", animation: "pulse 1.5s infinite" }} />
-                  <span>{lang === "HI" ? "लाइव न्यूज़ अपडेट प्रसारित" : "LIVE NEWS STREAM ACTIVE"}</span>
-                </div>
-                <span style={{ fontSize: "0.68rem", opacity: 0.9 }}>HD 1080p</span>
               </div>
+
+              {/* Active Trending Article Card (Manual Slider Slide) */}
+              {(() => {
+                const activeSlide = trendingSliderArticles[trendingSlideIndex] || mainHero;
+                if (!activeSlide) return null;
+
+                const isExactCity = activeSlide.district && (activeSlide.district.toLowerCase().includes(userCityLower) || userCityLower.includes(activeSlide.district.toLowerCase()));
+                const isSameState = activeSlide.state && activeSlide.state.toLowerCase().trim() === userStateLower;
+                
+                let badgeLabel = `🔥 TRENDING NEWS #${trendingSlideIndex + 1}`;
+                if (isExactCity) {
+                  badgeLabel = `📍 ${userCity.toUpperCase()} LOCAL LEAD`;
+                } else if (isSameState) {
+                  badgeLabel = `📍 LOCAL STORY (${activeSlide.district || activeSlide.state})`;
+                }
+
+                return (
+                  <Link href={getArticleUrl(activeSlide)} title={activeSlide.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                      <span style={{
+                        background: isExactCity ? "#e50914" : isSameState ? "#2563eb" : "#0f172a",
+                        color: "#ffffff",
+                        fontSize: "0.68rem",
+                        fontWeight: 900,
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em"
+                      }}>
+                        {badgeLabel}
+                      </span>
+                      {activeSlide.isHero && (
+                        <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.65rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>
+                          🌟 SPOTLIGHT
+                        </span>
+                      )}
+                    </div>
+                    <h2 title={activeSlide.title} style={{ fontSize: "1.15rem", fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px", color: "var(--color-text, #0f172a)" }}>
+                      {activeSlide.title}
+                    </h2>
+                    <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
+                      <img
+                        src={getArticleImage(activeSlide, trendingSlideIndex)}
+                        alt={activeSlide.title}
+                        title={activeSlide.title}
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      {activeSlide.videoUrl && (
+                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
+                          <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(229,9,20,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                            <Play size={20} style={{ marginLeft: "3px" }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p style={{
+                      fontSize: "0.82rem",
+                      color: "var(--color-secondary, #64748b)",
+                      margin: "8px 0 0",
+                      lineHeight: 1.4,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis"
+                    }}>
+                      {stripHtml(activeSlide.summary)}
+                    </p>
+                    <div style={{ marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "0.82rem", color: "#e50914", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        {lang === "HI" ? "पूरी खबर पढ़ें ▶" : "Read Full Story ▶"}
+                      </span>
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        {trendingSliderArticles.slice(0, 10).map((_, dotIdx) => (
+                          <span
+                            key={dotIdx}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setTrendingSlideIndex(dotIdx);
+                            }}
+                            style={{
+                              width: dotIdx === trendingSlideIndex ? "16px" : "6px",
+                              height: "6px",
+                              borderRadius: "4px",
+                              background: dotIdx === trendingSlideIndex ? "#e50914" : "#cbd5e1",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease"
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })()}
             </div>
+          </div>
+
+          {/* Column 2: "TOP 5 NEWS" (5 Latest News Only - Matched Equal Height) */}
+          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Zap size={18} style={{ color: "#e50914", fill: "#e50914" }} />
+                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
+                    {lang === "HI" ? "टॉप 5 न्यूज" : "TOP 5 NEWS"}
+                  </h3>
+                </div>
+                <span style={{ fontSize: "0.72rem", color: "var(--color-secondary)", fontWeight: 600 }}>
+                  {lang === "HI" ? "5 सबसे ताज़ा समाचार" : "5 Latest News"}
+                </span>
+              </div>
+
+              {superfastList.slice(0, 5).map((item, idx) => (
+                <article key={item.id} style={{ borderBottom: idx < Math.min(superfastList.length, 5) - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "12px 0" }}>
+                  <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "12px", alignItems: "center" }}>
+                    <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: idx < 3 ? "#e50914" : "#0f172a", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.78rem", fontWeight: 900, flexShrink: 0 }}>
+                      {idx + 1}
+                    </div>
+                    <div style={{ width: "75px", height: "54px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
+                      <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 title={item.title} style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
+                        {item.title}
+                      </h4>
+                      {idx === 0 && (
+                        <span style={{ fontSize: "0.72rem", color: "#e50914", fontWeight: 700, marginTop: "2px", display: "inline-block" }}>
+                          {lang === "HI" ? "और भी ▶" : "Read More ▶"}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 3: Admin Video Advertisement Player (Matched Equal Height) */}
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
 
             {/* Admin Video Advertisement Carousel Card */}
             {videoAdEnabled && videoAdsList.length > 0 && (() => {
@@ -956,9 +974,9 @@ export default function Home() {
               const isMultiple = videoAdsList.length > 1;
 
               return (
-                <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", position: "relative" }}>
+                <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
                   {/* Video Player Box with Autoplay & Auto-Next on End */}
-                  <div style={{ position: "relative", width: "100%", height: "320px", minHeight: "320px", background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ position: "relative", width: "100%", height: "100%", minHeight: "100%", flex: 1, background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {activeAd?.url ? (
                       activeAd.url.includes("embed/") || activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") ? (
                         <iframe
@@ -983,7 +1001,7 @@ export default function Home() {
                               setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
                             }
                           }}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                         />
                       )
                     ) : (
@@ -1087,6 +1105,33 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* New Row: Full-Width Image / Video Advertisement Banner Space (Only displayed if configured from Admin) */}
+      {spotlightCol1Ad?.url && (
+        <div className="main-layout-container" style={{ marginTop: "24px", marginBottom: "16px" }}>
+          <div style={{ borderRadius: "14px", overflow: "hidden", border: "1px solid #fed7aa", background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", padding: "12px 16px", boxShadow: "0 4px 16px rgba(234,88,12,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ background: "#ea580c", color: "#ffffff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 900, textTransform: "uppercase" }}>
+                  📢 ADVERTISEMENT BANNER
+                </span>
+                <span style={{ fontSize: "0.75rem", color: "#c2410c", fontWeight: 700 }}>ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन स्लॉट</span>
+              </div>
+              <a href="/advertise" style={{ fontSize: "0.72rem", color: "#ea580c", fontWeight: 800, textDecoration: "none" }}>
+                {lang === "HI" ? "विज्ञापन दें ▶" : "Advertise With Us ▶"}
+              </a>
+            </div>
+
+            <a href={spotlightCol1Ad.targetLink || "/advertise"} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+              {spotlightCol1Ad.url.endsWith(".mp4") || spotlightCol1Ad.url.includes("video") ? (
+                <video src={spotlightCol1Ad.url} autoPlay muted loop playsInline style={{ width: "100%", maxHeight: "280px", objectFit: "cover", borderRadius: "10px" }} />
+              ) : (
+                <img src={spotlightCol1Ad.url} alt={spotlightCol1Ad.title} style={{ width: "100%", maxHeight: "280px", objectFit: "cover", borderRadius: "10px" }} />
+              )}
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* ===========================
           MOBILE HERO CARD
