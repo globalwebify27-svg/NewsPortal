@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { prisma } from "../prisma";
-import { generateArticleSlug } from "../defaultArticles";
+import { generateArticleSlug, normalizeSlugDateToYyMmDd } from "../defaultArticles";
 import { INDIAN_STATES } from "../states";
 
 export type WorkflowArticleStatus = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "PUBLISHED" | "REJECTED";
@@ -232,11 +232,12 @@ export async function createOrUpdateArticle(data: any) {
       }
     }
 
-    // Ensure clean English slug
+    // Ensure clean English slug with YY-MM-DD date suffix
     let slug = data.slug;
     if (!slug || /[\u0900-\u097F]/.test(slug)) {
       slug = await generateArticleSlug(data.title || "News Story", data.id, now.toISOString());
     }
+    slug = normalizeSlugDateToYyMmDd(slug);
 
     // Category Resolution: check by ID first, then by name or slug
     let catId: string | null = data.categoryId || null;

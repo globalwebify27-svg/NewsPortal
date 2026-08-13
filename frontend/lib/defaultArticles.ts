@@ -127,9 +127,9 @@ export async function generateArticleSlug(
   return fallback.length > 2 ? `${fallback}-${suffix}` : `news-${suffix}`;
 }
 
-/** Build the date+id suffix: {dd-mm-yy}-{shortId} */
+/** Build the date+id suffix: {yy-mm-dd}-{shortId} */
 function buildSuffix(id?: string, dateIso?: string): string {
-  let dd = "10", mm = "08", yy = "26";
+  let dd = "13", mm = "08", yy = "26";
   try {
     const d = new Date(dateIso || Date.now());
     if (!isNaN(d.getTime())) {
@@ -141,7 +141,7 @@ function buildSuffix(id?: string, dateIso?: string): string {
   const shortId = id
     ? id.replace(/[^a-zA-Z0-9]/g, "").slice(-8)
     : Math.random().toString(36).substring(2, 8);
-  return `${dd}-${mm}-${yy}-${shortId}`;
+  return `${yy}-${mm}-${dd}-${shortId}`;
 }
 
 /** Convert any text to lowercase hyphen slug (full title, no truncation) */
@@ -164,14 +164,34 @@ export async function translateHindiToEnglishSlug(text: string): Promise<string>
 }
 
 /**
- * formatArticleSlug — READ ONLY.
- * Just returns article.slug as stored. Does NOT re-generate.
- * Slug must have been created via generateArticleSlug() at save time.
+ * Helper to ensure any date suffix in a slug strictly uses YY-MM-DD format (-26-08-13-)
+ */
+export function normalizeSlugDateToYyMmDd(rawSlug: string): string {
+  if (!rawSlug) return rawSlug;
+  const s = rawSlug.toLowerCase().trim();
+
+  // Match -DD-MM-YY-hash or -DD-MM-YYYY-hash at the end of the slug
+  return s.replace(/-(\d{2})-(\d{2})-(2\d|\d{4})-([a-zA-Z0-9]+)$/, (_match, day, month, yearRaw, hash) => {
+    let year = yearRaw;
+    if (year.length === 4) year = year.slice(-2);
+    const dNum = parseInt(day, 10);
+    const yNum = parseInt(year, 10);
+    // If first part is day (<= 31) and 3rd part is year (>= 20), swap to YY-MM-DD
+    if (dNum <= 31 && yNum >= 20 && yNum <= 35) {
+      return `-${year}-${month}-${day}-${hash}`;
+    }
+    return `-${day}-${month}-${year}-${hash}`;
+  });
+}
+
+/**
+ * formatArticleSlug — Normalizes and returns clean article slug with YY-MM-DD date suffix.
  */
 export function formatArticleSlug(article: any): string {
   if (!article) return "news";
   const s = (article.slug ?? article.id ?? "news").toString();
-  return s.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  return normalizeSlugDateToYyMmDd(cleaned);
 }
 
 /**

@@ -1069,12 +1069,9 @@ export default function AdminArticlesPage() {
                       if (slugTranslateTimer.current) clearTimeout(slugTranslateTimer.current);
                       slugTranslateTimer.current = setTimeout(async () => {
                         if (/[\u0900-\u097F]/.test(newTitle)) {
-                          const englishBase = await translateHindiToEnglishSlug(newTitle);
-                          if (englishBase) {
-                            const parts = instantSlug.split("-");
-                            const dateStr = parts.slice(-4, -1).join("-") || "08-08-26";
-                            const idStr = parts.slice(-1)[0] || "001";
-                            setFormSlug(`${englishBase}-${dateStr}-${idStr}`);
+                          const fullSlug = await translateHindiToEnglishSlug(newTitle);
+                          if (fullSlug) {
+                            setFormSlug(fullSlug);
                           }
                         }
                       }, 500);
