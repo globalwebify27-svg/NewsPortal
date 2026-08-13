@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Share2, Check, Send, Linkedin } from "lucide-react";
+import { Share2, Check } from "lucide-react";
 
 interface SocialShareProps {
   title: string;
@@ -88,21 +88,6 @@ export default function SocialShareButtons({
     e.stopPropagation();
     const u = encodeURIComponent(shareUrl);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${u}`, "_blank");
-  };
-
-  const handleTelegram = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const t = encodeURIComponent(title);
-    const u = encodeURIComponent(shareUrl);
-    window.open(`https://t.me/share/url?url=${u}&text=${t}`, "_blank");
-  };
-
-  const handleLinkedIn = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const u = encodeURIComponent(shareUrl);
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`, "_blank");
   };
 
   const handleNativeShare = async (e: React.MouseEvent) => {
@@ -225,54 +210,6 @@ export default function SocialShareButtons({
         <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
         </svg>
-      </button>
-
-      {/* Telegram */}
-      <button
-        type="button"
-        onClick={handleTelegram}
-        className="share-btn share-telegram"
-        title="Share on Telegram"
-        aria-label="Share on Telegram"
-        style={{
-          background: "#229ED9",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "transform 0.15s ease",
-        }}
-      >
-        <Send size={currentIconSize - 1} />
-      </button>
-
-      {/* LinkedIn */}
-      <button
-        type="button"
-        onClick={handleLinkedIn}
-        className="share-btn share-linkedin"
-        title="Share on LinkedIn"
-        aria-label="Share on LinkedIn"
-        style={{
-          background: "#0A66C2",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "transform 0.15s ease",
-        }}
-      >
-        <Linkedin size={currentIconSize - 1} />
       </button>
 
       {/* Native / Copy Link */}
