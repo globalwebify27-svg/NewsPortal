@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./styles.css";
 import "./admin.css";
 import "./globals.css";
+import Script from "next/script";
 import LayoutProvider from "@/components/LayoutProvider";
 import { generateNewsOrganizationSchema, generateWebSiteSchema } from "@/lib/schema";
 
@@ -58,7 +59,7 @@ export const metadata: Metadata = {
     title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News",
     description:
       "देश-दुनिया और आपके अपने क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।",
-    url: "https://www.globalawaaz.com",
+    url: "https://www.globalawaaz.com/",
     siteName: "GLOBAL AWAAZ",
     locale: "hi_IN",
     type: "website",
@@ -75,7 +76,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक",
     description:
-      "ग्लोबल आवाज़ — निष्पक्ष खबरें, सटीक विश्लेषण। ताज़ा हिंदी व अंग्रेज़ी समाचार।",
+      "ग्लोबल आवाज़ — निष्पक्ष खबरें, सटीक विश्लेषण। देश-दुनिया की ताज़ा खबरें सबसे पहले।",
     site: "@globalawaaz",
     creator: "@globalawaaz",
     images: ["https://www.globalawaaz.com/logo.png"],
@@ -100,25 +101,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="hi" data-theme="light" suppressHydrationWarning>
       <head>
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-R6RP9RSLML" />
-        <script
-          id="google-analytics-gtag"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-
-              gtag('config', 'G-R6RP9RSLML');
-            `,
-          }}
-        />
         <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Serif+Devanagari:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+          rel="preload"
+          as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
         <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -137,6 +129,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-R6RP9RSLML" strategy="afterInteractive" />
+        <Script id="google-analytics-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-R6RP9RSLML');
+          `}
+        </Script>
         <LayoutProvider>{children}</LayoutProvider>
       </body>
     </html>

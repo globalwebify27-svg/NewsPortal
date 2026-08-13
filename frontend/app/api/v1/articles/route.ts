@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  // Direct Live MySQL Response (No browser or CDN caching)
-  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0");
+  // Optimized Server-Side & CDN Edge Cache (30s edge cache with 120s stale-while-revalidate)
+  response.headers.set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=120");
   return response;
 }
 

@@ -761,7 +761,14 @@ export default function Home() {
                   {mainHero.title}
                 </h2>
                 <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
-                  <img src={getArticleImage(mainHero, 0)} alt={mainHero.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img
+                    src={getArticleImage(mainHero, 0)}
+                    alt={mainHero.title}
+                    // @ts-ignore
+                    fetchPriority="high"
+                    decoding="async"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
                   {mainHero.videoUrl && (
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
                       <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(229,9,20,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
@@ -801,7 +808,7 @@ export default function Home() {
               <article key={item.id} style={{ borderBottom: idx < superfastList.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "10px 0" }}>
                 <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                   <div style={{ width: "70px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
-                    <img src={getArticleImage(item, idx + 1)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={getArticleImage(item, idx + 1)} alt={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h4 style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)" }}>
@@ -907,7 +914,7 @@ export default function Home() {
               <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div className="mobile-story-img-wrap">
                   {getArticleImage(item, idx + 2) ? (
-                    <img src={getArticleImage(item, idx + 2)} alt={item.title} className="mobile-story-img" />
+                    <img src={getArticleImage(item, idx + 2)} alt={item.title} className="mobile-story-img" loading="lazy" decoding="async" />
                   ) : (
                     <div className="mobile-story-img-placeholder" />
                   )}
