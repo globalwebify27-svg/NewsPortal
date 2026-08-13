@@ -271,6 +271,16 @@ export function getArticleImage(article: any, index: number = 0): string {
     return `https://globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
   }
 
+  // Auto-compress Unsplash images to WebP format with 800px width constraint for ultra-fast mobile loading
+  if (img.includes("images.unsplash.com") && !img.includes("w=")) {
+    img = `${img}${img.includes("?") ? "&" : "?"}w=800&q=75&auto=format`;
+  }
+
+  // Auto-compress Cloudinary images to WebP with auto quality
+  if (img.includes("res.cloudinary.com") && !img.includes("f_auto")) {
+    img = img.replace("/upload/", "/upload/f_auto,q_auto,w_800/");
+  }
+
   // If full HTTP/HTTPS URL or Data URL, return as-is
   if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) {
     return img;

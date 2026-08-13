@@ -5835,3 +5835,11 @@ span {
     min-height: auto !important;
   }
 }
+
+/* Mobile Layout Engine Optimization: defer offscreen section rendering */
+.mobile-top-stories-section,
+.mobile-state-section,
+.footer-top-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 400px;
+}
