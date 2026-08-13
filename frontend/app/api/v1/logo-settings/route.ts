@@ -13,7 +13,12 @@ const LOGO_KEYS = [
   "header_bg_gif",
   "header_bg_height",
   "header_bg_size_fit",
-  "header_bg_overlay_opacity"
+  "header_bg_overlay_opacity",
+  "sidebar_video_ad_url",
+  "sidebar_video_ad_title",
+  "sidebar_video_ad_target_link",
+  "sidebar_video_ad_enabled",
+  "sidebar_video_ads_list"
 ];
 
 // GET /api/v1/logo-settings — returns all logo-related settings as a map

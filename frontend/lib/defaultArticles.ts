@@ -1,7 +1,7 @@
 /**
  * Default articles registry.
- * Set to empty arrays & strict admin image resolution so the platform strictly displays live database / admin-created content and admin-uploaded photos.
  */
+import { extractYouTubeId } from "@/lib/youtube";
 
 export interface DefaultArticle {
   id: string;
@@ -199,13 +199,24 @@ export function formatArticleSlug(article: any): string {
  * Reads article.slug directly; slug was set once at save time.
  */
 export function getArticleUrl(article: any): string {
-  if (!article) return "/article/news";
-  const catSlug = (article.category?.slug || "article")
+  if (!article) return "/top-news/article";
+  const catSlug = (article.category?.slug || "top-news")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+
   const slug = formatArticleSlug(article);
+
+  // Video articles or category 'videos' route directly to /videos
+  if (catSlug === "videos" || article.format === "video") {
+    if (article.youtubeId || (article.videoUrl && !article.slug)) {
+      const ytId = article.youtubeId || extractYouTubeId(article.videoUrl);
+      if (ytId) return `/videos?v=${ytId}`;
+    }
+    return `/videos/${slug}`;
+  }
+
   return `/${catSlug}/${slug}`;
 }
 

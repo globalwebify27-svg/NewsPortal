@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
+import { extractYouTubeId } from "@/lib/youtube";
 
 export default function AdminSettingsPage() {
   // Toast state
@@ -88,6 +89,19 @@ export default function AdminSettingsPage() {
   const [headerBgOverlayOpacity, setHeaderBgOverlayOpacity] = useState<number>(0.12);
   const [isUploadingHeaderGif, setIsUploadingHeaderGif] = useState(false);
 
+  // Sidebar Video Advertisement State (Multi-Ad Carousel Playlist)
+  const [sidebarVideoAdsList, setSidebarVideoAdsList] = useState<Array<{ id: string; url: string; title: string; targetLink: string }>>([
+    {
+      id: "ad_1",
+      url: "",
+      title: "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन 1",
+      targetLink: "/advertise"
+    }
+  ]);
+  const [sidebarVideoAdEnabled, setSidebarVideoAdEnabled] = useState(true);
+  const [sidebarVideoAdSaving, setSidebarVideoAdSaving] = useState(false);
+  const [sidebarVideoUploadingId, setSidebarVideoUploadingId] = useState<string | null>(null);
+
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
     setToastType(type);
@@ -125,6 +139,23 @@ export default function AdminSettingsPage() {
         }
         if (data.header_bg_overlay_opacity !== undefined) {
           setHeaderBgOverlayOpacity(parseFloat(data.header_bg_overlay_opacity) ?? 0.12);
+        }
+        if (data.sidebar_video_ad_enabled !== undefined) setSidebarVideoAdEnabled(data.sidebar_video_ad_enabled !== "false");
+
+        if (data.sidebar_video_ads_list) {
+          try {
+            const parsed = JSON.parse(data.sidebar_video_ads_list);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setSidebarVideoAdsList(parsed);
+            }
+          } catch (e) {}
+        } else if (data.sidebar_video_ad_url) {
+          setSidebarVideoAdsList([{
+            id: "ad_1",
+            url: data.sidebar_video_ad_url,
+            title: data.sidebar_video_ad_title || "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन",
+            targetLink: data.sidebar_video_ad_target_link || "/advertise"
+          }]);
         }
       }
     } catch (e) {
@@ -293,6 +324,88 @@ export default function AdminSettingsPage() {
       showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
     } finally {
       setLeaderboardImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSaveSidebarVideoAdList = async (overrideList?: typeof sidebarVideoAdsList, overrideEnabled?: boolean) => {
+    const finalList = overrideList !== undefined ? overrideList : sidebarVideoAdsList;
+    const finalEnabled = overrideEnabled !== undefined ? overrideEnabled : sidebarVideoAdEnabled;
+    setSidebarVideoAdSaving(true);
+    try {
+      const firstAd = finalList[0] || { url: "", title: "", targetLink: "/advertise" };
+      const settings = [
+        { key: "sidebar_video_ads_list", value: JSON.stringify(finalList) },
+        { key: "sidebar_video_ad_url", value: firstAd.url },
+        { key: "sidebar_video_ad_title", value: firstAd.title },
+        { key: "sidebar_video_ad_target_link", value: firstAd.targetLink },
+        { key: "sidebar_video_ad_enabled", value: String(finalEnabled) }
+      ];
+      await fetch("/api/v1/logo-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings })
+      });
+      window.dispatchEvent(new Event("ga_video_ad_updated"));
+      showToast("✓ All Video Ads saved & live on homepage autoplay carousel!");
+    } catch (err: any) {
+      showToast("❌ Failed to save Video Ads: " + (err?.message || ""), "error");
+    } finally {
+      setSidebarVideoAdSaving(false);
+    }
+  };
+
+  const handleAddVideoAdItem = () => {
+    const newItem = {
+      id: `ad_${Date.now()}`,
+      url: "",
+      title: `ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन ${sidebarVideoAdsList.length + 1}`,
+      targetLink: "/advertise"
+    };
+    const updated = [...sidebarVideoAdsList, newItem];
+    setSidebarVideoAdsList(updated);
+    showToast("✓ New Video Ad slot added! Enter URL or upload MP4.");
+  };
+
+  const handleRemoveVideoAdItem = (id: string) => {
+    if (sidebarVideoAdsList.length <= 1) {
+      showToast("At least 1 Video Ad slot must remain!", "error");
+      return;
+    }
+    const updated = sidebarVideoAdsList.filter((item) => item.id !== id);
+    setSidebarVideoAdsList(updated);
+    handleSaveSidebarVideoAdList(updated);
+  };
+
+  const handleUpdateVideoAdItem = (id: string, field: "url" | "title" | "targetLink", value: string) => {
+    setSidebarVideoAdsList((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleVideoAdFileUploadForItem = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSidebarVideoUploadingId(id);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
+      const uploadJson = await uploadRes.json();
+      if (uploadJson.success && (uploadJson.url || uploadJson.data?.url)) {
+        const uploadedUrl = uploadJson.url || uploadJson.data?.url;
+        const updated = sidebarVideoAdsList.map((item) => (item.id === id ? { ...item, url: uploadedUrl } : item));
+        setSidebarVideoAdsList(updated);
+        await handleSaveSidebarVideoAdList(updated);
+        showToast("✓ Video MP4 ad uploaded & saved!");
+      } else {
+        showToast("❌ Upload failed: " + (uploadJson.error || uploadJson.message || ""), "error");
+      }
+    } catch (err: any) {
+      showToast("❌ Upload error: " + (err?.message || ""), "error");
+    } finally {
+      setSidebarVideoUploadingId(null);
       e.target.value = "";
     }
   };
@@ -1117,6 +1230,175 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Sidebar Video Advertisement Manager Card */}
+        <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "20px", padding: "28px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                🎥 Sidebar Video Ads Playlist (3-4 ऑटोप्ले एवं ऑटो-स्क्रॉल वीडियो विज्ञापन)
+              </h3>
+              <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                Add 3 to 4 video advertisement slots! On the homepage, ads will autoplay and automatically scroll / slide to the next ad when finished.
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 800, color: sidebarVideoAdEnabled ? "#16a34a" : "#dc2626" }}>
+                {sidebarVideoAdEnabled ? "ACTIVE (चालू)" : "DISABLED (बंद)"}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !sidebarVideoAdEnabled;
+                  setSidebarVideoAdEnabled(nextState);
+                  handleSaveSidebarVideoAdList(undefined, nextState);
+                }}
+                style={{
+                  background: sidebarVideoAdEnabled ? "#16a34a" : "#cbd5e1",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  fontWeight: 800,
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                {sidebarVideoAdEnabled ? "Turn OFF" : "Turn ON"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Header Action Bar */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#0f172a" }}>
+                Playlist Slots: <strong style={{ color: "#e50914" }}>{sidebarVideoAdsList.length} Ads Configured</strong>
+              </span>
+              <button
+                type="button"
+                onClick={handleAddVideoAdItem}
+                style={{ background: "#0f172a", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                <Plus size={14} /> Add Video Ad Slot
+              </button>
+            </div>
+
+            {/* List of Video Ad Form Slots */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {sidebarVideoAdsList.map((adItem, index) => (
+                <div key={adItem.id} style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", display: "grid", gridTemplateColumns: "1fr 280px", gap: "20px" }}>
+                  {/* Left: Input Fields */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ background: "#e50914", color: "#fff", padding: "3px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800 }}>
+                        📢 VIDEO AD #{index + 1}
+                      </span>
+                      {sidebarVideoAdsList.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVideoAdItem(adItem.id)}
+                          style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <Trash2 size={13} /> Delete Ad Slot
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                        🎬 Video URL (YouTube Link or Upload MP4 Video)
+                      </label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input
+                          type="url"
+                          placeholder="https://www.youtube.com/watch?v=... or MP4 URL"
+                          value={adItem.url}
+                          onChange={(e) => handleUpdateVideoAdItem(adItem.id, "url", e.target.value)}
+                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                        />
+                        <label style={{ background: sidebarVideoUploadingId === adItem.id ? "#64748b" : "#0f172a", color: "#ffffff", padding: "8px 12px", borderRadius: "8px", fontWeight: 800, fontSize: "0.78rem", cursor: sidebarVideoUploadingId === adItem.id ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                          {sidebarVideoUploadingId === adItem.id ? "Uploading..." : "Upload MP4"}
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime"
+                            onChange={(e) => handleVideoAdFileUploadForItem(adItem.id, e)}
+                            disabled={sidebarVideoUploadingId === adItem.id}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                        🏷️ Video Ad Headline / Business Title
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. विशेष बिज़नेस प्रमोशन"
+                        value={adItem.title}
+                        onChange={(e) => handleUpdateVideoAdItem(adItem.id, "title", e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                        🔗 Destination Click Link (यूजर यहाँ जाएगा)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://yourwebsite.com or /advertise"
+                        value={adItem.targetLink}
+                        onChange={(e) => handleUpdateVideoAdItem(adItem.id, "targetLink", e.target.value)}
+                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right: Live Preview Box */}
+                  <div style={{ background: "#0a0f1d", borderRadius: "10px", overflow: "hidden", border: "1px solid #1e293b", display: "flex", flexDirection: "column", height: "100%" }}>
+                    <div style={{ background: "#e50914", color: "#fff", padding: "4px 8px", fontSize: "0.68rem", fontWeight: 800 }}>
+                      PREVIEW AD #{index + 1}
+                    </div>
+                    <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000" }}>
+                      {adItem.url ? (
+                        adItem.url.includes("embed/") || adItem.url.includes("youtube.com") || adItem.url.includes("youtu.be") ? (
+                          <iframe
+                            src={adItem.url.includes("embed/") ? adItem.url : `https://www.youtube.com/embed/${extractYouTubeId(adItem.url)}`}
+                            title={`Preview ${index + 1}`}
+                            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                          />
+                        ) : (
+                          <video src={adItem.url} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        )
+                      ) : (
+                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
+                          No video added yet
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "6px 8px", background: "#111827", fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {adItem.title || "Untitled Ad"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Save All Button */}
+            <button
+              type="button"
+              onClick={() => handleSaveSidebarVideoAdList()}
+              disabled={sidebarVideoAdSaving}
+              style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "14px 24px", borderRadius: "10px", fontWeight: 800, fontSize: "0.95rem", cursor: sidebarVideoAdSaving ? "not-allowed" : "pointer", width: "100%", boxShadow: "0 4px 16px rgba(229,9,20,0.3)", marginTop: "10px" }}
+            >
+              {sidebarVideoAdSaving ? "Saving All Video Ads..." : "💾 Save All Video Ads (Live Autoplay Carousel)"}
+            </button>
           </div>
         </div>
 

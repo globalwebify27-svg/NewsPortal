@@ -18,7 +18,9 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
-  X
+  X,
+  SkipBack,
+  SkipForward
 } from "lucide-react";
 import {
   YouTubeVideoItem,
@@ -106,9 +108,94 @@ export default function VideosPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const playNextVideo = () => {
+    if (!activeVideo || videos.length <= 1) return;
+    const currentIndex = videos.findIndex((v) => v.youtubeId === activeVideo.youtubeId || v.id === activeVideo.id);
+    const nextIndex = (currentIndex + 1) % videos.length;
+    const nextVideo = videos[nextIndex];
+    if (nextVideo) {
+      setActiveVideo(nextVideo);
+      setLiked(false);
+      if (typeof window !== "undefined") {
+        window.history.pushState({}, "", `/videos?v=${nextVideo.youtubeId}`);
+      }
+    }
+  };
+
+  const playPrevVideo = () => {
+    if (!activeVideo || videos.length <= 1) return;
+    const currentIndex = videos.findIndex((v) => v.youtubeId === activeVideo.youtubeId || v.id === activeVideo.id);
+    const prevIndex = (currentIndex - 1 + videos.length) % videos.length;
+    const prevVideo = videos[prevIndex];
+    if (prevVideo) {
+      setActiveVideo(prevVideo);
+      setLiked(false);
+      if (typeof window !== "undefined") {
+        window.history.pushState({}, "", `/videos?v=${prevVideo.youtubeId}`);
+      }
+    }
+  };
+
+  // Auto-next video when YouTube video finishes playing (ENDED state 0)
+  useEffect(() => {
+    if (!activeVideo) return;
+
+    // Comprehensive postMessage event listener
+    const handleYouTubeMessage = (event: MessageEvent) => {
+      if (!event.data) return;
+      try {
+        let data = event.data;
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+
+        // 1. Direct state change (0 = ENDED)
+        if (
+          data.event === "onStateChange" &&
+          (data.info === 0 || data.info?.playerState === 0)
+        ) {
+          playNextVideo();
+          return;
+        }
+
+        // 2. infoDelivery object state change or end of duration
+        if (data.event === "infoDelivery" && data.info) {
+          if (data.info.playerState === 0) {
+            playNextVideo();
+            return;
+          }
+          if (
+            typeof data.info.currentTime === "number" &&
+            typeof data.info.duration === "number" &&
+            data.info.duration > 0 &&
+            data.info.currentTime >= data.info.duration - 0.6
+          ) {
+            playNextVideo();
+            return;
+          }
+        }
+
+        // 3. Fallback info 0
+        if (data.info === 0 || (data.info && data.info.playerState === 0)) {
+          playNextVideo();
+          return;
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener("message", handleYouTubeMessage);
+
+    return () => {
+      window.removeEventListener("message", handleYouTubeMessage);
+    };
+  }, [activeVideo, videos]);
+
   const selectVideo = (video: YouTubeVideoItem) => {
     setActiveVideo(video);
     setLiked(false);
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", `/videos?v=${video.youtubeId}`);
+    }
     window.scrollTo({ top: 100, behavior: "smooth" });
   };
 
@@ -158,7 +245,9 @@ export default function VideosPage() {
                 className="video-iframe-container"
               >
                 <iframe
-                  src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&fs=1&enablejsapi=1`}
+                  id="youtube-active-player-iframe"
+                  key={`yt_${activeVideo.youtubeId}`}
+                  src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&loop=0&rel=0&fs=1&enablejsapi=1${videos.length > 1 ? `&playlist=${videos.map(v => v.youtubeId).filter(Boolean).join(",")}` : ""}&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "https://www.globalawaaz.com")}`}
                   title={activeVideo.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen={true}
@@ -195,23 +284,30 @@ export default function VideosPage() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #e2e8f0", flexWrap: "wrap" }}>
                   <button
-                    onClick={handleShare}
-                    style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", flex: 1 }}
+                    onClick={playPrevVideo}
+                    title="Play Previous Video"
+                    style={{ background: "#f1f5f9", color: "#0f172a", border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", flex: 1, whiteSpace: "nowrap" }}
                   >
-                    {copied ? <CheckCircle2 size={16} style={{ color: "#16a34a" }} /> : <Share2 size={16} />}
-                    {copied ? "Copied!" : "Share"}
+                    <SkipBack size={15} /> Prev Video
                   </button>
 
-                  <a
-                    href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", boxShadow: "0 4px 14px rgba(229,9,20,0.3)", flex: 1, whiteSpace: "nowrap" }}
+                  <button
+                    onClick={playNextVideo}
+                    title="Play Next Video (Autoplay on End)"
+                    style={{ background: "#0f172a", color: "#ffffff", border: "none", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", flex: 1, whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(15,23,42,0.2)" }}
                   >
-                    <ExternalLink size={16} /> Open in YouTube
-                  </a>
+                    Next Video <SkipForward size={15} />
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.83rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}
+                  >
+                    {copied ? <CheckCircle2 size={15} style={{ color: "#16a34a" }} /> : <Share2 size={15} />}
+                    {copied ? "Copied!" : "Share"}
+                  </button>
                 </div>
               </div>
             </div>

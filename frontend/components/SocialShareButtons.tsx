@@ -39,12 +39,28 @@ export default function SocialShareButtons({
     // 2. Clean the slug string
     const cleanSlug = slug.startsWith("/") ? slug.slice(1) : slug;
 
-    // 3. If cleanSlug already includes a section path (e.g. "jharkhand/my-slug" or "article/my-slug")
-    if (cleanSlug.includes("/")) {
+    // 3. If cleanSlug already includes a section path or standalone top-level route (videos, epaper, breaking, etc.)
+    if (
+      cleanSlug.includes("/") ||
+      cleanSlug.startsWith("videos") ||
+      cleanSlug.startsWith("epaper") ||
+      cleanSlug.startsWith("breaking") ||
+      cleanSlug.startsWith("top-news") ||
+      cleanSlug.startsWith("advertise") ||
+      cleanSlug.startsWith("about") ||
+      cleanSlug.startsWith("careers")
+    ) {
       return `https://www.globalawaaz.com/${cleanSlug}`;
     }
 
-    // 4. If on client-side reading an article page
+    // 4. If category is "videos"
+    let cleanSection = (categorySlug || "top-news").toLowerCase().trim();
+    if (cleanSection === "videos") {
+      const vidQuery = cleanSlug.includes("?v=") ? cleanSlug : `videos?v=${cleanSlug}`;
+      return `https://www.globalawaaz.com/${vidQuery}`;
+    }
+
+    // 5. If on client-side reading an article page
     if (typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname.length > 2) {
       const path = window.location.pathname;
       const pathSegments = path.split("/").filter(Boolean);
@@ -55,8 +71,7 @@ export default function SocialShareButtons({
       }
     }
 
-    // 5. Construct canonical URL with category section prefix
-    let cleanSection = (categorySlug || "top-news").toLowerCase().trim();
+    // 6. Construct canonical URL with category section prefix
     if (cleanSection === "news" || !cleanSection) {
       cleanSection = "top-news";
     }

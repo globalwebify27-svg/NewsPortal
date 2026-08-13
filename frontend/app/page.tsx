@@ -131,12 +131,71 @@ export default function Home() {
     } catch (e) {}
   }, []);
 
+  const [videoAdsList, setVideoAdsList] = useState<Array<{ id: string; url: string; title: string; targetLink: string }>>([
+    {
+      id: "1",
+      url: "",
+      title: "ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन",
+      targetLink: "/advertise"
+    }
+  ]);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [videoAdEnabled, setVideoAdEnabled] = useState(true);
+
+  const loadVideoAdSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/logo-settings", { cache: "no-store" });
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        setVideoAdEnabled(json.data.sidebar_video_ad_enabled !== "false");
+        if (json.data.sidebar_video_ads_list) {
+          try {
+            const parsed = JSON.parse(json.data.sidebar_video_ads_list);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setVideoAdsList(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        if (json.data.sidebar_video_ad_url) {
+          setVideoAdsList([{
+            id: "1",
+            url: json.data.sidebar_video_ad_url,
+            title: json.data.sidebar_video_ad_title || "ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन",
+            targetLink: json.data.sidebar_video_ad_target_link || "/advertise"
+          }]);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
     loadStickyAdSettings();
-    const handleUpdate = () => loadStickyAdSettings(true);
+    loadVideoAdSettings();
+    const handleUpdate = () => {
+      loadStickyAdSettings(true);
+      loadVideoAdSettings();
+    };
     window.addEventListener("ga_sticky_ad_updated", handleUpdate);
-    return () => window.removeEventListener("ga_sticky_ad_updated", handleUpdate);
-  }, [loadStickyAdSettings]);
+    window.addEventListener("ga_video_ad_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("ga_sticky_ad_updated", handleUpdate);
+      window.removeEventListener("ga_video_ad_updated", handleUpdate);
+    };
+  }, [loadStickyAdSettings, loadVideoAdSettings]);
+
+  // Auto-scroll Carousel timer for YouTube / static slides
+  useEffect(() => {
+    if (!videoAdEnabled || videoAdsList.length <= 1) return;
+    const activeAd = videoAdsList[currentAdIndex];
+    const isYouTube = activeAd?.url && (activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") || activeAd.url.includes("embed/"));
+    if (isYouTube || !activeAd?.url) {
+      const timer = setInterval(() => {
+        setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
+      }, 9000);
+      return () => clearInterval(timer);
+    }
+  }, [videoAdEnabled, videoAdsList, currentAdIndex]);
 
   useEffect(() => {
     const updateVideos = () => {
@@ -287,14 +346,6 @@ export default function Home() {
   const handleScrollRight = () => {
     if (carouselWrapperRef.current) {
       carouselWrapperRef.current.scrollBy({ left: 320, behavior: "smooth" });
-    }
-  };
-
-  const handleCarouselWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    // Convert vertical mouse wheel to horizontal scroll
-    if (carouselWrapperRef.current) {
-      e.preventDefault();
-      carouselWrapperRef.current.scrollBy({ left: e.deltaY * 1.5, behavior: "smooth" });
     }
   };
 
@@ -612,6 +663,7 @@ export default function Home() {
                 <img
                   src={leaderboardAdData.image}
                   alt={leaderboardAdData.title || "Leaderboard Advertisement"}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                   style={{ width: "100%", height: "auto", maxHeight: `${leaderboardAdData.height || "110"}px`, objectFit: "cover", display: "block" }}
                 />
               </Link>
@@ -719,10 +771,11 @@ export default function Home() {
         <div className="spotlight-3col-grid" style={{
           display: "grid",
           gridTemplateColumns: "1.2fr 1fr 0.9fr",
-          gap: "20px"
+          gap: "20px",
+          alignItems: "start"
         }}>
           {/* Column 1: Primary Big News Story / Video Lead (Geo-Targeted Local Lead / Admin Hero Story) */}
-          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "fit-content" }}>
             {mainHero && (() => {
               const isExactCity = mainHero.district && (mainHero.district.toLowerCase().includes(userCityLower) || userCityLower.includes(mainHero.district.toLowerCase()));
               const isSameState = mainHero.state && mainHero.state.toLowerCase().trim() === userStateLower;
@@ -737,7 +790,7 @@ export default function Home() {
               }
 
               return (
-                <Link href={getArticleUrl(mainHero)} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link href={getArticleUrl(mainHero)} title={mainHero.title} style={{ textDecoration: "none", color: "inherit" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
                     <span style={{
                       background: isExactCity ? "#e50914" : isSameState ? "#2563eb" : "#0f172a",
@@ -757,13 +810,14 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 800, lineHeight: 1.4, margin: "0 0 12px", color: "var(--color-text, #0f172a)" }}>
+                <h2 title={mainHero.title} style={{ fontSize: "1.2rem", fontWeight: 800, lineHeight: 1.4, margin: "0 0 12px", color: "var(--color-text, #0f172a)" }}>
                   {mainHero.title}
                 </h2>
                 <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
                   <img
                     src={getArticleImage(mainHero, 0)}
                     alt={mainHero.title}
+                    title={mainHero.title}
                     // @ts-ignore
                     fetchPriority="high"
                     decoding="async"
@@ -791,7 +845,7 @@ export default function Home() {
         </div>
 
           {/* Column 2: "सुपरफ़ास्ट NEWS" Real-Time Feed (Admin Superfast Articles) */}
-          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "fit-content" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <Zap size={18} style={{ color: "#e50914", fill: "#e50914" }} />
@@ -806,12 +860,12 @@ export default function Home() {
 
             {superfastList.map((item, idx) => (
               <article key={item.id} style={{ borderBottom: idx < superfastList.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "10px 0" }}>
-                <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
+                <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                   <div style={{ width: "70px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
-                    <img src={getArticleImage(item, idx + 1)} alt={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4 style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)" }}>
+                    <h4 title={item.title} style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
                       {item.title}
                     </h4>
                     {idx === 0 && (
@@ -880,17 +934,136 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Social Follow Buttons */}
-            <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <a href={liveTvConfig.googleNewsUrl || "https://news.google.com"} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "20px", padding: "6px 14px", textDecoration: "none", color: "inherit" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: 700 }}>Follow us on Google News</span>
-                <ExternalLink size={14} style={{ color: "#4285F4" }} />
-              </a>
-              <a href={liveTvConfig.whatsappUrl || "https://whatsapp.com"} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#25D366", color: "#ffffff", borderRadius: "20px", padding: "6px 14px", textDecoration: "none", fontWeight: 800 }}>
-                <span style={{ fontSize: "0.8rem" }}>Join WhatsApp Channel</span>
-                <Share2 size={14} />
-              </a>
-            </div>
+            {/* Admin Video Advertisement Carousel Card */}
+            {videoAdEnabled && videoAdsList.length > 0 && (() => {
+              const activeAd = videoAdsList[currentAdIndex] || videoAdsList[0];
+              const isMultiple = videoAdsList.length > 1;
+
+              return (
+                <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", position: "relative" }}>
+                  {/* Video Player Box with Autoplay & Auto-Next on End */}
+                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {activeAd?.url ? (
+                      activeAd.url.includes("embed/") || activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") ? (
+                        <iframe
+                          key={`yt_${currentAdIndex}_${activeAd.url}`}
+                          src={activeAd.url.includes("embed/") ? activeAd.url : `https://www.youtube.com/embed/${extractYouTubeId(activeAd.url)}?autoplay=1&mute=1&controls=1&rel=0`}
+                          title={activeAd.title}
+                          style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          key={`mp4_${currentAdIndex}_${activeAd.url}`}
+                          src={activeAd.url}
+                          autoPlay
+                          muted
+                          loop={!isMultiple}
+                          playsInline
+                          controls
+                          onEnded={() => {
+                            if (isMultiple) {
+                              setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
+                            }
+                          }}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        />
+                      )
+                    ) : (
+                      <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px", textAlign: "center", background: "linear-gradient(135deg, #1e1b4b 0%, #090d16 100%)" }}>
+                        <span style={{ color: "#ffffff", fontWeight: 800, fontSize: "0.85rem", marginBottom: "6px" }}>
+                          {activeAd?.title || "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन"}
+                        </span>
+                        <span style={{ color: "#94a3b8", fontSize: "0.72rem" }}>
+                          {lang === "HI" ? "अपना ब्रांड या बिज़नेस यहाँ प्रमोट करें" : "Promote your brand or business here"}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Left & Right Slide Controls */}
+                    {isMultiple && (
+                      <>
+                        <button
+                          onClick={() => setCurrentAdIndex((prev) => (prev - 1 + videoAdsList.length) % videoAdsList.length)}
+                          style={{
+                            position: "absolute",
+                            left: "6px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "28px",
+                            height: "28px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            zIndex: 3
+                          }}
+                          title="Previous Video Ad"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          onClick={() => setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length)}
+                          style={{
+                            position: "absolute",
+                            right: "6px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "28px",
+                            height: "28px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            zIndex: 3
+                          }}
+                          title="Next Video Ad"
+                        >
+                          ›
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Target Action Link */}
+                  {activeAd?.targetLink && (
+                    <div style={{ padding: "8px 12px", background: "#111827" }}>
+                      <a
+                        href={activeAd.targetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          background: "#e50914",
+                          color: "#ffffff",
+                          borderRadius: "8px",
+                          padding: "7px 12px",
+                          textDecoration: "none",
+                          fontSize: "0.78rem",
+                          fontWeight: 800,
+                          transition: "background 0.2s ease"
+                        }}
+                      >
+                        <span>{lang === "HI" ? "अभी जानें / संपर्क करें" : "Learn More / Visit Site"}</span>
+                        <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </section>
@@ -1029,15 +1202,15 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
           {stateArticles.map((item, idx) => (
             <article key={item.id} style={{ background: "var(--color-bg, #f8fafc)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+              <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div style={{ position: "relative", height: "150px", overflow: "hidden", background: "#0a0f1d" }}>
-                  <img src={getArticleImage(item, idx + 4)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={getArticleImage(item, idx + 4)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "8px", left: "8px", background: "#e50914", color: "#fff", fontSize: "0.68rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
                     📍 {item.district || userCity}
                   </span>
                 </div>
                 <div style={{ padding: "12px", display: "flex", flexDirection: "column", flex: 1 }}>
-                  <h3 style={{ margin: "0 0 8px 0", fontSize: "0.92rem", fontWeight: 800, lineHeight: 1.35, color: "var(--color-text, #0f172a)" }}>
+                  <h3 title={item.title} style={{ margin: "0 0 8px 0", fontSize: "0.92rem", fontWeight: 800, lineHeight: 1.35, color: "var(--color-text, #0f172a)" }}>
                     {item.title}
                   </h3>
                   <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "var(--color-secondary, #64748b)" }}>
@@ -1070,15 +1243,15 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "14px" }}>
           {trendingList.map((item, idx) => (
             <article key={item.id} style={{ background: "#ffffff", border: "1px solid #ffedd5", borderRadius: "10px", padding: "12px", boxShadow: "0 2px 10px rgba(234,88,12,0.06)" }}>
-              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
+              <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                 <div style={{ width: "65px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#0a0f1d" }}>
-                  <img src={getArticleImage(item, idx + 2)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={getArticleImage(item, idx + 2)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ background: "#ea580c", color: "#ffffff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800, marginBottom: "4px", display: "inline-block" }}>
                     🔥 TRENDING #{idx + 1}
                   </span>
-                  <h4 style={{ margin: 0, fontSize: "0.84rem", fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "#0f172a" }}>
+                  <h4 title={item.title} style={{ margin: 0, fontSize: "0.84rem", fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "#0f172a" }}>
                     {item.title}
                   </h4>
                 </div>
@@ -1110,7 +1283,6 @@ export default function Home() {
         <div
           ref={carouselWrapperRef}
           className="top-stories-carousel-wrapper"
-          onWheel={handleCarouselWheel}
         >
           <div
             ref={containerRef}
@@ -1118,10 +1290,10 @@ export default function Home() {
           >
             {todaysTopStories.map((item, index) => (
               <article key={`${item.id}-${index}`} className="top-story-item">
-                <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+                <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
                     {getArticleImage(item, index + 3) ? (
-                      <img src={getArticleImage(item, index + 3)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getArticleImage(item, index + 3)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" }} />
                     )}
@@ -1131,7 +1303,7 @@ export default function Home() {
                     <span className="story-time-chip">{item.readTime || (lang === "HI" ? "4 मिनट पढ़ें" : "4 min read")}</span>
                   </div>
                   <div className="story-info-box">
-                    <h3 className="story-heading">{item.title}</h3>
+                    <h3 className="story-heading" title={item.title}>{item.title}</h3>
                     <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.74rem", color: "var(--color-secondary)", marginTop: "2px" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Clock size={12} />
@@ -1199,7 +1371,7 @@ export default function Home() {
               </h3>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
                 <span style={{ fontSize: "0.72rem", color: "var(--color-secondary)", fontWeight: 600 }}>YouTube Video</span>
-                <SocialShareButtons title={video.title} slug={`videos?v=${video.youtubeId}`} image={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} size="sm" />
+                <SocialShareButtons title={video.title} slug={`videos?v=${video.youtubeId}`} categorySlug="videos" image={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} size="sm" />
               </div>
             </Link>
           ))}

@@ -213,12 +213,15 @@
 .pill-nav-container {
   background: #000000 !important;
   border-radius: 0px !important;
-  padding: 4px 0 !important;
+  padding: 4px 12px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
   box-shadow: none !important;
-  overflow: visible !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   white-space: nowrap !important;
   width: 100% !important;
   height: 48px !important;
@@ -227,19 +230,24 @@
   z-index: 500 !important;
 }
 
+.pill-nav-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .pill-nav-links {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   flex: 1 !important;
-  gap: 0px !important;
+  gap: 2px !important;
   list-style: none !important;
   margin: 0 !important;
-  padding: 0 2px !important;
+  padding: 0 !important;
   white-space: nowrap !important;
-  overflow: visible !important;
   position: relative !important;
-  min-width: 0 !important;
+  min-width: max-content !important;
 }
 
 .location-pill-wrapper,
@@ -326,11 +334,11 @@
 .pill-nav-link {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
-  padding: 5px 8px !important;
+  gap: 3px !important;
+  padding: 5px 6px !important;
   border-radius: 6px !important;
   color: #ffffff !important;
-  font-size: 0.88rem !important;
+  font-size: clamp(0.76rem, 0.88vw, 0.85rem) !important;
   font-weight: 700 !important;
   letter-spacing: -0.01em !important;
   text-decoration: none !important;
@@ -2876,4 +2884,28 @@
   100% {
     transform: translate3d(-50%, 0, 0);
   }
+}
+
+/* Image & Heading Hover Tooltip Styling */
+article img[title],
+a img[title],
+h1[title],
+h2[title],
+h3[title],
+h4[title],
+h5[title],
+h6[title] {
+  cursor: pointer;
+}
+
+article img[title]:hover,
+a img[title]:hover {
+  filter: brightness(1.06) contrast(1.02);
+}
+
+h1[title]:hover,
+h2[title]:hover,
+h3[title]:hover,
+h4[title]:hover {
+  color: #e50914 !important;
 }
