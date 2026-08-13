@@ -64,7 +64,6 @@ export default function Footer() {
     { nameHi: "हमारे बारे में", nameEn: "About Us", href: "/about" },
     { nameHi: "हमारी टीम", nameEn: "Our Team", href: "/team" },
     { nameHi: "करियर / नौकरियां", nameEn: "Careers & Jobs", href: "/careers" },
-    { nameHi: "गोपनीयता नीति", nameEn: "Privacy Policy", href: "/#privacy" },
     { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
     { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/#contact" },
     { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/advertise" }
@@ -132,15 +131,14 @@ export default function Footer() {
     };
   });
 
-  // Quick links (Unique content sections, no duplicates with Company column)
+  // Quick links (Unique content sections)
   const quickLinks = [
     { name: isHindi ? "ताज़ा समाचार" : "Latest News", href: "/" },
     { name: isHindi ? "झारखंड समाचार" : "Jharkhand News", href: "/jharkhand" },
     { name: isHindi ? "शिक्षा व परीक्षा" : "Education & Exams", href: "/education" },
     { name: isHindi ? "संपादकीय व विचार" : "Editorials & Opinion", href: "/opinion" },
     { name: isHindi ? "वीडियो बुलेटिन" : "Video Bulletins", href: "/videos" },
-    { name: isHindi ? "डिजिटल ई-पेपर" : "Digital E-Paper", href: "/epaper" },
-    { name: isHindi ? "RSS फीड" : "RSS Feed", href: "/feed.xml" }
+    { name: isHindi ? "डिजिटल ई-पेपर" : "Digital E-Paper", href: "/epaper" }
   ];
 
   return (
