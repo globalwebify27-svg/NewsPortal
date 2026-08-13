@@ -30,7 +30,7 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
 }
 
 function formatAbsoluteImageUrl(imgUrl?: string): string {
-  if (!imgUrl) return "https://globalawaaz.com/global-awaaz-logo.jpg";
+  if (!imgUrl || imgUrl.startsWith("data:image")) return "https://www.globalawaaz.com/logo.png";
   // Fix malformed protocols from database (https// → https://)
   let url = imgUrl;
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
@@ -38,13 +38,16 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
   // Rewrite Hostinger internal URLs to main domain
   if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
     const path = url.replace("https://yellowgreen-rook-384455.hostingersite.com", "");
-    return `https://globalawaaz.com${path.startsWith("/") ? path : `/${path}`}`;
+    return `https://www.globalawaaz.com${path.startsWith("/") ? path : `/${path}`}`;
   }
   if (url.startsWith("http://") || url.startsWith("https://")) {
+    if (url.startsWith("https://globalawaaz.com")) {
+      return url.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
+    }
     return url;
   }
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `https://globalawaaz.com${cleanPath}`;
+  return `https://www.globalawaaz.com${cleanPath}`;
 }
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {

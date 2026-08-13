@@ -132,15 +132,15 @@ export default function Footer() {
     };
   });
 
-  // Quick links
+  // Quick links (Unique content sections, no duplicates with Company column)
   const quickLinks = [
-    { name: isHindi ? "ताज़ा समाचार" : "Latest News", href: "/#latest" },
-    { name: isHindi ? "विशेष रिपोर्ट" : "Special Reports", href: "/#reports" },
-    { name: isHindi ? "हमारी टीम" : "Our Editorial Team", href: "/team" },
-    { name: isHindi ? "करियर / नौकरियां" : "Careers & Jobs", href: "/careers" },
-    { name: isHindi ? "वीडियो" : "Videos", href: "/videos" },
-    { name: isHindi ? "ई-पेपर" : "E-Paper", href: "/epaper" },
-    { name: isHindi ? "विज्ञापन दें" : "Advertise With Us", href: "/advertise" }
+    { name: isHindi ? "ताज़ा समाचार" : "Latest News", href: "/" },
+    { name: isHindi ? "झारखंड समाचार" : "Jharkhand News", href: "/jharkhand" },
+    { name: isHindi ? "शिक्षा व परीक्षा" : "Education & Exams", href: "/education" },
+    { name: isHindi ? "संपादकीय व विचार" : "Editorials & Opinion", href: "/opinion" },
+    { name: isHindi ? "वीडियो बुलेटिन" : "Video Bulletins", href: "/videos" },
+    { name: isHindi ? "डिजिटल ई-पेपर" : "Digital E-Paper", href: "/epaper" },
+    { name: isHindi ? "RSS फीड" : "RSS Feed", href: "/feed.xml" }
   ];
 
   return (

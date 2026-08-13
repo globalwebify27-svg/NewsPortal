@@ -429,6 +429,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               <SocialShareButtons
                 title={article.title}
                 slug={slug}
+                categorySlug={article.category?.slug || "top-news"}
                 image={article.featuredImage}
                 summary={article.summary}
                 size="md"
@@ -682,6 +683,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             <SocialShareButtons
               title={article.title}
               slug={slug}
+              categorySlug={article.category?.slug || "top-news"}
               image={article.featuredImage}
               summary={article.summary}
               size="lg"

@@ -1139,7 +1139,7 @@ export default function Home() {
                     <p className="story-brief">{stripHtml(item.summary)}</p>
                     <div className="story-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "8px" }}>
                       <span className="author-name">{t("by")} {item.author?.name || "Global Awaaz Admin"}</span>
-                      <SocialShareButtons title={item.title} slug={item.slug} image={item.featuredImage} summary={item.summary} size="sm" />
+                      <SocialShareButtons title={item.title} slug={item.slug} categorySlug={item.category?.slug || "top-news"} image={item.featuredImage} summary={item.summary} size="sm" />
                     </div>
                   </div>
                 </Link>
