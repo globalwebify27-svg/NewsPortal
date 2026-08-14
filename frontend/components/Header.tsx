@@ -99,6 +99,7 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
   // Interactive News Filter States
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -473,14 +474,7 @@ export default function Header() {
                 <span className="lang-text-desktop">{lang === "EN" ? "हिंदी" : "English"}</span>
                 <span className="lang-text-mobile">{lang === "EN" ? "हि" : "EN"}</span>
               </button>
-              <button
-                className="icon-btn search-trigger"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-                title={lang === "HI" ? "समाचार खोजें" : "Search News"}
-                aria-label={lang === "HI" ? "समाचार खोजें" : "Search News"}
-              >
-                <Search size={20} />
-              </button>
+
               <button
                 className="icon-btn notification-btn"
                 aria-label={lang === "HI" ? "अधिसूचनाएं" : "Notifications"}
@@ -623,7 +617,12 @@ export default function Header() {
         <div className="container menu-wrapper-pill">
           <div className="pill-nav-container">
             {/* State Location Selector Pill with Hover Sub-menu */}
-            <div style={{ position: "relative" }} className="location-pill-wrapper">
+            <div
+              style={{ position: "relative" }}
+              className="location-pill-wrapper"
+              onMouseEnter={() => setHoveredNav("location")}
+              onMouseLeave={() => setHoveredNav(null)}
+            >
               <button
                 onClick={() => setIsStateModalOpen(true)}
                 className="location-pill-btn"
@@ -648,7 +647,17 @@ export default function Header() {
                 </span>
                 <ChevronDown size={14} style={{ color: "#64748b" }} />
               </button>
-              <div className="mega-dropdown" style={{ minWidth: "220px", top: "calc(100% + 8px)" }}>
+              <div
+                className="mega-dropdown"
+                style={{
+                  minWidth: "220px",
+                  top: "calc(100% + 8px)",
+                  display: hoveredNav === "location" ? "block" : undefined,
+                  opacity: hoveredNav === "location" ? 1 : undefined,
+                  visibility: hoveredNav === "location" ? "visible" : undefined,
+                  pointerEvents: hoveredNav === "location" ? "auto" : undefined
+                }}
+              >
                 {INDIAN_STATES.slice(0, 6).map((st) => (
                   <Link
                     key={st.code}
@@ -680,25 +689,69 @@ export default function Header() {
             <span className="location-pill-divider"></span>
 
             <ul className="nav-links pill-nav-links" onMouseEnter={() => setIsStateModalOpen(false)}>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("home")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`} title={lang === "HI" ? "मुख्य पृष्ठ" : "Home"}>
                   <Home size={15} />
                   <span>{t("home")}</span>
                   {isActive("/") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "home" ? "block" : "none",
+                    opacity: hoveredNav === "home" ? 1 : 0,
+                    visibility: hoveredNav === "home" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "home" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   <Link href="/" title={lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}><Zap size={14} />{lang === "HI" ? "मुख्य समाचार" : "Lead Headlines"}</Link>
                   <Link href="/" title={lang === "HI" ? "लाइव समाचार" : "Live Updates"}><Clock size={14} />{lang === "HI" ? "लाइव समाचार" : "Live Updates"}</Link>
                   <Link href="/" title={lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}><Star size={14} />{lang === "HI" ? "संपादकीय चयन" : "Editor's Pick"}</Link>
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("education")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`} title={lang === "HI" ? "शिक्षा" : "Education"}>
                   <Zap size={15} />
                   <span>{lang === "HI" ? "शिक्षा" : "Education"}</span>
                   {isActive("/education") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "education" ? "block" : "none",
+                    opacity: hoveredNav === "education" ? 1 : 0,
+                    visibility: hoveredNav === "education" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "education" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("education").map((sub) => (
                     <Link
                       key={sub.en}
@@ -711,13 +764,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("world")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`} title={lang === "HI" ? "विदेश" : "World"}>
                   <Globe size={15} />
                   <span>{t("world")}</span>
                   {isActive("/world") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "world" ? "block" : "none",
+                    opacity: hoveredNav === "world" ? 1 : 0,
+                    visibility: hoveredNav === "world" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "world" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("world").map((sub) => (
                     <Link
                       key={sub.en}
@@ -730,7 +805,11 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("india")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link
                   href="/india"
                   className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
@@ -744,7 +823,25 @@ export default function Header() {
                   {isActive("/india") && <span className="active-pill-bar"></span>}
                 </Link>
                 {/* INDIA TAB MEGA DROPDOWN WITH ALL STATES SUB-TABS */}
-                <div className="mega-dropdown" style={{ minWidth: "480px", padding: "18px" }}>
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    minWidth: "480px",
+                    padding: "18px",
+                    display: hoveredNav === "india" ? "block" : "none",
+                    opacity: hoveredNav === "india" ? 1 : 0,
+                    visibility: hoveredNav === "india" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "india" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid var(--color-border)", paddingBottom: "8px" }}>
                     <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "6px" }}>
                       <MapPin size={14} /> {lang === "HI" ? "भारत के सभी राज्य (All States of India)" : "All States of India"}
@@ -781,13 +878,35 @@ export default function Header() {
                   </div>
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("business")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/business" className={`nav-link pill-nav-link ${isActive("/business") ? "active" : ""}`} title={lang === "HI" ? "व्यापार" : "Business"}>
                   <TrendingUp size={15} />
                   <span>{t("business")}</span>
                   {isActive("/business") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "business" ? "block" : "none",
+                    opacity: hoveredNav === "business" ? 1 : 0,
+                    visibility: hoveredNav === "business" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "business" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("business").map((sub) => (
                     <Link
                       key={sub.en}
@@ -800,13 +919,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("technology")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/technology" className={`nav-link pill-nav-link ${isActive("/technology") ? "active" : ""}`} title={lang === "HI" ? "तकनीक" : "Technology"}>
                   <Cpu size={15} />
                   <span>{t("technology")}</span>
                   {isActive("/technology") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "technology" ? "block" : "none",
+                    opacity: hoveredNav === "technology" ? 1 : 0,
+                    visibility: hoveredNav === "technology" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "technology" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("technology").map((sub) => (
                     <Link
                       key={sub.en}
@@ -819,13 +960,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("sports")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/sports" className={`nav-link pill-nav-link ${isActive("/sports") ? "active" : ""}`} title={lang === "HI" ? "खेल" : "Sports"}>
                   <Trophy size={15} />
                   <span>{t("sports")}</span>
                   {isActive("/sports") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "sports" ? "block" : "none",
+                    opacity: hoveredNav === "sports" ? 1 : 0,
+                    visibility: hoveredNav === "sports" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "sports" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("sports").map((sub) => (
                     <Link
                       key={sub.en}
@@ -838,13 +1001,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("entertainment")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/entertainment" className={`nav-link pill-nav-link ${isActive("/entertainment") ? "active" : ""}`} title={lang === "HI" ? "मनोरंजन" : "Entertainment"}>
                   <Film size={15} />
                   <span>{t("entertainment")}</span>
                   {isActive("/entertainment") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "entertainment" ? "block" : "none",
+                    opacity: hoveredNav === "entertainment" ? 1 : 0,
+                    visibility: hoveredNav === "entertainment" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "entertainment" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("entertainment").map((sub) => (
                     <Link
                       key={sub.en}
@@ -857,13 +1042,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("science")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`} title={lang === "HI" ? "विज्ञान" : "Science"}>
                   <Atom size={15} />
                   <span>{t("science")}</span>
                   {isActive("/science") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "science" ? "block" : "none",
+                    opacity: hoveredNav === "science" ? 1 : 0,
+                    visibility: hoveredNav === "science" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "science" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("science").map((sub) => (
                     <Link
                       key={sub.en}
@@ -876,13 +1083,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("health")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/health" className={`nav-link pill-nav-link ${isActive("/health") ? "active" : ""}`} title={lang === "HI" ? "स्वास्थ्य" : "Health"}>
                   <HeartPulse size={15} />
                   <span>{t("health")}</span>
                   {isActive("/health") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "health" ? "block" : "none",
+                    opacity: hoveredNav === "health" ? 1 : 0,
+                    visibility: hoveredNav === "health" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "health" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("health").map((sub) => (
                     <Link
                       key={sub.en}
@@ -895,13 +1124,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("opinion")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/opinion" className={`nav-link pill-nav-link ${isActive("/opinion") ? "active" : ""}`} title={lang === "HI" ? "विचार" : "Opinion"}>
                   <MessageSquare size={15} />
                   <span>{t("opinion")}</span>
                   {isActive("/opinion") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "opinion" ? "block" : "none",
+                    opacity: hoveredNav === "opinion" ? 1 : 0,
+                    visibility: hoveredNav === "opinion" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "opinion" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("opinion").map((sub) => (
                     <Link
                       key={sub.en}
@@ -914,13 +1165,35 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav("videos")}
+                onMouseLeave={() => setHoveredNav(null)}
+              >
                 <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`} title={lang === "HI" ? "वीडियो" : "Videos"}>
                   <Tv size={15} />
                   <span>{t("videos")}</span>
                   {isActive("/videos") && <span className="active-pill-bar"></span>}
                 </Link>
-                <div className="mega-dropdown">
+                <div
+                  className="mega-dropdown"
+                  style={{
+                    display: hoveredNav === "videos" ? "block" : "none",
+                    opacity: hoveredNav === "videos" ? 1 : 0,
+                    visibility: hoveredNav === "videos" ? "visible" : "hidden",
+                    pointerEvents: hoveredNav === "videos" ? "auto" : "none",
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    zIndex: 99999,
+                    background: "#0d1117",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    borderRadius: "12px",
+                    padding: "10px",
+                    minWidth: "220px",
+                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
+                  }}
+                >
                   {getSubCategories("videos").map((sub) => (
                     <Link
                       key={sub.en}
@@ -958,6 +1231,8 @@ export default function Header() {
           </div>
         </div>
       </nav>
+
+
 
       {/* Clean Dynamic JS-Driven Infinite Non-Overlapping News Ticker */}
       <NewsTicker

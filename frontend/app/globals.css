@@ -180,6 +180,10 @@
   background-color: #000000 !important;
 }
 
+.sticky-header {
+  overflow: visible !important;
+}
+
 /* STICKY CATEGORY NAVIGATION BAR — FULL WIDTH SOLID BLACK */
 .mega-menu-nav {
   position: -webkit-sticky !important;
@@ -218,8 +222,7 @@
   align-items: center !important;
   justify-content: flex-start !important;
   box-shadow: none !important;
-  overflow-x: auto !important;
-  overflow-y: visible !important;
+  overflow: visible !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
   white-space: nowrap !important;
@@ -236,6 +239,7 @@
   height: 0 !important;
 }
 
+.nav-links,
 .pill-nav-links {
   display: flex !important;
   align-items: center !important;
@@ -248,12 +252,19 @@
   white-space: nowrap !important;
   position: relative !important;
   min-width: max-content !important;
+  height: 100% !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
 }
 
 .location-pill-wrapper,
 .pill-nav-links>li {
   position: relative !important;
   list-style: none !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* MEGA DROPDOWN HOVER MECHANICS */
@@ -268,12 +279,11 @@
   border-radius: 14px !important;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8) !important;
   padding: 10px !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: translateY(4px) !important;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease !important;
-  transition-delay: 0.05s !important;
+  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: none !important;
   z-index: 10000 !important;
   backdrop-filter: blur(12px) !important;
 }
@@ -292,22 +302,11 @@
 
 .pill-nav-links>li:hover>.mega-dropdown,
 .location-pill-wrapper:hover>.mega-dropdown {
+  display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  transform: translateY(0) !important;
-  transition-delay: 0s !important;
-}
-
-/* Smooth dismissal so mouse movement into dropdown is seamless */
-.pill-nav-links>li:not(:hover)>.mega-dropdown,
-.location-pill-wrapper:not(:hover)>.mega-dropdown {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: translateY(4px) !important;
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease !important;
-  transition-delay: 0.1s !important;
+  transform: none !important;
 }
 
 .location-pill-wrapper .mega-dropdown a,

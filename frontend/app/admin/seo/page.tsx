@@ -112,6 +112,19 @@ export default function AdminSeoPage() {
     return "#dc2626";
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState<"all" | "main" | "subtab">("all");
+
+  const filteredConfigs = configs.filter((c) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || c.pageName.toLowerCase().includes(q) || c.path.toLowerCase().includes(q) || c.metaTitle.toLowerCase().includes(q);
+    if (!matchesSearch) return false;
+
+    if (filterCategory === "main") return !c.isSubTab;
+    if (filterCategory === "subtab") return c.isSubTab;
+    return true;
+  });
+
   return (
     <div style={{ paddingBottom: "60px" }}>
       {/* Toast Notification */}
@@ -162,11 +175,11 @@ export default function AdminSeoPage() {
               SENIOR DEV SUITE
             </span>
             <h2 style={{ fontSize: "1.45rem", fontWeight: 900, margin: 0, color: "#ffffff" }}>
-              Enterprise Page-by-Page SEO & Meta Management
+              Enterprise Page & Sub-Tab SEO Management
             </h2>
           </div>
           <p style={{ margin: 0, fontSize: "0.88rem", color: "#94a3b8", maxWidth: "650px", lineHeight: "1.5" }}>
-            Customize Meta Titles, Descriptions, Open Graph Cards, Canonical URLs, and Google Rich Snippet JSON-LD Schemas across every route of Global Awaaz.
+            Customize Meta Titles, Descriptions, Open Graph Cards, Canonical URLs, and Schemas across every Main Page and <strong>Sub-Tab Navigation Item</strong> (e.g. Board Exams, Cricket, Stock Markets, AI).
           </p>
         </div>
 
@@ -212,7 +225,7 @@ export default function AdminSeoPage() {
       </div>
 
       {/* Main Grid: Left Sidebar Page Selector + Right Editor Suite */}
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "310px 1fr", gap: "24px" }}>
         {/* LEFT COLUMN: Page Selector Sidebar */}
         <div
           style={{
@@ -224,13 +237,84 @@ export default function AdminSeoPage() {
             height: "fit-content"
           }}
         >
-          <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
             <Layers size={16} style={{ color: "#e50914" }} />
-            <span>Select Page to Configure</span>
+            <span>Select Page / Sub-Tab</span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {configs.map((p) => {
+          {/* Search Box */}
+          <div style={{ position: "relative", marginBottom: "12px" }}>
+            <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search sub-tabs (e.g. Board Exams)..."
+              style={{
+                width: "100%",
+                padding: "7px 10px 7px 30px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.78rem",
+                boxSizing: "border-box"
+              }}
+            />
+          </div>
+
+          {/* Filter Category Tabs */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "12px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
+            <button
+              onClick={() => setFilterCategory("all")}
+              style={{
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 0",
+                fontSize: "0.72rem",
+                fontWeight: filterCategory === "all" ? 800 : 600,
+                background: filterCategory === "all" ? "#ffffff" : "transparent",
+                color: filterCategory === "all" ? "#0f172a" : "#64748b",
+                boxShadow: filterCategory === "all" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                cursor: "pointer"
+              }}
+            >
+              All ({configs.length})
+            </button>
+            <button
+              onClick={() => setFilterCategory("main")}
+              style={{
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 0",
+                fontSize: "0.72rem",
+                fontWeight: filterCategory === "main" ? 800 : 600,
+                background: filterCategory === "main" ? "#ffffff" : "transparent",
+                color: filterCategory === "main" ? "#0f172a" : "#64748b",
+                boxShadow: filterCategory === "main" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                cursor: "pointer"
+              }}
+            >
+              Main ({configs.filter((c) => !c.isSubTab).length})
+            </button>
+            <button
+              onClick={() => setFilterCategory("subtab")}
+              style={{
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 0",
+                fontSize: "0.72rem",
+                fontWeight: filterCategory === "subtab" ? 800 : 600,
+                background: filterCategory === "subtab" ? "#e50914" : "transparent",
+                color: filterCategory === "subtab" ? "#ffffff" : "#64748b",
+                boxShadow: filterCategory === "subtab" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                cursor: "pointer"
+              }}
+            >
+              ⚡ Sub-Tabs ({configs.filter((c) => c.isSubTab).length})
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "540px", overflowY: "auto", paddingRight: "2px" }}>
+            {filteredConfigs.map((p) => {
               const isSelected = p.path === selectedPath;
               const pScoreObj = calculateSeoScore(p);
 
@@ -242,20 +326,21 @@ export default function AdminSeoPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 14px",
+                    padding: "9px 12px",
                     borderRadius: "10px",
                     border: isSelected ? "2px solid #e50914" : "1px solid transparent",
-                    background: isSelected ? "#fef2f2" : "#f8fafc",
-                    color: isSelected ? "#e50914" : "#334155",
+                    background: isSelected ? "#fef2f2" : p.isSubTab ? "#faf5ff" : "#f8fafc",
+                    color: isSelected ? "#e50914" : p.isSubTab ? "#6b21a8" : "#334155",
                     fontWeight: isSelected ? 800 : 600,
-                    fontSize: "0.84rem",
+                    fontSize: "0.8rem",
                     cursor: "pointer",
                     textAlign: "left",
                     transition: "all 0.15s ease"
                   }}
                 >
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.pageName}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, display: "flex", alignItems: "center", gap: "4px" }}>
+                    {p.isSubTab && <span style={{ fontSize: "0.65rem", background: "#8b5cf6", color: "#fff", padding: "1px 5px", borderRadius: "4px", fontWeight: 800 }}>SUB</span>}
+                    <span>{p.pageName}</span>
                   </span>
                   <span
                     style={{

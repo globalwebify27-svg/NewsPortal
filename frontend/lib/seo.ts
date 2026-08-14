@@ -1,3 +1,5 @@
+import { MASTER_SUB_CATEGORIES } from "./subCategories";
+
 export interface SeoPageConfig {
   path: string;
   pageName: string;
@@ -13,9 +15,45 @@ export interface SeoPageConfig {
   robots: "index, follow" | "noindex, follow" | "index, nofollow" | "noindex, nofollow";
   jsonLdType: "NewsMediaOrganization" | "WebPage" | "CollectionPage" | "NewsArticle";
   schemaJson?: string;
+  isSubTab?: boolean;
+  parentCategory?: string;
 }
 
-export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
+export function generateSubTabSeoConfigs(): SeoPageConfig[] {
+  const subTabPages: SeoPageConfig[] = [];
+  
+  if (typeof MASTER_SUB_CATEGORIES === "object" && MASTER_SUB_CATEGORIES !== null) {
+    Object.entries(MASTER_SUB_CATEGORIES).forEach(([catKey, subList]) => {
+      if (Array.isArray(subList)) {
+        subList.forEach((sub) => {
+          const subSlug = sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+          const path = `/${catKey}/${subSlug}`;
+          subTabPages.push({
+            path,
+            pageName: `Sub-Tab: ${sub.hi} (${sub.en})`,
+            metaTitle: `${sub.hi} (${sub.en}) | ${catKey.toUpperCase()} News — Global Awaaz`,
+            metaDescription: `${sub.hi} से जुड़ी ताज़ा ख़बरें, ब्रेकिंग समाचार, मुख्य अपडेट्स और विस्तृत विश्लेषणात्मक रिपोर्ट पढ़ें ग्लोबल आवाज़ पर।`,
+            keywords: `${sub.hi}, ${sub.en}, ${catKey} news hindi, breaking news, Global Awaaz`,
+            canonicalUrl: `https://www.globalawaaz.com${path}`,
+            ogTitle: `${sub.hi} — ताज़ा समाचार व लाइव अपडेट्स | Global Awaaz`,
+            ogDescription: `${sub.hi} क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।`,
+            ogImage: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80",
+            ogType: "website",
+            twitterCard: "summary_large_image",
+            robots: "index, follow",
+            jsonLdType: "CollectionPage",
+            isSubTab: true,
+            parentCategory: catKey
+          });
+        });
+      }
+    });
+  }
+
+  return subTabPages;
+}
+
+export const BASE_SEO_PAGES: SeoPageConfig[] = [
   {
     path: "/",
     pageName: "Homepage (मुख्य पृष्ठ)",
@@ -241,6 +279,11 @@ export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
     robots: "index, follow",
     jsonLdType: "WebPage"
   }
+];
+
+export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
+  ...BASE_SEO_PAGES,
+  ...generateSubTabSeoConfigs()
 ];
 
 export const SEO_STORAGE_KEY = "ga_seo_settings";
