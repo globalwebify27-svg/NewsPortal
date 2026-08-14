@@ -15,16 +15,18 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
 
-  // Proxy /public/uploads/* to Hostinger storage so images load via
+  // Proxy /uploads/* and /public/uploads/* to Hostinger storage so images & videos load via
   // globalawaaz.com without exposing the internal Hostinger hostname.
   async rewrites() {
+    const origin = process.env.HOSTINGER_MEDIA_ORIGIN || "https://yellowgreen-rook-384455.hostingersite.com";
     return [
       {
+        source: "/uploads/:path*",
+        destination: `${origin}/uploads/:path*`,
+      },
+      {
         source: "/public/uploads/:path*",
-        destination:
-          (process.env.HOSTINGER_MEDIA_ORIGIN ||
-            "https://yellowgreen-rook-384455.hostingersite.com") +
-          "/public/uploads/:path*",
+        destination: `${origin}/public/uploads/:path*`,
       },
     ];
   },

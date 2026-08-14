@@ -64,10 +64,22 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           const resJson = await response.json();
           if (resJson.success && resJson.url) {
-            // Rewrite Hostinger internal URL to main domain before storing
-            publicUrl = (resJson.url as string)
-              .replace("https://yellowgreen-rook-384455.hostingersite.com", "https://www.globalawaaz.com")
-              .replace("https://globalawaaz.com", "https://www.globalawaaz.com");
+            // Strip internal Hostinger hostname & /public prefix to return clean relative /uploads/ URLs
+            let rawUrl = (resJson.url as string)
+              .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+              .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+              .replace("//yellowgreen-rook-384455.hostingersite.com", "")
+              .replace("https://www.globalawaaz.com", "")
+              .replace("https://globalawaaz.com", "");
+
+            if (rawUrl.startsWith("/public/uploads/")) {
+              rawUrl = rawUrl.replace("/public/uploads/", "/uploads/");
+            }
+            if (!rawUrl.startsWith("/")) {
+              rawUrl = "/" + rawUrl;
+            }
+
+            publicUrl = rawUrl;
           } else {
             console.warn("Hostinger bridge returned non-success:", resJson);
           }

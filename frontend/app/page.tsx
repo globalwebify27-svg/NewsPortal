@@ -973,15 +973,35 @@ export default function Home() {
               const activeAd = videoAdsList[currentAdIndex] || videoAdsList[0];
               const isMultiple = videoAdsList.length > 1;
 
+              const cleanAdUrl = activeAd?.url
+                ? activeAd.url
+                    .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+                    .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+                    .replace("//yellowgreen-rook-384455.hostingersite.com", "")
+                    .replace("/public/uploads/", "/uploads/")
+                : "";
+
+              let cleanTargetLink = activeAd?.targetLink ? activeAd.targetLink.trim() : "";
+              if (cleanTargetLink) {
+                cleanTargetLink = cleanTargetLink
+                  .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+                  .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+                  .replace("//yellowgreen-rook-384455.hostingersite.com", "");
+
+                if (!cleanTargetLink.startsWith("http://") && !cleanTargetLink.startsWith("https://") && !cleanTargetLink.startsWith("/")) {
+                  cleanTargetLink = "https://" + cleanTargetLink;
+                }
+              }
+
               return (
                 <div style={{ background: "#0a0f1d", borderRadius: "14px", overflow: "hidden", border: "1px solid #1e293b", boxShadow: "0 8px 24px rgba(0,0,0,0.15)", position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
                   {/* Video Player Box with Autoplay & Auto-Next on End */}
                   <div style={{ position: "relative", width: "100%", height: "100%", minHeight: "100%", flex: 1, background: "#000", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {activeAd?.url ? (
-                      activeAd.url.includes("embed/") || activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") ? (
+                    {cleanAdUrl ? (
+                      cleanAdUrl.includes("embed/") || cleanAdUrl.includes("youtube.com") || cleanAdUrl.includes("youtu.be") ? (
                         <iframe
-                          key={`yt_${currentAdIndex}_${activeAd.url}`}
-                          src={activeAd.url.includes("embed/") ? activeAd.url : `https://www.youtube.com/embed/${extractYouTubeId(activeAd.url)}?autoplay=1&mute=1&controls=1&rel=0`}
+                          key={`yt_${currentAdIndex}_${cleanAdUrl}`}
+                          src={cleanAdUrl.includes("embed/") ? cleanAdUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanAdUrl)}?autoplay=1&mute=1&controls=1&rel=0`}
                           title={activeAd.title}
                           style={{ width: "100%", height: "100%", border: "none", display: "block" }}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -989,8 +1009,8 @@ export default function Home() {
                         />
                       ) : (
                         <video
-                          key={`mp4_${currentAdIndex}_${activeAd.url}`}
-                          src={activeAd.url}
+                          key={`mp4_${currentAdIndex}_${cleanAdUrl}`}
+                          src={cleanAdUrl}
                           autoPlay
                           muted
                           loop={!isMultiple}
@@ -1016,9 +1036,9 @@ export default function Home() {
                     )}
 
                     {/* Floating Target Action Link overlay over video */}
-                    {activeAd?.targetLink && (
+                    {cleanTargetLink && (
                       <a
-                        href={activeAd.targetLink}
+                        href={cleanTargetLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{

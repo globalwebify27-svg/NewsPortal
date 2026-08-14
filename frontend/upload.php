@@ -25,10 +25,14 @@ if ($apiKey !== $SECRET_KEY) {
     exit;
 }
 
-// 2. Target upload directory
-$uploadDir = __DIR__ . '/public/uploads/';
+// 2. Target upload directories
+$uploadDir = __DIR__ . '/uploads/';
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0755, true);
+}
+$publicUploadDir = __DIR__ . '/public/uploads/';
+if (!file_exists($publicUploadDir)) {
+    mkdir($publicUploadDir, 0755, true);
 }
 
 if (!isset($_FILES['file'])) {
@@ -40,17 +44,19 @@ if (!isset($_FILES['file'])) {
 $file = $_FILES['file'];
 $filename = basename($file['name']);
 $targetFilePath = $uploadDir . $filename;
+$targetPublicFilePath = $publicUploadDir . $filename;
 
-// Move file to public/uploads/
+// Move file to uploads/ and mirror to public/uploads/
 if (move_uploaded_file($file['tmp_name'], $targetFilePath)) {
-    // Generate public HTTP URL
-    $host = $_SERVER['HTTP_HOST'];
-    $publicUrl = "https://$host/public/uploads/$filename";
+    @copy($targetFilePath, $targetPublicFilePath);
+    
+    // Return relative public path so frontend uses its own domain and hides backend host
+    $relativeUrl = "/uploads/$filename";
 
     http_response_code(200);
     echo json_encode([
         "success" => true,
-        "url" => $publicUrl,
+        "url" => $relativeUrl,
         "filename" => $filename
     ]);
 } else {
