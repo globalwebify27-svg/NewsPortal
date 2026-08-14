@@ -23,6 +23,7 @@ import {
 
 import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
 import { extractYouTubeId } from "@/lib/youtube";
+import { uploadMediaDirectly } from "@/lib/mediaUpload";
 
 export default function AdminSettingsPage() {
   // Toast state
@@ -388,22 +389,15 @@ export default function AdminSettingsPage() {
     if (!file) return;
 
     setSidebarVideoUploadingId(id);
+    showToast("⏳ Uploading & Optimizing Video MP4 for live streaming...");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const uploadRes = await fetch("/api/v1/media/upload", { method: "POST", body: formData });
-      const uploadJson = await uploadRes.json();
-      if (uploadJson.success && (uploadJson.url || uploadJson.data?.url)) {
-        const uploadedUrl = uploadJson.url || uploadJson.data?.url;
-        const updated = sidebarVideoAdsList.map((item) => (item.id === id ? { ...item, url: uploadedUrl } : item));
-        setSidebarVideoAdsList(updated);
-        await handleSaveSidebarVideoAdList(updated);
-        showToast("✓ Video MP4 ad uploaded & saved!");
-      } else {
-        showToast("❌ Upload failed: " + (uploadJson.error || uploadJson.message || ""), "error");
-      }
+      const uploadedUrl = await uploadMediaDirectly(file);
+      const updated = sidebarVideoAdsList.map((item) => (item.id === id ? { ...item, url: uploadedUrl } : item));
+      setSidebarVideoAdsList(updated);
+      await handleSaveSidebarVideoAdList(updated);
+      showToast("✓ Video MP4 ad uploaded & optimized live!");
     } catch (err: any) {
-      showToast("❌ Upload error: " + (err?.message || ""), "error");
+      showToast("❌ Upload error: " + (err?.message || "File upload failed"), "error");
     } finally {
       setSidebarVideoUploadingId(null);
       e.target.value = "";

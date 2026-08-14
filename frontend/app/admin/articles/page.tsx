@@ -25,6 +25,7 @@ import { INDIAN_STATES } from "@/lib/states";
 import { INDIAN_DISTRICTS, getDistrictsForState } from "@/lib/districts";
 import { convertImageToWebP } from "@/lib/webpConverter";
 import { getSubCategories } from "@/lib/subCategories";
+import { uploadMediaDirectly } from "@/lib/mediaUpload";
 
 export interface ArticleAdItem {
   id: string;
@@ -363,23 +364,10 @@ export default function AdminArticlesPage() {
     reader.readAsDataURL(file);
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-
-      const res = await fetch("/api/v1/media/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const json = await res.json();
-
-      if (json?.success && json?.data?.url) {
-        // Replace preview with saved local WebP URL
-        setFormImage(json.data.url);
-        setImageFileName(file.name + " (WebP Format ✓)");
-        showToast("✅ Image converted to WebP & saved to /public/uploads/!");
-      } else {
-        showToast("⚠️ Upload failed: " + (json?.message || "Unknown error"));
-      }
+      const uploadedUrl = await uploadMediaDirectly(file);
+      setFormImage(uploadedUrl);
+      setImageFileName(file.name + " (WebP Format ✓)");
+      showToast("✅ Image converted to WebP & saved to Hostinger!");
     } catch (err: any) {
       console.error("Local upload error:", err);
       showToast("⚠️ Upload failed — image saved as local preview only.");
@@ -401,14 +389,9 @@ export default function AdminArticlesPage() {
     reader.readAsDataURL(file);
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/v1/media/upload", { method: "POST", body: fd });
-      const json = await res.json();
-      if (json?.success && json?.data?.url) {
-        setFormAdImage(json.data.url);
-        showToast("✅ Custom Ad Banner uploaded successfully!");
-      }
+      const uploadedUrl = await uploadMediaDirectly(file);
+      setFormAdImage(uploadedUrl);
+      showToast("✅ Custom Ad Banner uploaded successfully!");
     } catch (err) {
       showToast("⚠️ Ad image saved as local preview.");
     } finally {
