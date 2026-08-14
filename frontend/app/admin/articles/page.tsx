@@ -120,6 +120,7 @@ export default function AdminArticlesPage() {
   const [formDistrict, setFormDistrict] = useState("Ranchi");
   const [formIsTrending, setFormIsTrending] = useState(false);
   const [formAuthor, setFormAuthor] = useState("Global Admin");
+  const [staffMembersList, setStaffMembersList] = useState<any[]>([]);
   const [formStatus, setFormStatus] = useState("PUBLISHED");
   const [formLanguage, setFormLanguage] = useState<"EN" | "HI">("HI");
   const [formSummary, setFormSummary] = useState("");
@@ -198,17 +199,18 @@ export default function AdminArticlesPage() {
         let rawRole = sessionStorage.getItem("ga_admin_role") || "";
         const user = sessionStorage.getItem("ga_admin_user") || "Global Admin";
 
-        if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
-          try {
-            const res = await fetch("/api/v1/staff");
-            const json = await res.json();
-            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+        try {
+          const res = await fetch("/api/v1/staff");
+          const json = await res.json();
+          const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+          setStaffMembersList(storedUsers);
+          if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
             const found = storedUsers.find((u: any) => u.name === user || u.email === user);
             if (found && found.roleSlug) {
               rawRole = found.roleSlug;
             }
-          } catch (e) {}
-        }
+          }
+        } catch (e) {}
 
         const role = (rawRole || "super_admin").toLowerCase();
         setAdminRole(role);
@@ -463,8 +465,8 @@ export default function AdminArticlesPage() {
       category: { name: activeCat, slug: activeCat.toLowerCase(), color: getCategoryColor(activeCat), subCategory: formSubCategory },
       categories: formCategories.length > 0 ? formCategories : [activeCat],
       subCategory: formSubCategory,
-      author: { name: editingArticle?.author?.name || `${adminUserName}` },
-      authorId: editingArticle?.authorId || adminUserName,
+      author: { name: (formAuthor && formAuthor.trim()) ? formAuthor.trim() : (adminUserName && adminUserName !== "Global Admin" ? adminUserName : "Global Awaaz Admin") },
+      authorId: (formAuthor && formAuthor.trim()) ? formAuthor.trim() : adminUserName,
       status: targetStatus,
       submittedAt: submittedAt || undefined,
       approvedBy: approvedBy || undefined,
@@ -1329,6 +1331,39 @@ export default function AdminArticlesPage() {
                     )}
                   </select>
                 </div>
+              </div>
+
+              {/* News Composed By / Author Selection */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
+                  ✍️ News Composed By / Author Name (लेखक / संवाददाता नाम)
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. amatjeet, Amarjeet, Raj..."
+                    value={formAuthor}
+                    onChange={(e) => setFormAuthor(e.target.value)}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a", fontWeight: 700 }}
+                  />
+                  {staffMembersList.length > 0 && (
+                    <select
+                      value={formAuthor}
+                      onChange={(e) => setFormAuthor(e.target.value)}
+                      style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#f8fafc", color: "#0f172a", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      <option value="">Select Staff Account...</option>
+                      {staffMembersList.map((st: any) => (
+                        <option key={st.id || st.email} value={st.name || st.email}>
+                          👤 {st.name || st.email} ({st.roleName || "Staff"})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <span style={{ fontSize: "0.74rem", color: "#64748b", display: "block", marginTop: "4px" }}>
+                  The article page will display <strong>{formAuthor || adminUserName}</strong> as the author on the website.
+                </span>
               </div>
 
               <div>

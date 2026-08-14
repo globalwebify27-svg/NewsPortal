@@ -375,9 +375,9 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                 {(article.author?.name || "G")[0].toUpperCase()}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: "0.94rem" }}>{article.author?.name || "Global Awaaz Staff"}</div>
+                <div style={{ fontWeight: 700, fontSize: "0.94rem" }}>{article.author?.name || "Global Awaaz Admin"}</div>
                 <div style={{ fontSize: "0.78rem", color: "var(--color-secondary)" }}>
-                  {article.author?.bio || "Editorial Correspondent"}
+                  {article.author?.bio || (article.author?.name === "Global Awaaz Admin" ? "Chief Editor & Administrator at Global Awaaz." : "Editor & Correspondent at Global Awaaz")}
                 </div>
               </div>
             </div>

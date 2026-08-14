@@ -189,7 +189,25 @@ export async function getArticleBySlug(slug: string) {
       }
     }
 
-    return article ? { ...article, isHero: !!article.isFeatured } : null;
+    if (article) {
+      const rawAuthorName = article.author?.name;
+      const submittedByName = (article as any).submittedBy;
+      const authorName = (rawAuthorName && rawAuthorName !== "Global Awaaz Admin" && rawAuthorName !== "Global Admin")
+        ? rawAuthorName
+        : (submittedByName || rawAuthorName || "Global Awaaz Admin");
+
+      return {
+        ...article,
+        author: {
+          ...article.author,
+          name: authorName,
+          bio: article.author?.bio || (authorName === "Global Awaaz Admin" ? "Chief Editor & Administrator at Global Awaaz." : "Editor & Correspondent at Global Awaaz")
+        },
+        isHero: !!article.isFeatured
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error("Error fetching article by slug from MySQL DB:", error);
     return null;
@@ -278,41 +296,44 @@ export async function createOrUpdateArticle(data: any) {
       }
     }
 
-    // Author Resolution: convert authorId (if string name like "Global Admin") to valid User DB ID
-    let authorId: string | null = data.authorId || null;
-    let validAuthor = null;
+    // Author Resolution: convert authorId / author.name to valid User DB ID
+    const targetAuthorName = (typeof data.author === "object" && data.author?.name)
+      ? data.author.name
+      : (data.authorId || data.submittedBy || data.userName || "Global Awaaz Staff");
 
-    if (authorId) {
-      validAuthor = await prisma.user.findFirst({
-        where: { OR: [{ id: authorId }, { name: authorId }, { email: authorId }] }
-      });
-    }
+    let authorId: string | null = null;
+    let validAuthor = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: targetAuthorName },
+          { name: targetAuthorName },
+          { email: targetAuthorName }
+        ]
+      }
+    });
 
-    if (!validAuthor && data.userName) {
+    if (!validAuthor && data.submittedBy) {
       validAuthor = await prisma.user.findFirst({
-        where: { OR: [{ name: data.userName }, { email: data.userName }] }
+        where: {
+          OR: [
+            { name: data.submittedBy },
+            { email: data.submittedBy }
+          ]
+        }
       });
     }
 
     if (validAuthor) {
       authorId = validAuthor.id;
     } else {
-      const defaultUser = await prisma.user.findFirst({
-        where: { role: { in: ["SUPERADMIN", "ADMIN"] } }
-      }) || await prisma.user.findFirst();
-
-      if (defaultUser) {
-        authorId = defaultUser.id;
-      } else {
-        const createdUser = await prisma.user.create({
-          data: {
-            name: data.userName || "Global Admin",
-            email: `admin_${Date.now()}@globalawaaz.com`,
-            role: "SUPERADMIN"
-          }
-        });
-        authorId = createdUser.id;
-      }
+      const createdUser = await prisma.user.create({
+        data: {
+          name: targetAuthorName,
+          email: `${targetAuthorName.toLowerCase().replace(/[^a-z0-9]/g, "") || "editor"}_${Date.now()}@globalawaaz.com`,
+          role: "EDITOR"
+        }
+      });
+      authorId = createdUser.id;
     }
 
     const payload = {
