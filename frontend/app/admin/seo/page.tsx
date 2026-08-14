@@ -113,15 +113,16 @@ export default function AdminSeoPage() {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState<"all" | "main" | "subtab">("all");
+  const [filterCategory, setFilterCategory] = useState<"all" | "main" | "state" | "subtab">("all");
 
   const filteredConfigs = configs.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || c.pageName.toLowerCase().includes(q) || c.path.toLowerCase().includes(q) || c.metaTitle.toLowerCase().includes(q);
     if (!matchesSearch) return false;
 
-    if (filterCategory === "main") return !c.isSubTab;
-    if (filterCategory === "subtab") return c.isSubTab;
+    if (filterCategory === "main") return !c.isSubTab && !c.isState;
+    if (filterCategory === "state") return c.isState;
+    if (filterCategory === "subtab") return c.isSubTab && !c.isState;
     return true;
   });
 
@@ -249,7 +250,7 @@ export default function AdminSeoPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search sub-tabs (e.g. Board Exams)..."
+              placeholder="Search states & sub-tabs (e.g. Jharkhand, Bihar, UP)..."
               style={{
                 width: "100%",
                 padding: "7px 10px 7px 30px",
@@ -262,14 +263,14 @@ export default function AdminSeoPage() {
           </div>
 
           {/* Filter Category Tabs */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px", marginBottom: "12px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "3px", marginBottom: "12px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
             <button
               onClick={() => setFilterCategory("all")}
               style={{
                 border: "none",
                 borderRadius: "6px",
                 padding: "5px 0",
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: filterCategory === "all" ? 800 : 600,
                 background: filterCategory === "all" ? "#ffffff" : "transparent",
                 color: filterCategory === "all" ? "#0f172a" : "#64748b",
@@ -285,7 +286,7 @@ export default function AdminSeoPage() {
                 border: "none",
                 borderRadius: "6px",
                 padding: "5px 0",
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: filterCategory === "main" ? 800 : 600,
                 background: filterCategory === "main" ? "#ffffff" : "transparent",
                 color: filterCategory === "main" ? "#0f172a" : "#64748b",
@@ -293,7 +294,23 @@ export default function AdminSeoPage() {
                 cursor: "pointer"
               }}
             >
-              Main ({configs.filter((c) => !c.isSubTab).length})
+              Main ({configs.filter((c) => !c.isSubTab && !c.isState).length})
+            </button>
+            <button
+              onClick={() => setFilterCategory("state")}
+              style={{
+                border: "none",
+                borderRadius: "6px",
+                padding: "5px 0",
+                fontSize: "0.7rem",
+                fontWeight: filterCategory === "state" ? 800 : 600,
+                background: filterCategory === "state" ? "#dc2626" : "transparent",
+                color: filterCategory === "state" ? "#ffffff" : "#64748b",
+                boxShadow: filterCategory === "state" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                cursor: "pointer"
+              }}
+            >
+              📍 States ({configs.filter((c) => c.isState).length})
             </button>
             <button
               onClick={() => setFilterCategory("subtab")}
@@ -301,15 +318,15 @@ export default function AdminSeoPage() {
                 border: "none",
                 borderRadius: "6px",
                 padding: "5px 0",
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: filterCategory === "subtab" ? 800 : 600,
-                background: filterCategory === "subtab" ? "#e50914" : "transparent",
+                background: filterCategory === "subtab" ? "#8b5cf6" : "transparent",
                 color: filterCategory === "subtab" ? "#ffffff" : "#64748b",
                 boxShadow: filterCategory === "subtab" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                 cursor: "pointer"
               }}
             >
-              ⚡ Sub-Tabs ({configs.filter((c) => c.isSubTab).length})
+              ⚡ Sub ({configs.filter((c) => c.isSubTab && !c.isState).length})
             </button>
           </div>
 
@@ -329,8 +346,8 @@ export default function AdminSeoPage() {
                     padding: "9px 12px",
                     borderRadius: "10px",
                     border: isSelected ? "2px solid #e50914" : "1px solid transparent",
-                    background: isSelected ? "#fef2f2" : p.isSubTab ? "#faf5ff" : "#f8fafc",
-                    color: isSelected ? "#e50914" : p.isSubTab ? "#6b21a8" : "#334155",
+                    background: isSelected ? "#fef2f2" : p.isState ? "#fff1f2" : p.isSubTab ? "#faf5ff" : "#f8fafc",
+                    color: isSelected ? "#e50914" : p.isState ? "#991b1b" : p.isSubTab ? "#6b21a8" : "#334155",
                     fontWeight: isSelected ? 800 : 600,
                     fontSize: "0.8rem",
                     cursor: "pointer",
@@ -339,7 +356,11 @@ export default function AdminSeoPage() {
                   }}
                 >
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, display: "flex", alignItems: "center", gap: "4px" }}>
-                    {p.isSubTab && <span style={{ fontSize: "0.65rem", background: "#8b5cf6", color: "#fff", padding: "1px 5px", borderRadius: "4px", fontWeight: 800 }}>SUB</span>}
+                    {p.isState ? (
+                      <span style={{ fontSize: "0.63rem", background: "#dc2626", color: "#fff", padding: "1px 5px", borderRadius: "4px", fontWeight: 800 }}>STATE</span>
+                    ) : p.isSubTab ? (
+                      <span style={{ fontSize: "0.63rem", background: "#8b5cf6", color: "#fff", padding: "1px 5px", borderRadius: "4px", fontWeight: 800 }}>SUB</span>
+                    ) : null}
                     <span>{p.pageName}</span>
                   </span>
                   <span
