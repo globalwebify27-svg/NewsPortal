@@ -12,6 +12,7 @@ import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/li
 import { defaultEnglishArticles, defaultHindiArticles, allDefaultArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
+import { cleanVideoUrl } from "@/lib/mediaUpload";
 
 interface Article {
   id: string;
@@ -973,13 +974,7 @@ export default function Home() {
               const activeAd = videoAdsList[currentAdIndex] || videoAdsList[0];
               const isMultiple = videoAdsList.length > 1;
 
-              const cleanAdUrl = activeAd?.url
-                ? activeAd.url
-                    .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
-                    .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
-                    .replace("//yellowgreen-rook-384455.hostingersite.com", "")
-                    .replace("/public/uploads/", "/uploads/")
-                : "";
+              const cleanAdUrl = cleanVideoUrl(activeAd?.url);
 
               let cleanTargetLink = activeAd?.targetLink ? activeAd.targetLink.trim() : "";
               if (cleanTargetLink) {

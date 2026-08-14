@@ -4,6 +4,42 @@
  * directly to Hostinger storage, returning clean relative URLs (/uploads/filename.mp4).
  */
 
+export function cleanVideoUrl(rawUrl: string): string {
+  if (!rawUrl) return "";
+  let url = rawUrl.trim();
+
+  // 1. YouTube / Vimeo / external embed links
+  if (url.includes("youtube.com") || url.includes("youtu.be") || url.includes("vimeo.com")) {
+    return url;
+  }
+
+  // 2. Remove malformed leading /https/, /http/, /https:/, /https//, etc.
+  url = url.replace(/^\/?(https?:?\/?\/?)+/g, "");
+
+  // 3. Remove Hostinger or site domains if embedded in path
+  url = url
+    .replace("yellowgreen-rook-384455.hostingersite.com", "")
+    .replace("www.globalawaaz.com", "")
+    .replace("globalawaaz.com", "")
+    .replace(/^\/?(https?:?\/?\/?)+/g, "");
+
+  // 4. Normalize /public/uploads/ -> /uploads/
+  if (url.includes("uploads/")) {
+    const idx = url.indexOf("uploads/");
+    url = "/" + url.slice(idx);
+  }
+
+  if (url.startsWith("/public/uploads/")) {
+    url = url.replace("/public/uploads/", "/uploads/");
+  }
+
+  if (!url.startsWith("/")) {
+    url = "/" + url;
+  }
+
+  return url;
+}
+
 export async function uploadMediaDirectly(file: File): Promise<string> {
   if (!file) throw new Error("No file provided");
 
@@ -26,21 +62,7 @@ export async function uploadMediaDirectly(file: File): Promise<string> {
     if (response.ok) {
       const resJson = await response.json();
       if (resJson.success && resJson.url) {
-        let cleanUrl = (resJson.url as string)
-          .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
-          .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
-          .replace("//yellowgreen-rook-384455.hostingersite.com", "")
-          .replace("https://www.globalawaaz.com", "")
-          .replace("https://globalawaaz.com", "");
-
-        if (cleanUrl.startsWith("/public/uploads/")) {
-          cleanUrl = cleanUrl.replace("/public/uploads/", "/uploads/");
-        }
-        if (!cleanUrl.startsWith("/")) {
-          cleanUrl = "/" + cleanUrl;
-        }
-
-        return cleanUrl;
+        return cleanVideoUrl(resJson.url as string);
       }
     }
   } catch (directErr) {
@@ -66,21 +88,8 @@ export async function uploadMediaDirectly(file: File): Promise<string> {
 
   const fallbackJson = await fallbackRes.json();
   if (fallbackJson.success && (fallbackJson.url || fallbackJson.data?.url)) {
-    let cleanUrl = fallbackJson.url || fallbackJson.data?.url;
-    cleanUrl = cleanUrl
-      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
-      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
-      .replace("//yellowgreen-rook-384455.hostingersite.com", "")
-      .replace("https://www.globalawaaz.com", "")
-      .replace("https://globalawaaz.com", "");
-
-    if (cleanUrl.startsWith("/public/uploads/")) {
-      cleanUrl = cleanUrl.replace("/public/uploads/", "/uploads/");
-    }
-    if (!cleanUrl.startsWith("/")) {
-      cleanUrl = "/" + cleanUrl;
-    }
-    return cleanUrl;
+    const raw = fallbackJson.url || fallbackJson.data?.url;
+    return cleanVideoUrl(raw);
   }
 
   throw new Error(fallbackJson.message || fallbackJson.error || "Media upload failed");
