@@ -1274,6 +1274,18 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
+          {/* Recommended Best Practices Box */}
+          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "#1e40af" }}>
+              💡 Best Practices for Video Advertisements:
+            </span>
+            <span style={{ fontSize: "0.78rem", color: "#1e3a8a", lineHeight: 1.5 }}>
+              • <strong>Option A (Fastest & 100% Free - Recommended):</strong> Paste any <strong>YouTube video or Shorts link</strong> (e.g. <code>https://www.youtube.com/watch?v=...</code>). It streams in 4K/1080p with zero server bandwidth costs.
+              <br />
+              • <strong>Option B (Direct MP4 Upload):</strong> Click <strong>Upload MP4</strong> to upload video files directly. They stream live via <code>/uploads/...</code> proxy.
+            </span>
+          </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {/* Header Action Bar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>

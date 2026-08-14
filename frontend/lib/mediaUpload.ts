@@ -48,8 +48,11 @@ export async function uploadMediaDirectly(file: File): Promise<string> {
 
   // 1. Direct Upload to Hostinger PHP Storage Bridge (Bypasses Vercel 4.5MB Limit)
   try {
+    const sanitizedFileName = file.name.toLowerCase().replace(/[^a-z0-9._-]/g, "-").replace(/-+/g, "-");
+    const renamedFile = new File([file], sanitizedFileName, { type: file.type });
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", renamedFile);
 
     const response = await fetch(hostingerUploadUrl, {
       method: "POST",

@@ -42,7 +42,10 @@ if (!isset($_FILES['file'])) {
 }
 
 $file = $_FILES['file'];
-$filename = basename($file['name']);
+$rawFilename = basename($file['name']);
+$filename = preg_replace('/[^a-zA-Z0-9._-]/', '-', strtolower($rawFilename));
+$filename = preg_replace('/-+/', '-', $filename);
+
 $targetFilePath = $uploadDir . $filename;
 $targetPublicFilePath = $publicUploadDir . $filename;
 
