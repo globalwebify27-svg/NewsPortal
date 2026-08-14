@@ -22,18 +22,36 @@ export async function GET(
       fetchHeaders["range"] = req.headers.get("range")!;
     }
 
-    // Try primary /uploads/ path first on Hostinger
-    let targetUrl = `${hostingerOrigin}/uploads/${filenamePath}`;
-    let response = await fetch(targetUrl, { headers: fetchHeaders });
+    const decodedFilename = decodeURIComponent(filenamePath);
 
-    // Fallback to /public/uploads/ path if primary returns 404
-    if (!response.ok && response.status === 404) {
-      targetUrl = `${hostingerOrigin}/public/uploads/${filenamePath}`;
-      response = await fetch(targetUrl, { headers: fetchHeaders });
+    const candidatePaths = Array.from(new Set([
+      `/uploads/${filenamePath}`,
+      `/public/uploads/${filenamePath}`,
+      `/uploads/${decodedFilename}`,
+      `/public/uploads/${decodedFilename}`,
+      `/uploads/${filenamePath.replace(/-/g, "_")}`,
+      `/public/uploads/${filenamePath.replace(/-/g, "_")}`,
+      `/uploads/${filenamePath.replace(/-/g, " ")}`,
+      `/public/uploads/${filenamePath.replace(/-/g, " ")}`
+    ]));
+
+    let response: Response | null = null;
+
+    for (const relPath of candidatePaths) {
+      try {
+        const testUrl = `${hostingerOrigin}${relPath}`;
+        const res = await fetch(testUrl, { headers: fetchHeaders });
+        if (res.ok) {
+          response = res;
+          break;
+        }
+      } catch (err) {
+        // try next candidate
+      }
     }
 
-    if (!response.ok) {
-      return new NextResponse(`File not found on storage server (${response.status})`, {
+    if (!response || !response.ok) {
+      return new NextResponse(`File not found on storage server`, {
         status: 404,
       });
     }
