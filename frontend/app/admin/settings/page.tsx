@@ -23,7 +23,7 @@ import {
 
 import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
 import { extractYouTubeId } from "@/lib/youtube";
-import { uploadMediaDirectly } from "@/lib/mediaUpload";
+import { uploadMediaDirectly, cleanVideoUrl } from "@/lib/mediaUpload";
 
 export default function AdminSettingsPage() {
   // Toast state
@@ -147,13 +147,17 @@ export default function AdminSettingsPage() {
           try {
             const parsed = JSON.parse(data.sidebar_video_ads_list);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setSidebarVideoAdsList(parsed);
+              const cleaned = parsed.map((item: any) => ({
+                ...item,
+                url: cleanVideoUrl(item.url || "")
+              }));
+              setSidebarVideoAdsList(cleaned);
             }
           } catch (e) {}
         } else if (data.sidebar_video_ad_url) {
           setSidebarVideoAdsList([{
             id: "ad_1",
-            url: data.sidebar_video_ad_url,
+            url: cleanVideoUrl(data.sidebar_video_ad_url),
             title: data.sidebar_video_ad_title || "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन",
             targetLink: data.sidebar_video_ad_target_link || "/advertise"
           }]);
@@ -330,7 +334,11 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveSidebarVideoAdList = async (overrideList?: typeof sidebarVideoAdsList, overrideEnabled?: boolean) => {
-    const finalList = overrideList !== undefined ? overrideList : sidebarVideoAdsList;
+    const rawList = overrideList !== undefined ? overrideList : sidebarVideoAdsList;
+    const finalList = rawList.map((item) => ({
+      ...item,
+      url: cleanVideoUrl(item.url || "")
+    }));
     const finalEnabled = overrideEnabled !== undefined ? overrideEnabled : sidebarVideoAdEnabled;
     setSidebarVideoAdSaving(true);
     try {
@@ -1360,21 +1368,28 @@ export default function AdminSettingsPage() {
                       PREVIEW AD #{index + 1}
                     </div>
                     <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000" }}>
-                      {adItem.url ? (
-                        adItem.url.includes("embed/") || adItem.url.includes("youtube.com") || adItem.url.includes("youtu.be") ? (
-                          <iframe
-                            src={adItem.url.includes("embed/") ? adItem.url : `https://www.youtube.com/embed/${extractYouTubeId(adItem.url)}`}
-                            title={`Preview ${index + 1}`}
-                            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-                          />
-                        ) : (
-                          <video src={adItem.url} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                        )
-                      ) : (
-                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
-                          No video added yet
-                        </div>
-                      )}
+                      {(() => {
+                        const cleanUrl = cleanVideoUrl(adItem.url);
+                        if (!cleanUrl) {
+                          return (
+                            <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
+                              No video added yet
+                            </div>
+                          );
+                        }
+                        if (cleanUrl.includes("embed/") || cleanUrl.includes("youtube.com") || cleanUrl.includes("youtu.be")) {
+                          return (
+                            <iframe
+                              src={cleanUrl.includes("embed/") ? cleanUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanUrl)}`}
+                              title={`Preview ${index + 1}`}
+                              style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                            />
+                          );
+                        }
+                        return (
+                          <video src={cleanUrl} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        );
+                      })()}
                     </div>
                     <div style={{ padding: "6px 8px", background: "#111827", fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {adItem.title || "Untitled Ad"}
