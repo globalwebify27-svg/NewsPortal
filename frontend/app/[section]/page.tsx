@@ -48,11 +48,20 @@ export async function generateMetadata({
       siteName: "GLOBAL AWAAZ",
       locale: "hi_IN",
       type: "website",
+      images: [
+        {
+          url: "https://www.globalawaaz.com/logo.png",
+          width: 1200,
+          height: 630,
+          alt: `${formattedTitle} News | GLOBAL AWAAZ`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: `${formattedTitle} News | GLOBAL AWAAZ`,
       description: `Latest ${formattedTitle} news, editorials, analysis, and updates on GLOBAL AWAAZ.`,
+      images: ["https://www.globalawaaz.com/logo.png"],
     },
   };
 }

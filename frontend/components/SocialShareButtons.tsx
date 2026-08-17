@@ -36,8 +36,9 @@ export default function SocialShareButtons({
       return slug;
     }
 
-    // 2. Clean the slug string
-    const cleanSlug = slug.startsWith("/") ? slug.slice(1) : slug;
+    // 2. Clean the slug string and replace unencoded spaces with hyphens
+    let cleanSlug = slug.startsWith("/") ? slug.slice(1) : slug;
+    cleanSlug = cleanSlug.replace(/%20/g, "-").replace(/\s+/g, "-");
 
     // 3. If cleanSlug already includes a section path or standalone top-level route (videos, epaper, breaking, etc.)
     if (
@@ -54,7 +55,7 @@ export default function SocialShareButtons({
     }
 
     // 4. If category is "videos"
-    let cleanSection = (categorySlug || "top-news").toLowerCase().trim();
+    let cleanSection = (categorySlug || "top-news").toLowerCase().trim().replace(/\s+/g, "-");
     if (cleanSection === "videos") {
       const vidQuery = cleanSlug.includes("?v=") ? cleanSlug : `videos?v=${cleanSlug}`;
       return `https://www.globalawaaz.com/${vidQuery}`;
@@ -65,9 +66,8 @@ export default function SocialShareButtons({
       const path = window.location.pathname;
       const pathSegments = path.split("/").filter(Boolean);
       if (pathSegments.length >= 2 || (pathSegments.length === 1 && !["admin", "login", "categories", "epaper", "about"].includes(pathSegments[0]))) {
-        if (path.includes(cleanSlug)) {
-          return `https://www.globalawaaz.com${path}`;
-        }
+        const cleanPath = path.replace(/%20/g, "-").replace(/\s+/g, "-");
+        return `https://www.globalawaaz.com${cleanPath}`;
       }
     }
 

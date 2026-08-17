@@ -37,12 +37,24 @@ function isStateRoute(slug: string): boolean {
   );
 }
 
+import { getArticleBySlug } from "@/lib/services/articles";
+
 async function getArticleData(slug: string): Promise<ArticleDetail | null> {
   const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.globalawaaz.com").replace(/\/$/, "");
 
-  // 1. Try backend API with absolute URL for SSR
+  // 1. Direct Server-Side DB query for fast, reliable SSR & Social Media metadata
   try {
+    const dbArticle = await getArticleBySlug(targetSlug);
+    if (dbArticle) {
+      return dbArticle as unknown as ArticleDetail;
+    }
+  } catch (err) {
+    console.error("Direct DB fetch error in getArticleData:", err);
+  }
+
+  // 2. Try backend API with absolute URL for SSR fallback
+  try {
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.globalawaaz.com").replace(/\/$/, "");
     const fetchUrl = `${baseUrl}/api/v1/articles/${encodeURIComponent(targetSlug)}`;
     const res = await fetch(fetchUrl, { next: { revalidate: 60 } });
     if (res.ok) {
@@ -53,7 +65,7 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
     // API network fetch fallback
   }
 
-  // 2. Fall back to default articles
+  // 3. Fall back to default articles
   const defaultFound = findDefaultArticle(targetSlug);
   if (defaultFound) {
     return defaultFound as ArticleDetail;

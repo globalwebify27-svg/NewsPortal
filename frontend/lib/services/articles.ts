@@ -174,18 +174,34 @@ export async function getArticleBySlug(slug: string) {
     });
 
     if (!article) {
-      const parts = targetSlug.split("-");
-      const possibleId = parts[parts.length - 1];
-      if (possibleId && possibleId.length >= 2) {
-        article = await prisma.article.findFirst({
-          where: {
-            OR: [{ id: possibleId }, { id: { endsWith: possibleId } }, { slug: { contains: possibleId } }],
-          },
-          include: {
-            category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
-            author: { select: { id: true, name: true, avatar: true, bio: true } },
-          },
-        });
+      // 2. Try removing category/section prefix if targetSlug is e.g. "top-news/nesar-ansari..." or "top news/nesar-ansari..."
+      const cleanTargetSlug = targetSlug.includes("/") ? targetSlug.split("/").pop() || targetSlug : targetSlug;
+
+      article = await prisma.article.findFirst({
+        where: {
+          OR: [{ slug: cleanTargetSlug }, { id: cleanTargetSlug }],
+        },
+        include: {
+          category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
+          author: { select: { id: true, name: true, avatar: true, bio: true } },
+        },
+      });
+
+      // 3. Fall back to ID suffix matching or partial slug matching
+      if (!article) {
+        const parts = cleanTargetSlug.split("-");
+        const possibleId = parts[parts.length - 1];
+        if (possibleId && possibleId.length >= 2) {
+          article = await prisma.article.findFirst({
+            where: {
+              OR: [{ id: possibleId }, { id: { endsWith: possibleId } }, { slug: { contains: possibleId } }],
+            },
+            include: {
+              category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
+              author: { select: { id: true, name: true, avatar: true, bio: true } },
+            },
+          });
+        }
       }
     }
 
