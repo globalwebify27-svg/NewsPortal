@@ -212,7 +212,7 @@ export default function CareersPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
-              <span>{isHi ? "ग्लोबल आवाज़ करियर पोर्टल" : "Careers at GLOBAL AWAAZ"}</span>
+              <span>{isHi ? "GLOBAL AWAAZ करियर पोर्टल" : "Careers at GLOBAL AWAAZ"}</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 max-w-4xl mx-auto leading-tight">

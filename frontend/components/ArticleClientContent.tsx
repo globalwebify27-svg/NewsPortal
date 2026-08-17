@@ -346,7 +346,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               href="/"
               style={{ color: "var(--color-secondary)", textDecoration: "none", fontSize: "0.84rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px", transition: "color 0.2s ease" }}
             >
-              <ArrowLeft size={15} /> {lang === "HI" ? "ग्लोबल आवाज़ मुख्य पृष्ठ पर लौटें" : "Back to Global Awaaz"}
+              <ArrowLeft size={15} /> {lang === "HI" ? "GLOBAL AWAAZ मुख्य पृष्ठ पर लौटें" : "Back to Global Awaaz"}
             </Link>
           </div>
 

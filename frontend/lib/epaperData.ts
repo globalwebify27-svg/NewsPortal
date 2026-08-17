@@ -67,10 +67,10 @@ export interface EPaperIssue {
 }
 
 export const defaultEditions: EPaperEdition[] = [
-  { id: "patna", nameHi: "ग्लोबल आवाज़ (पटना)", nameEn: "Global Awaaz (Patna)", cityHi: "पटना", cityEn: "Patna", stateHi: "बिहार", stateEn: "Bihar", isPopular: true },
-  { id: "ranchi", nameHi: "ग्लोबल आवाज़ (रांची)", nameEn: "Global Awaaz (Ranchi)", cityHi: "रांची", cityEn: "Ranchi", stateHi: "झारखंड", stateEn: "Jharkhand" },
-  { id: "delhi", nameHi: "ग्लोबल आवाज़ (दिल्ली)", nameEn: "Global Awaaz (Delhi)", cityHi: "नई दिल्ली", cityEn: "New Delhi", stateHi: "दिल्ली", stateEn: "Delhi" },
-  { id: "mumbai", nameHi: "ग्लोबल आवाज़ (मुंबई)", nameEn: "Global Awaaz (Mumbai)", cityHi: "मुंबई", cityEn: "Mumbai", stateHi: "महाराष्ट्र", stateEn: "Maharashtra" }
+  { id: "patna", nameHi: "GLOBAL AWAAZ (पटना)", nameEn: "Global Awaaz (Patna)", cityHi: "पटना", cityEn: "Patna", stateHi: "बिहार", stateEn: "Bihar", isPopular: true },
+  { id: "ranchi", nameHi: "GLOBAL AWAAZ (रांची)", nameEn: "Global Awaaz (Ranchi)", cityHi: "रांची", cityEn: "Ranchi", stateHi: "झारखंड", stateEn: "Jharkhand" },
+  { id: "delhi", nameHi: "GLOBAL AWAAZ (दिल्ली)", nameEn: "Global Awaaz (Delhi)", cityHi: "नई दिल्ली", cityEn: "New Delhi", stateHi: "दिल्ली", stateEn: "Delhi" },
+  { id: "mumbai", nameHi: "GLOBAL AWAAZ (मुंबई)", nameEn: "Global Awaaz (Mumbai)", cityHi: "मुंबई", cityEn: "Mumbai", stateHi: "महाराष्ट्र", stateEn: "Maharashtra" }
 ];
 
 export const defaultEPaperIssue: EPaperIssue = {

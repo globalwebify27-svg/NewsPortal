@@ -116,7 +116,7 @@ export default function PublicTeamPage() {
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3 max-w-4xl mx-auto leading-tight">
               {isHi ? (
                 <>
-                  ग्लोबल आवाज़ की <span className="text-red-600">विश्वसनीय और निष्पक्ष</span> मीडिया टीम
+                  GLOBAL AWAAZ की <span className="text-red-600">विश्वसनीय और निष्पक्ष</span> मीडिया टीम
                 </>
               ) : (
                 <>
@@ -291,7 +291,7 @@ export default function PublicTeamPage() {
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-1 tracking-tight">
                   {isHi ? (
                     <>
-                      ग्लोबल मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
+                      GLOBAL मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
                     </>
                   ) : (
                     <>

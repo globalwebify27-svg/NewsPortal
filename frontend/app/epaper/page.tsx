@@ -451,7 +451,7 @@ export default function EPaperPage() {
                 {/* Newspaper Title Banner */}
                 <div style={{ textAlign: "center", padding: "10px 0" }}>
                   <h1 style={{ fontFamily: "serif", fontSize: "clamp(2.5rem, 6vw, 4.2rem)", fontWeight: 900, margin: 0, color: "#0f172a", lineHeight: 1, letterSpacing: "-0.02em" }}>
-                    ग्लोबल <span style={{ color: "#e50914" }}>आवाज़</span>
+                    GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span>
                   </h1>
                   <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "0.82rem", fontWeight: 800, marginTop: "6px" }}>
                     <span style={{ width: "24px", height: "3px", background: "#e50914", borderRadius: "2px" }} />

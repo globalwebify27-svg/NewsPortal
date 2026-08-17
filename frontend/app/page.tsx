@@ -1525,7 +1525,7 @@ export default function Home() {
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-1 tracking-tight">
                 {isHi ? (
                   <>
-                    ग्लोबल मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
+                    GLOBAL मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
                   </>
                 ) : (
                   <>

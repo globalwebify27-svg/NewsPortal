@@ -283,7 +283,7 @@ export default function AboutPage() {
               {isHindi ? "हमसे संपर्क करें (Contact Us)" : "Get In Touch"}
             </h2>
             <p style={{ color: "#64748b", fontSize: "0.86rem", margin: 0 }}>
-              {isHindi ? "ग्लोबल आवाज मुख्य कार्यालय" : "Global Awaaz Headquarters"}
+              {isHindi ? "GLOBAL AWAAZ मुख्य कार्यालय" : "Global Awaaz Headquarters"}
             </p>
           </div>
 

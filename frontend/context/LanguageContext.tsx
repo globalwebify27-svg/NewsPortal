@@ -86,7 +86,7 @@ const translations: Record<Language, Record<string, string>> = {
     openVideoPortal: "Open Video Portal"
   },
   HI: {
-    globalEdition: "ग्लोबल संस्करण",
+    globalEdition: "GLOBAL संस्करण",
     subscribe: "सदस्यता लें",
     live: "लाइव",
     logIn: "लॉग इन",
@@ -140,7 +140,7 @@ const translations: Record<Language, Record<string, string>> = {
     tvSeries: "टीवी और वेब सीरीज",
     music: "संगीत",
     celebrity: "सेलेब्रिटी",
-    newsletterTitle: "ग्लोबल मॉर्निंग ब्रीफिंग के साथ आगे रहें",
+    newsletterTitle: "GLOBAL मॉर्निंग ब्रीफिंग के साथ आगे रहें",
     newsletterDesc: "हर सुबह अपने इनबॉक्स में संपादकीय विश्लेषण, बाजार की जानकारी और ताज़ा अंतरराष्ट्रीय अपडेट प्राप्त करें।",
     enterEmail: "अपना ईमेल पता दर्ज करें...",
     subscribeBtn: "अभी सब्सक्राइब करें",
