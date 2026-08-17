@@ -219,15 +219,11 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
       if (rawImg.startsWith("https//")) rawImg = rawImg.replace("https//", "https://");
       if (rawImg.startsWith("http//")) rawImg = rawImg.replace("http//", "http://");
       
-      const hostingerOrigin = process.env.HOSTINGER_MEDIA_ORIGIN || "https://yellowgreen-rook-384455.hostingersite.com";
-      if (rawImg.includes("hostingersite.com") || rawImg.startsWith("/uploads/") || rawImg.startsWith("uploads/") || rawImg.startsWith("/public/uploads/")) {
-        let cleanPath = rawImg;
-        if (cleanPath.includes("hostingersite.com")) {
-          cleanPath = cleanPath.substring(cleanPath.indexOf("hostingersite.com") + "hostingersite.com".length);
-        }
-        if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
-        imgUrl = `${hostingerOrigin.replace(/\/$/, "")}${cleanPath}`;
-      } else if (rawImg.startsWith("http://") || rawImg.startsWith("https://")) {
+      if (rawImg.includes("/uploads/") && !rawImg.includes("/public/uploads/")) {
+        rawImg = rawImg.replace("/uploads/", "/public/uploads/");
+      }
+
+      if (rawImg.startsWith("http://") || rawImg.startsWith("https://")) {
         imgUrl = rawImg.startsWith("https://globalawaaz.com") ? rawImg.replace("https://globalawaaz.com", "https://www.globalawaaz.com") : rawImg;
       } else {
         const cleanPath = rawImg.startsWith("/") ? rawImg : `/${rawImg}`;

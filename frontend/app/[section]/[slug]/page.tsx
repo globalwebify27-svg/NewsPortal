@@ -85,19 +85,12 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
 
-  const hostingerOrigin = process.env.HOSTINGER_MEDIA_ORIGIN || "https://yellowgreen-rook-384455.hostingersite.com";
-
-  // If path is a Hostinger storage URL or uploads path, direct to Hostinger media origin
-  if (url.includes("hostingersite.com") || url.startsWith("/uploads/") || url.startsWith("uploads/") || url.startsWith("/public/uploads/")) {
-    let cleanPath = url;
-    if (cleanPath.includes("hostingersite.com")) {
-      cleanPath = cleanPath.substring(cleanPath.indexOf("hostingersite.com") + "hostingersite.com".length);
-    }
-    if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
-    return `${hostingerOrigin.replace(/\/$/, "")}${cleanPath}`;
+  // Ensure /uploads/ becomes /public/uploads/ where Hostinger web server physically serves files (200 OK)
+  if (url.includes("/uploads/") && !url.includes("/public/uploads/")) {
+    url = url.replace("/uploads/", "/public/uploads/");
   }
 
-  // If full external URL (e.g. Unsplash, Cloudinary, YouTube)
+  // If full external URL
   if (url.startsWith("http://") || url.startsWith("https://")) {
     if (url.startsWith("https://globalawaaz.com")) {
       return url.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
@@ -253,9 +246,9 @@ function extractDynamicArticleKeywords(article: any, sectionName: string): strin
           height: 630,
           alt: article.title,
         },
-        ...(imageUrl.includes("hostingersite.com") ? [{
-          url: imageUrl.replace("https://yellowgreen-rook-384455.hostingersite.com", "https://www.globalawaaz.com"),
-          secureUrl: imageUrl.replace("https://yellowgreen-rook-384455.hostingersite.com", "https://www.globalawaaz.com"),
+        ...(imageUrl.includes("globalawaaz.com") ? [{
+          url: imageUrl.replace("https://www.globalawaaz.com", "https://yellowgreen-rook-384455.hostingersite.com"),
+          secureUrl: imageUrl.replace("https://www.globalawaaz.com", "https://yellowgreen-rook-384455.hostingersite.com"),
           width: 1200,
           height: 630,
           alt: article.title,

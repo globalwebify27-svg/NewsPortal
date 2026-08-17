@@ -22,7 +22,7 @@ const nextConfig = {
     return [
       {
         source: "/uploads/:path*",
-        destination: `${origin}/uploads/:path*`,
+        destination: `${origin}/public/uploads/:path*`,
       },
       {
         source: "/public/uploads/:path*",
