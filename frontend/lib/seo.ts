@@ -26,14 +26,15 @@ export function generateStateSeoConfigs(): SeoPageConfig[] {
   
   if (Array.isArray(INDIAN_STATES)) {
     INDIAN_STATES.forEach((st) => {
-      const pathIndia = `/india/${st.slug}`;
       const pathDirect = `/${st.slug}`;
 
-      const stateBase = {
+      statePages.push({
+        path: pathDirect,
         pageName: `State: ${st.nameHi} (${st.nameEn})`,
         metaTitle: `${st.nameHi} समाचार (${st.nameEn} News) | Breaking News, Politics & Local Updates — Global Awaaz`,
         metaDescription: `${st.nameHi} (${st.nameEn}) की ताज़ा ख़बरें, मुख्य समाचार, राजनीति, ग्राउंड रिपोर्टिंग, प्रशासन और स्थानीय अपडेट्स पढ़ें ग्लोबल आवाज़ पर।`,
         keywords: `${st.nameHi}, ${st.nameEn} news, ${st.nameHi} breaking news, ${st.slug} latest news, Global Awaaz`,
+        canonicalUrl: `https://www.globalawaaz.com${pathDirect}`,
         ogTitle: `${st.nameHi} — ताज़ा समाचार व ब्रेकिंग न्यूज़ | Global Awaaz`,
         ogDescription: `${st.nameHi} क्षेत्र की हर छोटी-बड़ी खबर, राजनीति और विकास कार्यों की विस्तृत कवरेज।`,
         ogImage: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1200&auto=format&fit=crop&q=80",
@@ -44,18 +45,6 @@ export function generateStateSeoConfigs(): SeoPageConfig[] {
         isSubTab: true,
         isState: true,
         parentCategory: "india"
-      };
-
-      statePages.push({
-        ...stateBase,
-        path: pathIndia,
-        canonicalUrl: `https://www.globalawaaz.com${pathIndia}`
-      });
-
-      statePages.push({
-        ...stateBase,
-        path: pathDirect,
-        canonicalUrl: `https://www.globalawaaz.com${pathDirect}`
       });
     });
   }
@@ -333,21 +322,63 @@ export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
 
 export const SEO_STORAGE_KEY = "ga_seo_settings";
 
+import { prisma } from "./prisma";
+
 export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
   try {
-    const res = await fetch("/api/v1/seo-settings", { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-        const parsed: SeoPageConfig[] = json.data;
-        const merged = DEFAULT_SEO_PAGES.map((def) => {
-          const found = parsed.find((p) => p.path === def.path);
-          return found ? { ...def, ...found } : def;
-        });
-        const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
-        const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
-        return [...merged, ...extraCustom];
+    let rawData: any = null;
+
+    if (typeof window === "undefined") {
+      // SERVER-SIDE: Fast, direct Prisma DB query (no HTTP loopback or invalid relative URL errors)
+      const setting = await prisma.siteSetting.findUnique({
+        where: { key: "seo_settings_data" },
+      });
+      if (setting && setting.value) {
+        try {
+          rawData = JSON.parse(setting.value);
+        } catch (e) {
+          console.error("Error parsing SEO settings JSON from DB:", e);
+        }
       }
+    } else {
+      // CLIENT-SIDE: Fetch from API endpoint
+      const res = await fetch("/api/v1/seo-settings", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success) {
+          rawData = json.data;
+        }
+      }
+    }
+
+    if (Array.isArray(rawData) && rawData.length > 0) {
+      const parsedMap = new Map<string, SeoPageConfig>();
+      
+      rawData.forEach((item: SeoPageConfig) => {
+        if (!item || !item.path) return;
+        let cleanPath = item.path;
+        if (cleanPath.startsWith("/india/")) {
+          cleanPath = "/" + cleanPath.replace("/india/", "");
+        }
+        const cleanItem = {
+          ...item,
+          path: cleanPath,
+          canonicalUrl: `https://www.globalawaaz.com${cleanPath}`
+        };
+        parsedMap.set(cleanPath, cleanItem);
+      });
+
+      const merged = DEFAULT_SEO_PAGES.map((def) => {
+        const found = parsedMap.get(def.path);
+        return found ? { ...def, ...found } : def;
+      });
+
+      const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
+      const extraCustom = Array.from(parsedMap.values()).filter(
+        (p) => !defaultPaths.has(p.path) && !p.path.startsWith("/india/")
+      );
+
+      return [...merged, ...extraCustom];
     }
   } catch (e) {
     console.error("Error in getAllSeoConfigs:", e);
@@ -361,6 +392,22 @@ export async function getSeoConfigForPath(currentPath: string): Promise<SeoPageC
 
   const exact = configs.find((c) => c.path === normalized);
   if (exact) return exact;
+
+  // State route alias matching (/jharkhand <-> /india/jharkhand)
+  let aliasPath = normalized;
+  if (normalized.startsWith("/india/")) {
+    aliasPath = "/" + normalized.replace("/india/", "");
+  } else if (!normalized.slice(1).includes("/")) {
+    aliasPath = "/india" + normalized;
+  }
+  const aliasMatch = configs.find((c) => c.path === aliasPath);
+  if (aliasMatch) {
+    return {
+      ...aliasMatch,
+      path: normalized,
+      canonicalUrl: `https://www.globalawaaz.com${normalized}`
+    };
+  }
 
   // Prefix matching for dynamic section/article pages
   if (normalized.startsWith("/article/")) {

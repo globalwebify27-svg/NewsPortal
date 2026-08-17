@@ -23,11 +23,15 @@ export default function SeoHeadManager() {
     // Always enforce index, follow across client DOM
     setMetaTag("name", "robots", "index, follow");
 
-    // Check if route is a dynamic article reading page or admin page
     const pathSegments = pathname.split("/").filter(Boolean);
-    const mainCategories = ["education", "world", "india", "business", "technology", "sports", "entertainment", "science", "health", "opinion", "videos", "latest"];
-    const isSubTabRoute = pathSegments.length === 2 && mainCategories.includes(pathSegments[0]);
-    const isArticleRoute = !isSubTabRoute && (pathname.startsWith("/article/") || (pathSegments.length >= 2 && !["admin", "api", "login", "categories", "epaper", "about", "contact"].includes(pathSegments[0])));
+    const nonArticlePrefixes = [
+      "admin", "api", "login", "categories", "epaper", "about", "contact",
+      "india", "world", "education", "business", "technology", "sports",
+      "entertainment", "science", "health", "opinion", "videos", "careers", "advertise", "top-news"
+    ];
+    
+    const isArticleRoute = pathname.startsWith("/article/") || 
+      (pathSegments.length >= 2 && !nonArticlePrefixes.includes(pathSegments[0]) && pathSegments[1].length > 35);
 
     if (isArticleRoute) {
       return;

@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import SectionClientContent from "@/components/SectionClientContent";
+import { getSeoConfigForPath } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -10,23 +11,33 @@ export async function generateMetadata({
   const resolvedParams = await params;
   const rawSection = resolvedParams?.section || "news";
   const section = rawSection.toLowerCase();
-  const formattedTitle = section.charAt(0).toUpperCase() + section.slice(1);
-  const canonicalUrl = `https://www.globalawaaz.com/${section}`;
+  const path = `/${section}`;
+  const fallbackCanonicalUrl = `https://www.globalawaaz.com${path}`;
 
-  const sectionKeywords = [
-    `${formattedTitle} News`,
-    `${formattedTitle} समाचार`,
-    `${formattedTitle} ख़बरें`,
-    "GLOBAL AWAAZ",
-    "ग्लोबल आवाज़",
-    "Breaking News Hindi",
-    "Latest Updates"
-  ];
+  // Fetch dynamic/saved Admin SEO config for this section or state route
+  const config = await getSeoConfigForPath(path);
+
+  const keywordsList = config.keywords
+    ? config.keywords.split(",").map((k) => k.trim()).filter(Boolean)
+    : [
+        `${section} News`,
+        `${section} समाचार`,
+        "GLOBAL AWAAZ",
+        "ग्लोबल आवाज़",
+        "Breaking News Hindi",
+      ];
+
+  const pageTitle = config.metaTitle || `${section.charAt(0).toUpperCase() + section.slice(1)} News - GLOBAL AWAAZ | ताज़ा ख़बरें`;
+  const pageDesc = config.metaDescription || `Latest ${section} news, editorials, analysis, and updates on GLOBAL AWAAZ.`;
+  const ogTitle = config.ogTitle || pageTitle;
+  const ogDesc = config.ogDescription || pageDesc;
+  const ogImg = config.ogImage || "https://www.globalawaaz.com/logo.png";
+  const canonicalUrl = config.canonicalUrl || fallbackCanonicalUrl;
 
   return {
-    title: `${formattedTitle} News - GLOBAL AWAAZ | ताज़ा ख़बरें`,
-    description: `Latest ${formattedTitle} news, editorials, analysis, and updates on GLOBAL AWAAZ.`,
-    keywords: sectionKeywords,
+    title: pageTitle,
+    description: pageDesc,
+    keywords: keywordsList,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -42,26 +53,28 @@ export async function generateMetadata({
       },
     },
     openGraph: {
-      title: `${formattedTitle} News | GLOBAL AWAAZ`,
-      description: `Latest ${formattedTitle} news, editorials, analysis, and updates on GLOBAL AWAAZ.`,
+      title: ogTitle,
+      description: ogDesc,
       url: canonicalUrl,
       siteName: "GLOBAL AWAAZ",
       locale: "hi_IN",
-      type: "website",
+      type: (config.ogType as any) || "website",
       images: [
         {
-          url: "https://www.globalawaaz.com/logo.png",
+          url: ogImg,
           width: 1200,
           height: 630,
-          alt: `${formattedTitle} News | GLOBAL AWAAZ`,
+          alt: ogTitle,
         },
       ],
     },
     twitter: {
-      card: "summary_large_image",
-      title: `${formattedTitle} News | GLOBAL AWAAZ`,
-      description: `Latest ${formattedTitle} news, editorials, analysis, and updates on GLOBAL AWAAZ.`,
-      images: ["https://www.globalawaaz.com/logo.png"],
+      card: (config.twitterCard as any) || "summary_large_image",
+      title: ogTitle,
+      description: ogDesc,
+      images: [ogImg],
+      site: "@globalawaaz",
+      creator: "@globalawaaz",
     },
   };
 }
