@@ -76,8 +76,14 @@ export default function SeoHeadManager() {
       const oldAuthorLink = document.head.querySelector('link[rel="author"]');
       if (oldAuthorLink) oldAuthorLink.remove();
       
-      // Ensure canonicalUrl always has www prefix
+      // Ensure canonicalUrl always matches the exact current page URL and has www prefix
       let canonicalUrl = config.canonicalUrl || `https://www.globalawaaz.com${pathname}`;
+
+      // If page is not homepage ("/") but canonicalUrl points to homepage root ("https://www.globalawaaz.com" or "https://www.globalawaaz.com/"), correct it to exact page URL
+      if (pathname !== "/" && (canonicalUrl === "https://www.globalawaaz.com" || canonicalUrl === "https://www.globalawaaz.com/")) {
+        canonicalUrl = `https://www.globalawaaz.com${pathname}`;
+      }
+
       if (canonicalUrl.startsWith("https://globalawaaz.com")) {
         canonicalUrl = canonicalUrl.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
       }

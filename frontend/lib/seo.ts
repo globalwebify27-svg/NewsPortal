@@ -26,24 +26,36 @@ export function generateStateSeoConfigs(): SeoPageConfig[] {
   
   if (Array.isArray(INDIAN_STATES)) {
     INDIAN_STATES.forEach((st) => {
-      const path = `/india/${st.slug}`;
-      statePages.push({
-        path,
+      const pathIndia = `/india/${st.slug}`;
+      const pathDirect = `/${st.slug}`;
+
+      const stateBase = {
         pageName: `State: ${st.nameHi} (${st.nameEn})`,
         metaTitle: `${st.nameHi} समाचार (${st.nameEn} News) | Breaking News, Politics & Local Updates — Global Awaaz`,
         metaDescription: `${st.nameHi} (${st.nameEn}) की ताज़ा ख़बरें, मुख्य समाचार, राजनीति, ग्राउंड रिपोर्टिंग, प्रशासन और स्थानीय अपडेट्स पढ़ें ग्लोबल आवाज़ पर।`,
         keywords: `${st.nameHi}, ${st.nameEn} news, ${st.nameHi} breaking news, ${st.slug} latest news, Global Awaaz`,
-        canonicalUrl: `https://www.globalawaaz.com${path}`,
         ogTitle: `${st.nameHi} — ताज़ा समाचार व ब्रेकिंग न्यूज़ | Global Awaaz`,
         ogDescription: `${st.nameHi} क्षेत्र की हर छोटी-बड़ी खबर, राजनीति और विकास कार्यों की विस्तृत कवरेज।`,
         ogImage: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=1200&auto=format&fit=crop&q=80",
         ogType: "website",
-        twitterCard: "summary_large_image",
-        robots: "index, follow",
-        jsonLdType: "CollectionPage",
+        twitterCard: "summary_large_image" as const,
+        robots: "index, follow" as const,
+        jsonLdType: "CollectionPage" as const,
         isSubTab: true,
         isState: true,
         parentCategory: "india"
+      };
+
+      statePages.push({
+        ...stateBase,
+        path: pathIndia,
+        canonicalUrl: `https://www.globalawaaz.com${pathIndia}`
+      });
+
+      statePages.push({
+        ...stateBase,
+        path: pathDirect,
+        canonicalUrl: `https://www.globalawaaz.com${pathDirect}`
       });
     });
   }
@@ -369,9 +381,25 @@ export async function getSeoConfigForPath(currentPath: string): Promise<SeoPageC
     };
   }
 
-  // Fallback to homepage config
-  const home = configs.find((c) => c.path === "/");
-  return home || DEFAULT_SEO_PAGES[0];
+  // Dynamic fallback for any category / state / section route (e.g. /jharkhand, /bihar, /up, /news, etc.)
+  const rawName = normalized.slice(1).split("/").pop() || "News";
+  const sectionName = rawName.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  
+  return {
+    path: normalized,
+    pageName: `${sectionName} News`,
+    metaTitle: `${sectionName} News (मुख्य समाचार) | Global Awaaz`,
+    metaDescription: `${sectionName} से जुड़ी ताज़ा ख़बरें, मुख्य अपडेट्स और विश्लेषणात्मक रिपोर्ट पढ़ें ग्लोबल आवाज़ पर।`,
+    keywords: `${sectionName}, ${sectionName} news, Breaking News, Global Awaaz`,
+    canonicalUrl: `https://www.globalawaaz.com${normalized}`,
+    ogTitle: `${sectionName} — ताज़ा समाचार व लाइव अपडेट्स | Global Awaaz`,
+    ogDescription: `${sectionName} क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।`,
+    ogImage: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80",
+    ogType: "website",
+    twitterCard: "summary_large_image",
+    robots: "index, follow",
+    jsonLdType: "CollectionPage"
+  };
 }
 
 export function calculateSeoScore(config: SeoPageConfig): { score: number; label: string; tips: string[] } {
