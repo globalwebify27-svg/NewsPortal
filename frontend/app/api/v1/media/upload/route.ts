@@ -4,6 +4,7 @@ import path from "path";
 import prisma from "@/lib/prisma";
 import { MediaType } from "@prisma/client";
 import sharp from "sharp";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -64,22 +65,7 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           const resJson = await response.json();
           if (resJson.success && resJson.url) {
-            // Strip internal Hostinger hostname & /public prefix to return clean relative /uploads/ URLs
-            let rawUrl = (resJson.url as string)
-              .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
-              .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
-              .replace("//yellowgreen-rook-384455.hostingersite.com", "")
-              .replace("https://www.globalawaaz.com", "")
-              .replace("https://globalawaaz.com", "");
-
-            if (rawUrl.startsWith("/public/uploads/")) {
-              rawUrl = rawUrl.replace("/public/uploads/", "/uploads/");
-            }
-            if (!rawUrl.startsWith("/")) {
-              rawUrl = "/" + rawUrl;
-            }
-
-            publicUrl = rawUrl;
+            publicUrl = cleanMediaUrl(resJson.url as string);
           } else {
             console.warn("Hostinger bridge returned non-success:", resJson);
           }

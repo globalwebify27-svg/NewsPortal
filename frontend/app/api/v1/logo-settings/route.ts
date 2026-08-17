@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 
 const LOGO_KEYS = [
   "site_logo_url",
@@ -36,7 +37,11 @@ export async function GET() {
 
     const map: Record<string, string> = {};
     for (const s of settings) {
-      map[s.key] = s.value;
+      if (s.key === "site_logo_url" || s.key === "header_bg_gif" || s.key.includes("_url")) {
+        map[s.key] = cleanMediaUrl(s.value);
+      } else {
+        map[s.key] = s.value;
+      }
     }
 
     return NextResponse.json({ success: true, data: map });
@@ -65,10 +70,15 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      const valStr = String(value);
+      const cleanVal = (key === "site_logo_url" || key === "header_bg_gif" || key.includes("_url"))
+        ? cleanMediaUrl(valStr)
+        : valStr;
+
       await prisma.siteSetting.upsert({
         where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value), label: key, group: "branding" },
+        update: { value: cleanVal },
+        create: { key, value: cleanVal, label: key, group: "branding" },
       });
     }
 

@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Briefcase
 } from "lucide-react";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 
 export type AdminRoleSlug = "super_admin" | "chief_editor" | "editor";
 
@@ -57,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((res) => res.json())
       .then((json) => {
         if (json && json.success && json.data && json.data.site_logo_url) {
-          setSiteLogo(json.data.site_logo_url);
+          setSiteLogo(cleanMediaUrl(json.data.site_logo_url));
         }
       })
       .catch(() => { });

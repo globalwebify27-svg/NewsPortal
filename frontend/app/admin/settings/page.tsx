@@ -23,7 +23,7 @@ import {
 
 import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
 import { extractYouTubeId } from "@/lib/youtube";
-import { uploadMediaDirectly, cleanVideoUrl } from "@/lib/mediaUpload";
+import { uploadMediaDirectly, cleanVideoUrl, cleanMediaUrl } from "@/lib/mediaUpload";
 
 export default function AdminSettingsPage() {
   // Toast state
@@ -485,12 +485,12 @@ export default function AdminSettingsPage() {
         return;
       }
 
-      const cloudinaryUrl = uploadJson.data.url as string;
+      const cleanedUrl = cleanMediaUrl(uploadJson.data.url as string);
 
-      // 2. Save the Cloudinary URL to DB
-      await saveLogoSetting("site_logo_url", cloudinaryUrl);
-      setSiteLogoUrl(cloudinaryUrl);
-      setLogoInputUrl(cloudinaryUrl);
+      // 2. Save the cleaned URL to DB
+      await saveLogoSetting("site_logo_url", cleanedUrl);
+      setSiteLogoUrl(cleanedUrl);
+      setLogoInputUrl(cleanedUrl);
       showToast("✓ Logo uploaded to Hostinger Storage & saved globally!");
     } catch (err: any) {
       showToast("❌ Upload error: " + (err?.message || "Unknown error"), "error");
@@ -508,8 +508,10 @@ export default function AdminSettingsPage() {
     }
     setLogoLoading(true);
     try {
-      await saveLogoSetting("site_logo_url", logoInputUrl.trim());
-      setSiteLogoUrl(logoInputUrl.trim());
+      const cleanedUrl = cleanMediaUrl(logoInputUrl.trim());
+      await saveLogoSetting("site_logo_url", cleanedUrl);
+      setSiteLogoUrl(cleanedUrl);
+      setLogoInputUrl(cleanedUrl);
       showToast("✓ Logo URL saved to database & applied globally!");
     } catch (err: any) {
       showToast("❌ Save failed: " + (err?.message || ""), "error");

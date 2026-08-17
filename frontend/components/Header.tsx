@@ -68,6 +68,7 @@ import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/sta
 import { autoDetectUserCity, getDistrictsForState } from "@/lib/districts";
 import { getSubCategories } from "@/lib/subCategories";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 
 export default function Header() {
   let pathname = "";
@@ -232,7 +233,7 @@ export default function Header() {
         if (json && json.success && json.data) {
           const data = json.data;
           if (data.site_logo_url) {
-            setCustomLogoUrl(data.site_logo_url);
+            setCustomLogoUrl(cleanMediaUrl(data.site_logo_url));
           } else {
             setCustomLogoUrl(null);
           }
@@ -243,7 +244,7 @@ export default function Header() {
             setCustomLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
           }
           if (data.header_bg_gif) {
-            setHeaderBgGif(data.header_bg_gif);
+            setHeaderBgGif(cleanMediaUrl(data.header_bg_gif));
           } else {
             setHeaderBgGif(null);
           }
@@ -436,7 +437,7 @@ export default function Header() {
               {customLogoUrl && (
                 <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
                   <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
-                    <img src={customLogoUrl} alt="Site Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <img src={cleanMediaUrl(customLogoUrl)} alt="Site Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   </div>
                 </Link>
               )}

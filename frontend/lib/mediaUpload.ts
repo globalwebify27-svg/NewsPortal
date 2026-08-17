@@ -4,26 +4,43 @@
  * directly to Hostinger storage, returning clean relative URLs (/uploads/filename.mp4).
  */
 
-export function cleanVideoUrl(rawUrl: string): string {
+export function cleanMediaUrl(rawUrl: string): string {
   if (!rawUrl) return "";
   let url = rawUrl.trim();
 
-  // 1. YouTube / Vimeo / external embed links
-  if (url.includes("youtube.com") || url.includes("youtu.be") || url.includes("vimeo.com")) {
+  // 1. Data URLs, YouTube / Vimeo / Cloudinary external links
+  if (
+    url.startsWith("data:") ||
+    url.includes("youtube.com") ||
+    url.includes("youtu.be") ||
+    url.includes("vimeo.com") ||
+    url.includes("res.cloudinary.com")
+  ) {
     return url;
   }
 
-  // 2. Remove malformed leading /https/, /http/, /https:/, /https//, etc.
-  url = url.replace(/^\/?(https?:?\/?\/?)+/g, "");
+  // 2. Fix malformed leading slash prefix: e.g. "/https://...", "/http:/...", "/https/public/uploads/..."
+  if (/^\/(https?:?\/?)*/i.test(url)) {
+    url = url.replace(/^\/(https?:?\/?)*/i, "");
+  }
 
-  // 3. Remove Hostinger or site domains if embedded in path
+  // 3. Remove Hostinger or site domain prefixes
   url = url
+    .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+    .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+    .replace("//yellowgreen-rook-384455.hostingersite.com", "")
     .replace("yellowgreen-rook-384455.hostingersite.com", "")
-    .replace("www.globalawaaz.com", "")
-    .replace("globalawaaz.com", "")
-    .replace(/^\/?(https?:?\/?\/?)+/g, "");
+    .replace("https://www.globalawaaz.com", "")
+    .replace("https://globalawaaz.com", "")
+    .replace("http://www.globalawaaz.com", "")
+    .replace("http://globalawaaz.com", "");
 
-  // 4. Normalize /public/uploads/ -> /uploads/
+  // 4. Handle https://public/uploads/ or http://public/uploads/ or https://uploads/
+  if (/^https?:\/\/(public\/)?uploads\//i.test(url)) {
+    url = url.replace(/^https?:\/\/(public\/)?/i, "");
+  }
+
+  // 5. Normalize /public/uploads/ -> /uploads/
   if (url.includes("uploads/")) {
     const idx = url.indexOf("uploads/");
     url = "/" + url.slice(idx);
@@ -33,11 +50,20 @@ export function cleanVideoUrl(rawUrl: string): string {
     url = url.replace("/public/uploads/", "/uploads/");
   }
 
-  if (!url.startsWith("/")) {
+  if (
+    !url.startsWith("/") &&
+    !url.startsWith("http://") &&
+    !url.startsWith("https://") &&
+    !url.startsWith("data:")
+  ) {
     url = "/" + url;
   }
 
   return url;
+}
+
+export function cleanVideoUrl(rawUrl: string): string {
+  return cleanMediaUrl(rawUrl);
 }
 
 export async function uploadMediaDirectly(file: File): Promise<string> {
