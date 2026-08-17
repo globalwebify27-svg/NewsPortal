@@ -51,21 +51,22 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
 
-  // Ensure /uploads/ becomes /public/uploads/ where Hostinger web server physically serves files (200 OK)
+  // Ensure /uploads/ uses /public/uploads/ for static file serving
   if (url.includes("/uploads/") && !url.includes("/public/uploads/")) {
     url = url.replace("/uploads/", "/public/uploads/");
   }
 
-  // If full external URL
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    if (url.startsWith("https://globalawaaz.com")) {
-      return url.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
-    }
-    return url;
+  // Construct absolute image target URL
+  let targetUrl = url;
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+    const cleanPath = targetUrl.startsWith("/") ? targetUrl : `/${targetUrl}`;
+    targetUrl = `https://www.globalawaaz.com${cleanPath}`;
+  } else if (targetUrl.startsWith("https://globalawaaz.com")) {
+    targetUrl = targetUrl.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
   }
 
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `https://www.globalawaaz.com${cleanPath}`;
+  // Route through dynamic JPEG converter API so WhatsApp & social platforms receive a guaranteed 1200x630 JPEG image
+  return `https://www.globalawaaz.com/api/v1/og-image?img=${encodeURIComponent(targetUrl)}`;
 }
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
@@ -188,15 +189,9 @@ function extractDynamicArticleKeywords(article: any): string[] {
           secureUrl: imageUrl,
           width: 1200,
           height: 630,
+          type: "image/jpeg",
           alt: article.title,
         },
-        ...(imageUrl.includes("globalawaaz.com") ? [{
-          url: imageUrl.replace("https://www.globalawaaz.com", "https://yellowgreen-rook-384455.hostingersite.com"),
-          secureUrl: imageUrl.replace("https://www.globalawaaz.com", "https://yellowgreen-rook-384455.hostingersite.com"),
-          width: 1200,
-          height: 630,
-          alt: article.title,
-        }] : []),
       ],
       type: "article",
       publishedTime: article.createdAt ? new Date(article.createdAt).toISOString() : undefined,
