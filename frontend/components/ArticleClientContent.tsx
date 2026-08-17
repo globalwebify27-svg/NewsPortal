@@ -212,8 +212,30 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
 
     const titleText = `${article.title} | GLOBAL AWAAZ - LOCAL से GLOBAL तक`;
     const cleanDesc = stripHtml(article.summary || article.body?.substring(0, 160) || "");
-    const imgUrl = article.featuredImage || "https://globalawaaz.com/logo.png";
-    const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/article/${slug}` : `https://globalawaaz.com/article/${slug}`;
+    
+    let rawImg = article.featuredImage || "";
+    let imgUrl = "https://www.globalawaaz.com/logo.png";
+    if (rawImg && !rawImg.startsWith("data:image")) {
+      if (rawImg.startsWith("https//")) rawImg = rawImg.replace("https//", "https://");
+      if (rawImg.startsWith("http//")) rawImg = rawImg.replace("http//", "http://");
+      
+      const hostingerOrigin = process.env.HOSTINGER_MEDIA_ORIGIN || "https://yellowgreen-rook-384455.hostingersite.com";
+      if (rawImg.includes("hostingersite.com") || rawImg.startsWith("/uploads/") || rawImg.startsWith("uploads/") || rawImg.startsWith("/public/uploads/")) {
+        let cleanPath = rawImg;
+        if (cleanPath.includes("hostingersite.com")) {
+          cleanPath = cleanPath.substring(cleanPath.indexOf("hostingersite.com") + "hostingersite.com".length);
+        }
+        if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
+        imgUrl = `${hostingerOrigin.replace(/\/$/, "")}${cleanPath}`;
+      } else if (rawImg.startsWith("http://") || rawImg.startsWith("https://")) {
+        imgUrl = rawImg.startsWith("https://globalawaaz.com") ? rawImg.replace("https://globalawaaz.com", "https://www.globalawaaz.com") : rawImg;
+      } else {
+        const cleanPath = rawImg.startsWith("/") ? rawImg : `/${rawImg}`;
+        imgUrl = `https://www.globalawaaz.com${cleanPath}`;
+      }
+    }
+
+    const shareUrl = typeof window !== "undefined" ? window.location.href : `https://www.globalawaaz.com/article/${slug}`;
 
     document.title = titleText;
 
@@ -232,6 +254,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
     setMeta("property", "og:title", titleText);
     setMeta("property", "og:description", cleanDesc);
     setMeta("property", "og:image", imgUrl);
+    setMeta("property", "og:image:secure_url", imgUrl);
     setMeta("property", "og:url", shareUrl);
     setMeta("name", "twitter:title", titleText);
     setMeta("name", "twitter:description", cleanDesc);

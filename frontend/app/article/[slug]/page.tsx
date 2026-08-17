@@ -41,22 +41,36 @@ async function getArticleData(slug: string): Promise<ArticleDetail | null> {
 }
 
 function formatAbsoluteImageUrl(imgUrl?: string): string {
-  if (!imgUrl || imgUrl.startsWith("data:image")) return "https://www.globalawaaz.com/logo.png";
-  // Fix malformed protocols from database (https// → https://)
-  let url = imgUrl;
+  if (!imgUrl || typeof imgUrl !== "string" || imgUrl.trim().length === 0 || imgUrl.startsWith("data:image")) {
+    return "https://www.globalawaaz.com/logo.png";
+  }
+
+  let url = imgUrl.trim();
+
+  // Fix malformed protocols from database (https// → https://, http// → http://)
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
-  // Rewrite Hostinger internal URLs to main domain
-  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
-    const path = url.replace("https://yellowgreen-rook-384455.hostingersite.com", "");
-    return `https://www.globalawaaz.com${path.startsWith("/") ? path : `/${path}`}`;
+
+  const hostingerOrigin = process.env.HOSTINGER_MEDIA_ORIGIN || "https://yellowgreen-rook-384455.hostingersite.com";
+
+  // If path is a Hostinger storage URL or uploads path, direct to Hostinger media origin
+  if (url.includes("hostingersite.com") || url.startsWith("/uploads/") || url.startsWith("uploads/") || url.startsWith("/public/uploads/")) {
+    let cleanPath = url;
+    if (cleanPath.includes("hostingersite.com")) {
+      cleanPath = cleanPath.substring(cleanPath.indexOf("hostingersite.com") + "hostingersite.com".length);
+    }
+    if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
+    return `${hostingerOrigin.replace(/\/$/, "")}${cleanPath}`;
   }
+
+  // If full external URL (e.g. Unsplash, Cloudinary, YouTube)
   if (url.startsWith("http://") || url.startsWith("https://")) {
     if (url.startsWith("https://globalawaaz.com")) {
       return url.replace("https://globalawaaz.com", "https://www.globalawaaz.com");
     }
     return url;
   }
+
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return `https://www.globalawaaz.com${cleanPath}`;
 }
@@ -178,10 +192,18 @@ function extractDynamicArticleKeywords(article: any): string[] {
       images: [
         {
           url: imageUrl,
+          secureUrl: imageUrl,
           width: 1200,
           height: 630,
           alt: article.title,
         },
+        ...(imageUrl.includes("hostingersite.com") ? [{
+          url: imageUrl.replace("https://yellowgreen-rook-384455.hostingersite.com", "https://www.globalawaaz.com"),
+          secureUrl: imageUrl.replace("https://yellowgreen-rook-384455.hostingersite.com", "https://www.globalawaaz.com"),
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        }] : []),
       ],
       type: "article",
       publishedTime: article.createdAt ? new Date(article.createdAt).toISOString() : undefined,
