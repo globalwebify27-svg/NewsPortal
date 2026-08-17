@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import ArticleClientContent, { ArticleDetail } from "@/components/ArticleClientContent";
 import { findDefaultArticle, stripHtml } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import { getArticleBySlug } from "@/lib/services/articles";
 
@@ -47,14 +48,7 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
 
   let url = imgUrl.trim();
 
-  // Fix malformed protocols from database (https// → https://, http// → http://)
-  if (url.startsWith("https//")) url = url.replace("https//", "https://");
-  if (url.startsWith("http//")) url = url.replace("http//", "http://");
-
-  // Ensure /uploads/ uses /public/uploads/ for static file serving
-  if (url.includes("/uploads/") && !url.includes("/public/uploads/")) {
-    url = url.replace("/uploads/", "/public/uploads/");
-  }
+  url = cleanMediaUrl(url);
 
   // Construct absolute image target URL
   let targetUrl = url;

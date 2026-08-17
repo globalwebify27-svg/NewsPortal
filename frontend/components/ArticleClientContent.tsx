@@ -27,6 +27,7 @@ import {
   allDefaultArticles
 } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { extractYouTubeId } from "@/lib/youtube";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -219,10 +220,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
       if (rawImg.startsWith("https//")) rawImg = rawImg.replace("https//", "https://");
       if (rawImg.startsWith("http//")) rawImg = rawImg.replace("http//", "http://");
       
-      if (rawImg.includes("/uploads/") && !rawImg.includes("/public/uploads/")) {
-        rawImg = rawImg.replace("/uploads/", "/public/uploads/");
-      }
-
+      rawImg = cleanMediaUrl(rawImg);
       if (rawImg.startsWith("http://") || rawImg.startsWith("https://")) {
         imgUrl = rawImg.startsWith("https://globalawaaz.com") ? rawImg.replace("https://globalawaaz.com", "https://www.globalawaaz.com") : rawImg;
       } else {

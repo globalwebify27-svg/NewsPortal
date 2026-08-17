@@ -2,6 +2,7 @@
  * Default articles registry.
  */
 import { extractYouTubeId } from "@/lib/youtube";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 
 export interface DefaultArticle {
   id: string;
@@ -292,26 +293,6 @@ export function getArticleImage(article: any, index: number = 0): string {
     img = img.replace("/upload/", "/upload/f_auto,q_auto,w_800/");
   }
 
-  // If full HTTP/HTTPS URL or Data URL, return as-is
-  if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) {
-    return img;
-  }
-
-  // Handle relative /uploads/ paths
-  if (img.startsWith("/uploads/") || img.startsWith("uploads/")) {
-    const cleanPath = img.startsWith("/") ? img : `/${img}`;
-    
-    // In browser environment, check if we are on localhost vs live production site
-    if (typeof window !== "undefined") {
-      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      if (isLocalhost) {
-        return cleanPath; // Load directly from local dev server /public/uploads/
-      }
-    }
-
-    const hostingerBase = process.env.NEXT_PUBLIC_HOSTINGER_MEDIA_URL || "https://globalawaaz.com/public";
-    return `${hostingerBase}${cleanPath}`;
-  }
-
-  return img;
+  // Clean and normalize all uploaded media paths to /uploads/filename.ext
+  return cleanMediaUrl(img);
 }

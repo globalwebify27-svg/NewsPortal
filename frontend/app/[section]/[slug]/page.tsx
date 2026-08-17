@@ -3,6 +3,7 @@ import ArticleClientContent, { ArticleDetail } from "@/components/ArticleClientC
 import SectionClientContent from "@/components/SectionClientContent";
 import { findDefaultArticle, stripHtml } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
+import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import { MASTER_SUB_CATEGORIES } from "@/lib/subCategories";
 import { INDIAN_STATES } from "@/lib/states";
@@ -85,10 +86,7 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
 
-  // Ensure /uploads/ uses /public/uploads/ for static file serving
-  if (url.includes("/uploads/") && !url.includes("/public/uploads/")) {
-    url = url.replace("/uploads/", "/public/uploads/");
-  }
+  url = cleanMediaUrl(url);
 
   // Construct absolute image target URL
   let targetUrl = url;
