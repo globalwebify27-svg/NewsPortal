@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const jsonStr = JSON.stringify(body);
 
-    let dbSaved = false;
     // Save to Prisma MySQL Database for serverless persistence
     try {
       await prisma.siteSetting.upsert({
@@ -70,9 +69,12 @@ export async function POST(request: NextRequest) {
           group: "seo"
         }
       });
-      dbSaved = true;
-    } catch (dbErr) {
+    } catch (dbErr: any) {
       console.error("Error saving SEO settings to Prisma DB:", dbErr);
+      return NextResponse.json(
+        { success: false, message: `Database write failed: ${dbErr?.message || "DB Error"}` },
+        { status: 500, headers: NO_CACHE_HEADERS }
+      );
     }
 
     // Save local file backups
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
     } catch (e) {}
 
     return NextResponse.json(
-      { success: true, data: body, dbSaved, message: "SEO settings saved successfully" },
+      { success: true, data: body, message: "SEO settings saved successfully" },
       { headers: NO_CACHE_HEADERS }
     );
   } catch (err: any) {

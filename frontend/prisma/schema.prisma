@@ -391,7 +391,7 @@ model Advertisement {
 model SiteSetting {
   id        String      @id @default(cuid())
   key       String      @unique
-  value     String      @db.Text
+  value     String      @db.LongText
   type      SettingType @default(TEXT)
   label     String?
   group     String?     @default("general")
