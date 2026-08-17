@@ -32,6 +32,7 @@ import {
 export default function AdminSeoPage() {
   const [configs, setConfigs] = useState<SeoPageConfig[]>([]);
   const [selectedPath, setSelectedPath] = useState<string>("/");
+  const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<"serp" | "social" | "schema">("serp");
@@ -55,9 +56,15 @@ export default function AdminSeoPage() {
     );
   };
 
-  const handleSave = () => {
-    saveSeoConfigs(configs);
-    showToast("✅ SEO Configuration saved & activated live across all pages!");
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await saveSeoConfigs(configs);
+    setIsSaving(false);
+    if (success) {
+      showToast("✅ SEO Configuration saved & activated live across all pages!");
+    } else {
+      showToast("❌ Error saving SEO settings. Please try again.");
+    }
   };
 
   const handleResetCurrent = () => {

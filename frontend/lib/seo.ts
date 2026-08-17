@@ -323,19 +323,23 @@ export const SEO_STORAGE_KEY = "ga_seo_settings";
 
 export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
   try {
-    const res = await fetch("/api/v1/seo-settings");
-    const json = await res.json();
-    if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
-      const parsed: SeoPageConfig[] = json.data;
-      const merged = DEFAULT_SEO_PAGES.map((def) => {
-        const found = parsed.find((p) => p.path === def.path);
-        return found ? { ...def, ...found } : def;
-      });
-      const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
-      const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
-      return [...merged, ...extraCustom];
+    const res = await fetch("/api/v1/seo-settings", { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && Array.isArray(json.data) && json.data.length > 0) {
+        const parsed: SeoPageConfig[] = json.data;
+        const merged = DEFAULT_SEO_PAGES.map((def) => {
+          const found = parsed.find((p) => p.path === def.path);
+          return found ? { ...def, ...found } : def;
+        });
+        const defaultPaths = new Set(DEFAULT_SEO_PAGES.map((d) => d.path));
+        const extraCustom = parsed.filter((p) => !defaultPaths.has(p.path));
+        return [...merged, ...extraCustom];
+      }
     }
-  } catch {}
+  } catch (e) {
+    console.error("Error in getAllSeoConfigs:", e);
+  }
   return DEFAULT_SEO_PAGES;
 }
 
@@ -440,14 +444,44 @@ export function calculateSeoScore(config: SeoPageConfig): { score: number; label
   return { score, label, tips };
 }
 
-export async function saveSeoConfigs(list: SeoPageConfig[]): Promise<void> {
+export async function saveSeoConfigs(list: SeoPageConfig[]): Promise<boolean> {
   try {
-    await fetch("/api/v1/seo-settings", {
+    const cleanList = list.map((item) => ({
+      path: item.path,
+      pageName: item.pageName,
+      metaTitle: item.metaTitle || "",
+      metaDescription: item.metaDescription || "",
+      keywords: item.keywords || "",
+      canonicalUrl: item.canonicalUrl || "",
+      ogTitle: item.ogTitle || "",
+      ogDescription: item.ogDescription || "",
+      ogImage: item.ogImage || "",
+      ogType: item.ogType || "website",
+      twitterCard: item.twitterCard || "summary_large_image",
+      robots: item.robots || "index, follow",
+      jsonLdType: item.jsonLdType || "WebPage",
+      isSubTab: !!item.isSubTab,
+      isState: !!item.isState,
+      parentCategory: item.parentCategory || ""
+    }));
+
+    const res = await fetch("/api/v1/seo-settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(list)
+      body: JSON.stringify(cleanList)
     });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success) {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("ga_seo_updated"));
+        }
+        return true;
+      }
+    }
   } catch (e) {
     console.error("Failed saving SEO configs:", e);
   }
+  return false;
 }
