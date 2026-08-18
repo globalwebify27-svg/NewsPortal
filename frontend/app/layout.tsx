@@ -90,7 +90,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   verification: {
-    google: "KZ_C7A3SMkVZTz57VLdJ0fpc3Mot8a7S9nQeCehOCKI",
+    google: "XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA",
   },
 };
 
@@ -101,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="hi" data-theme="light" suppressHydrationWarning>
       <head>
-        <meta name="google-site-verification" content="KZ_C7A3SMkVZTz57VLdJ0fpc3Mot8a7S9nQeCehOCKI" />
+        <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
