@@ -241,6 +241,11 @@ model Article {
   @@index([isBreaking])
   @@index([isTrending])
   @@index([isFeatured])
+  // Composite indexes for common query patterns (eliminates full table scans)
+  @@index([status, publishedAt])                   // main feed: WHERE status='PUBLISHED' ORDER BY publishedAt DESC
+  @@index([status, categoryId, publishedAt])        // category pages: WHERE status='PUBLISHED' AND categoryId=?
+  @@index([subCategory, status])                    // sub-category filtering
+  @@index([status, isFeatured, publishedAt])        // hero/featured articles query
   @@map("articles")
 }
 

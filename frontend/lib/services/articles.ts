@@ -6,6 +6,7 @@
 import { prisma } from "../prisma";
 import { generateArticleSlug, normalizeSlugDateToYyMmDd } from "../defaultArticles";
 import { INDIAN_STATES } from "../states";
+import { serverCache, TTL } from "../cache";
 
 export type WorkflowArticleStatus = "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "PUBLISHED" | "REJECTED";
 
@@ -59,6 +60,11 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
   const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
   const skip = (page - 1) * limit;
 
+  // Build a stable cache key from all query params
+  const cacheKey = `articles:public:${JSON.stringify({ page, limit, ...params })}`;
+  const cached = serverCache.get<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
+  if (cached) return cached;
+
   try {
     const where: any = {
       status: "PUBLISHED",
@@ -110,7 +116,9 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
       status: (art.status || "PUBLISHED") as WorkflowArticleStatus
     }));
 
-    return { articles: mapped, total, page, limit };
+    const result = { articles: mapped, total, page, limit };
+    serverCache.set(cacheKey, result, TTL.ARTICLES_LIST);
+    return result;
   } catch (error) {
     console.error("Error fetching public articles from MySQL DB:", error);
     return { articles: [], total: 0, page, limit };
@@ -164,6 +172,11 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
 export async function getArticleBySlug(slug: string) {
   const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
 
+  // Serve from cache if available (60s TTL)
+  const cacheKey = `articles:slug:${targetSlug}`;
+  const cached = serverCache.get<any>(cacheKey);
+  if (cached) return cached;
+
   try {
     let article = await prisma.article.findFirst({
       where: {
@@ -214,7 +227,7 @@ export async function getArticleBySlug(slug: string) {
         ? rawAuthorName
         : (submittedByName || rawAuthorName || "Global Awaaz Admin");
 
-      return {
+      const result = {
         ...article,
         author: {
           ...article.author,
@@ -223,6 +236,8 @@ export async function getArticleBySlug(slug: string) {
         },
         isHero: !!article.isFeatured
       };
+      serverCache.set(cacheKey, result, TTL.ARTICLE_DETAIL);
+      return result;
     }
 
     return null;
@@ -242,6 +257,8 @@ export async function deleteArticleByIdOrSlug(idOrSlug: string) {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
       },
     });
+    // Invalidate all article caches after deletion
+    serverCache.invalidatePrefix("articles:");
     return true;
   } catch (error) {
     console.error("Error deleting article from MySQL DB:", error);
@@ -391,6 +408,8 @@ export async function createOrUpdateArticle(data: any) {
       });
     }
 
+    // Invalidate all article list caches so next request gets fresh data
+    serverCache.invalidatePrefix("articles:");
     return articleRecord;
   } catch (error: any) {
     console.error("Error creating/updating article in MySQL DB:", error);
