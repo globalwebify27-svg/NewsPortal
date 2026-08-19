@@ -77,6 +77,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function Page() {
-  return <HomeClient />;
+import { getPublicArticles } from "@/lib/services/articles";
+
+export default async function Page() {
+  let initialArticles: any[] = [];
+  try {
+    const result = await getPublicArticles({ limit: 60 });
+    if (result && Array.isArray(result.articles)) {
+      initialArticles = JSON.parse(JSON.stringify(result.articles));
+    }
+  } catch (e) {
+    console.warn("SSR initial articles fetch error:", e);
+  }
+
+  return <HomeClient initialArticles={initialArticles} />;
 }
+

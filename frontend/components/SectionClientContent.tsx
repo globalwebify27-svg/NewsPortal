@@ -70,9 +70,11 @@ function formatCardTime(dateStr?: string) {
 export default function SectionClientContent({
   section: propSection,
   initialSubCat,
+  initialArticles = []
 }: {
   section?: string;
   initialSubCat?: string;
+  initialArticles?: Article[];
 } = {}) {
   const params = useParams();
   const router = useRouter();
@@ -84,8 +86,8 @@ export default function SectionClientContent({
   const detectedStateFromPath = detectStateFromSection(section);
   const isStatePage = !!detectedStateFromPath || section === "india" || section === "state" || section === "states";
 
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [loading, setLoading] = useState(initialArticles.length === 0);
   const [activeSubCat, setActiveSubCat] = useState<string>(initialSubCat || "ALL");
   const [activeDistrict, setActiveDistrict] = useState<string>("ALL");
   // Initialize selectedState from path if it's a state page
@@ -129,7 +131,9 @@ export default function SectionClientContent({
 
   useEffect(() => {
     async function fetchSectionArticles() {
-      setLoading(true);
+      if (initialArticles.length === 0) {
+        setLoading(true);
+      }
       let combined: Article[] = [];
 
       try {
@@ -160,7 +164,9 @@ export default function SectionClientContent({
         console.warn("API fetch error for section:", section, err);
       }
 
-      setArticles(combined);
+      if (combined && combined.length > 0) {
+        setArticles(combined);
+      }
       setLoading(false);
     }
 

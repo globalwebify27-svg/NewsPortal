@@ -39,11 +39,15 @@ interface Article {
   createdAt?: string;
 }
 
-export default function HomeClient() {
+export default function HomeClient({
+  initialArticles = []
+}: {
+  initialArticles?: Article[];
+}) {
   const { lang, t } = useLanguage();
   const isHi = lang === "HI";
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [loading, setLoading] = useState(initialArticles.length === 0);
   const [activeVideoModal, setActiveVideoModal] = useState<YouTubeVideoItem | null>(null);
   const [trendingVideos, setTrendingVideos] = useState<YouTubeVideoItem[]>([]);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -146,10 +150,10 @@ export default function HomeClient() {
   const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
   const [spotlightCol2Ad, setSpotlightCol2Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
 
-  const loadVideoAdSettings = useCallback(async () => {
+  const loadVideoAdSettings = useCallback(async (forceBypass = false) => {
     try {
-      const res = await fetch("/api/v1/logo-settings", { cache: "no-store" });
-      const json = await res.json();
+      if (forceBypass) clearCacheKey("/api/v1/logo-settings");
+      const json = await fetchWithCache<{ success?: boolean; data?: any }>("/api/v1/logo-settings", 30000);
       if (json && json.success && json.data) {
         setVideoAdEnabled(json.data.sidebar_video_ad_enabled !== "false");
         if (json.data.spotlight_col1_ad_url) {
@@ -276,9 +280,12 @@ export default function HomeClient() {
 
   useEffect(() => {
     async function fetchArticles() {
+      if (initialArticles.length === 0) {
+        setLoading(true);
+      }
       let apiList: Article[] = [];
       try {
-        const res = await fetch(API_ENDPOINTS.articles, { cache: "no-store" });
+        const res = await fetch(API_ENDPOINTS.articles);
         if (res.ok) {
           const json = await res.json();
           if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
@@ -291,11 +298,9 @@ export default function HomeClient() {
         console.warn("Error fetching articles from MySQL DB:", err);
       }
 
-      if (!apiList || apiList.length === 0) {
-        apiList = [];
+      if (apiList && apiList.length > 0) {
+        setArticles(apiList);
       }
-
-      setArticles(apiList);
       setLoading(false);
     }
 
@@ -800,9 +805,9 @@ export default function HomeClient() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <TrendingUp size={18} style={{ color: "#e50914" }} />
-                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
+                  <h1 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
                     {lang === "HI" ? "ट्रेंडिंग न्यूज" : "TRENDING NEWS"}
-                  </h3>
+                  </h1>
                 </div>
                 
                 {/* Manual Slider Left/Right Navigation Arrows */}

@@ -107,16 +107,18 @@ export async function fetchRealtimeTemperature(lat?: number, lon?: number): Prom
   return "28°C";
 }
 
-/**
- * Real-time IP / VPN Geolocation detector for User City & District
- */
 export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
-  // Check sessionStorage cache first (speed optimization)
+  // Check localStorage / sessionStorage cache first (speed optimization: 0ms return)
   if (typeof window !== "undefined") {
     try {
-      const cached = sessionStorage.getItem("ga_user_geo_location");
+      const cached = localStorage.getItem("ga_user_geo_location_v2") || sessionStorage.getItem("ga_user_geo_location");
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        const cacheAge = Date.now() - (parsed._cachedAt || 0);
+        // Cache valid for 2 hours (7200000 ms)
+        if (cacheAge < 7200000 && parsed.data) {
+          return parsed.data;
+        }
       }
     } catch (_) { }
   }
@@ -124,6 +126,8 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
   const result = await detectLocationInternal();
   if (result && typeof window !== "undefined") {
     try {
+      const payload = JSON.stringify({ _cachedAt: Date.now(), data: result });
+      localStorage.setItem("ga_user_geo_location_v2", payload);
       sessionStorage.setItem("ga_user_geo_location", JSON.stringify(result));
     } catch (_) { }
   }

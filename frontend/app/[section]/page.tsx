@@ -79,11 +79,39 @@ export async function generateMetadata({
   };
 }
 
+import { getPublicArticles } from "@/lib/services/articles";
+import { INDIAN_STATES } from "@/lib/states";
+
 export default async function SectionPage({
   params,
 }: {
   params: Promise<{ section: string }> | { section: string };
 }) {
   const resolvedParams = await params;
-  return <SectionClientContent section={resolvedParams?.section} />;
+  const rawSection = resolvedParams?.section || "news";
+  const section = rawSection.toLowerCase();
+
+  let initialArticles: any[] = [];
+  try {
+    const matchedState = INDIAN_STATES.find(
+      (s) => s.slug === section || s.code.toLowerCase() === section || s.nameEn.toLowerCase() === section
+    );
+    const result = matchedState
+      ? await getPublicArticles({ state: matchedState.code, limit: 50 })
+      : await getPublicArticles({ category: section, limit: 50 });
+
+    if (result && Array.isArray(result.articles)) {
+      initialArticles = JSON.parse(JSON.stringify(result.articles));
+    }
+  } catch (e) {
+    console.warn("Section SSR initial articles fetch error:", e);
+  }
+
+  return (
+    <SectionClientContent
+      section={resolvedParams?.section}
+      initialArticles={initialArticles}
+    />
+  );
 }
+

@@ -558,7 +558,7 @@ export default function Header() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "EN" ? "हिंदी में पढ़ें (Switch to Hindi)" : "Read in English (Switch Edition)"}</p>
+                  <p style={{ margin: 0 }}>{lang === "EN" ? "हिंदी में पढ़ें" : "Read in English"}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -745,7 +745,7 @@ export default function Header() {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "राज्य चुनें (Select State for Regional News)" : "Select State for Regional News"}</p>
+                  <p style={{ margin: 0 }}>{lang === "HI" ? "राज्य चुनें" : "Select State"}</p>
                 </TooltipContent>
               </Tooltip>
               <div
@@ -760,30 +760,50 @@ export default function Header() {
                 }}
               >
                 {INDIAN_STATES.slice(0, 6).map((st) => (
-                  <Link
-                    key={st.code}
-                    href={`/${st.slug}`}
-                    onClick={() => handleSelectState(st)}
-                  >
-                    <span>📍</span>
-                    <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
-                  </Link>
+                  <Tooltip key={st.code}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={`/${st.slug}`}
+                        onClick={() => handleSelectState(st)}
+                        style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        <span>📍</span>
+                        <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p style={{ margin: 0 }}>
+                        {lang === "HI" ? `${st.nameHi} समाचार` : `${st.nameEn} News`}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
                 <div className="dropdown-divider"></div>
-                <button
-                  onClick={() => setIsStateModalOpen(true)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#e50914",
-                    fontWeight: 800,
-                    fontSize: "0.78rem",
-                    cursor: "pointer",
-                    textAlign: "left"
-                  }}
-                >
-                  {lang === "HI" ? "सभी राज्य देखें →" : "View All States →"}
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setIsStateModalOpen(true)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#e50914",
+                        fontWeight: 800,
+                        fontSize: "0.78rem",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        width: "100%",
+                        padding: "4px 8px"
+                      }}
+                    >
+                      {lang === "HI" ? "सभी राज्य देखें →" : "View All States →"}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p style={{ margin: 0 }}>
+                      {lang === "HI" ? "सभी राज्य देखें" : "View All States"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
@@ -804,7 +824,7 @@ export default function Header() {
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "ताज़ा व मुख्य समाचार (Top Headlines)" : "Top Headlines & Latest News"}</p>
+                    <p style={{ margin: 0 }}>{lang === "HI" ? "ताज़ा व मुख्य समाचार" : "Top Headlines"}</p>
                   </TooltipContent>
                 </Tooltip>
                 <div
@@ -981,28 +1001,35 @@ export default function Header() {
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px 10px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
                     {INDIAN_STATES.map((st) => (
-                      <Link
-                        key={st.code}
-                        href={`/${st.slug}`}
-                        title={lang === "HI" ? st.nameHi : st.nameEn}
-                        onClick={() => handleSelectState(st)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "6px 10px",
-                          borderRadius: "6px",
-                          fontSize: "0.82rem",
-                          fontWeight: selectedState.code === st.code ? 800 : 500,
-                          color: selectedState.code === st.code ? "#ffffff" : "#e2e8f0",
-                          background: selectedState.code === st.code ? "#e50914" : "rgba(255,255,255,0.06)",
-                          textDecoration: "none",
-                          transition: "all 0.15s ease"
-                        }}
-                      >
-                        <span style={{ fontSize: "0.75rem" }}>📍</span>
-                        <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
-                      </Link>
+                      <Tooltip key={st.code}>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href={`/${st.slug}`}
+                            onClick={() => handleSelectState(st)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              fontSize: "0.82rem",
+                              fontWeight: selectedState.code === st.code ? 800 : 500,
+                              color: selectedState.code === st.code ? "#ffffff" : "#e2e8f0",
+                              background: selectedState.code === st.code ? "#e50914" : "rgba(255,255,255,0.06)",
+                              textDecoration: "none",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            <span style={{ fontSize: "0.75rem" }}>📍</span>
+                            <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p style={{ margin: 0 }}>
+                            {lang === "HI" ? `${st.nameHi} समाचार` : `${st.nameEn} News`}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>

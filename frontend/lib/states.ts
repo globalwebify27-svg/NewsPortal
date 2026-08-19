@@ -44,9 +44,9 @@ export const INDIAN_STATES: IndianState[] = [
 export async function autoDetectUserIndianState(): Promise<IndianState | null> {
   if (typeof window !== "undefined") {
     try {
-      const cachedCode = sessionStorage.getItem("ga_selected_state");
+      const cachedCode = localStorage.getItem("ga_selected_state") || sessionStorage.getItem("ga_selected_state");
       if (cachedCode) {
-        const found = INDIAN_STATES.find((s) => s.code === cachedCode);
+        const found = INDIAN_STATES.find((s) => s.code === cachedCode || s.slug === cachedCode);
         if (found) return found;
       }
     } catch (_) {}
