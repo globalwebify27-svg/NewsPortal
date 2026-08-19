@@ -391,7 +391,7 @@ export default function Header() {
                   <Link href="/about">{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "ग्लोबल आवाज़ संपादकीय नीति व मिशन" : "About Global Awaaz & Mission"}</p>
+                  <p style={{ margin: 0 }}>{lang === "HI" ? "हमारे बारे में" : "About Us"}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -400,7 +400,7 @@ export default function Header() {
                   <Link href="/careers">{lang === "HI" ? "करियर" : "Careers"}</Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "ग्लोबल आवाज़ टीम से जुड़ें" : "Join the Global Awaaz Team"}</p>
+                  <p style={{ margin: 0 }}>{lang === "HI" ? "करियर" : "Careers"}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -409,7 +409,7 @@ export default function Header() {
                   <Link href="/advertise">{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "ब्रांड प्रमोशन व विज्ञापन समाधान" : "Advertising & Media Solutions"}</p>
+                  <p style={{ margin: 0 }}>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -418,7 +418,7 @@ export default function Header() {
                   <Link href="/about#contact">{lang === "HI" ? "संपर्क करें" : "Contact Us"}</Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "हेल्पलाइन एवं संपादकीय संपर्क" : "Newsdesk & Office Contact"}</p>
+                  <p style={{ margin: 0 }}>{lang === "HI" ? "संपर्क करें" : "Contact Us"}</p>
                 </TooltipContent>
               </Tooltip>
             </nav>

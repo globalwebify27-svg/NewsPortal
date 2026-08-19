@@ -199,7 +199,7 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
       children,
       side = "bottom",
       align = "center",
-      sideOffset = 8,
+      sideOffset = 5,
       className = "",
       style,
       ...props
@@ -224,15 +224,16 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
       zIndex: 99999999,
       pointerEvents: "none",
       backgroundColor: "#0f172a",
-      color: "#ffffff",
-      padding: "6px 12px",
-      borderRadius: "6px",
-      fontSize: "0.78rem",
-      fontWeight: 700,
-      lineHeight: 1.3,
+      color: "#f8fafc",
+      padding: "3px 7px",
+      borderRadius: "4px",
+      fontSize: "0.68rem",
+      fontWeight: 600,
+      lineHeight: 1.2,
+      letterSpacing: "0.01em",
       whiteSpace: "nowrap",
-      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15)",
-      animation: "ga-tooltip-fade 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+      boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12)",
+      animation: "ga-tooltip-fade 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       ...style,
     };
 
@@ -270,17 +271,17 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
         <div
           style={{
             position: "absolute",
-            width: "6px",
-            height: "6px",
+            width: "5px",
+            height: "5px",
             backgroundColor: "#0f172a",
             transform: "rotate(45deg)",
             ...(side === "top"
-              ? { bottom: "-3px", left: "calc(50% - 3px)", borderRight: "1px solid rgba(255,255,255,0.15)", borderBottom: "1px solid rgba(255,255,255,0.15)" }
+              ? { bottom: "-2.5px", left: "calc(50% - 2.5px)", borderRight: "1px solid rgba(255,255,255,0.12)", borderBottom: "1px solid rgba(255,255,255,0.12)" }
               : side === "bottom"
-              ? { top: "-3px", left: "calc(50% - 3px)", borderLeft: "1px solid rgba(255,255,255,0.15)", borderTop: "1px solid rgba(255,255,255,0.15)" }
+              ? { top: "-2.5px", left: "calc(50% - 2.5px)", borderLeft: "1px solid rgba(255,255,255,0.12)", borderTop: "1px solid rgba(255,255,255,0.12)" }
               : side === "left"
-              ? { right: "-3px", top: "calc(50% - 3px)", borderRight: "1px solid rgba(255,255,255,0.15)", borderTop: "1px solid rgba(255,255,255,0.15)" }
-              : { left: "-3px", top: "calc(50% - 3px)", borderLeft: "1px solid rgba(255,255,255,0.15)", borderBottom: "1px solid rgba(255,255,255,0.15)" }),
+              ? { right: "-2.5px", top: "calc(50% - 2.5px)", borderRight: "1px solid rgba(255,255,255,0.12)", borderTop: "1px solid rgba(255,255,255,0.12)" }
+              : { left: "-2.5px", top: "calc(50% - 2.5px)", borderLeft: "1px solid rgba(255,255,255,0.12)", borderBottom: "1px solid rgba(255,255,255,0.12)" }),
           }}
         />
         {children}
