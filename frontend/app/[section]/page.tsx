@@ -79,6 +79,11 @@ export async function generateMetadata({
   };
 }
 
-export default function SectionPage() {
-  return <SectionClientContent />;
+export default async function SectionPage({
+  params,
+}: {
+  params: Promise<{ section: string }> | { section: string };
+}) {
+  const resolvedParams = await params;
+  return <SectionClientContent section={resolvedParams?.section} />;
 }

@@ -38,7 +38,7 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--color-bg, #f8fafc)", color: "var(--color-text, #0f172a)", paddingBottom: "60px" }}>
+    <main suppressHydrationWarning style={{ minHeight: "100vh", background: "var(--color-bg, #f8fafc)", color: "var(--color-text, #0f172a)", paddingBottom: "60px" }}>
       {/* ── HERO BANNER ────────────────────────────────────────────────── */}
       <section className="about-hero-section">
         {/* Decorative Grid Pattern Background */}
@@ -288,35 +288,132 @@ export default function AboutPage() {
           </div>
 
           <div className="about-contact-grid">
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", background: "var(--color-bg-alt, #f8fafc)", padding: "16px 14px", borderRadius: "10px", border: "1px solid var(--color-border, #e2e8f0)" }}>
+            {/* Headquarters / Map */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "flex-start",
+                background: "var(--color-bg-alt, #f8fafc)",
+                padding: "16px 14px",
+                borderRadius: "10px",
+                border: "1px solid var(--color-border, #e2e8f0)",
+                transition: "all 0.2s ease"
+              }}
+            >
               <MapPin size={20} style={{ color: "#e50914", flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800 }}>{isHindi ? "मुख्य कार्यालय" : "Headquarters"}</h5>
+                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800, color: "var(--color-text, #0f172a)" }}>
+                  {isHindi ? "मुख्य कार्यालय" : "Headquarters"}
+                </h5>
                 <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.45 }}>
                   {isHindi ? data.addressHi : data.addressEn}
                 </p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.addressEn || data.addressHi || "Global Awaaz Ranchi")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    marginTop: "6px",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color: "#e50914",
+                    textDecoration: "none"
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                >
+                  📍 {isHindi ? "गूगल मैप पर देखें →" : "View on Google Maps →"}
+                </a>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", background: "var(--color-bg-alt, #f8fafc)", padding: "16px 14px", borderRadius: "10px", border: "1px solid var(--color-border, #e2e8f0)" }}>
+            {/* Email Contact */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "flex-start",
+                background: "var(--color-bg-alt, #f8fafc)",
+                padding: "16px 14px",
+                borderRadius: "10px",
+                border: "1px solid var(--color-border, #e2e8f0)",
+                transition: "all 0.2s ease"
+              }}
+            >
               <Mail size={20} style={{ color: "#e50914", flexShrink: 0, marginTop: "2px" }} />
-              <div>
-                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800 }}>{isHindi ? "ईमेल संपर्क" : "Email Enquiries"}</h5>
-                <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.45, wordBreak: "break-all" }}>
-                  {data.contactEmail1}<br />
-                  {data.contactEmail2}
-                </p>
+              <div style={{ minWidth: 0 }}>
+                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800, color: "var(--color-text, #0f172a)" }}>
+                  {isHindi ? "ईमेल संपर्क" : "Email Enquiries"}
+                </h5>
+                <div style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.6, wordBreak: "break-all", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {data.contactEmail1 && (
+                    <a
+                      href={`mailto:${data.contactEmail1}`}
+                      style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                      onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    >
+                      {data.contactEmail1}
+                    </a>
+                  )}
+                  {data.contactEmail2 && (
+                    <a
+                      href={`mailto:${data.contactEmail2}`}
+                      style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                      onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    >
+                      {data.contactEmail2}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", background: "var(--color-bg-alt, #f8fafc)", padding: "16px 14px", borderRadius: "10px", border: "1px solid var(--color-border, #e2e8f0)" }}>
+            {/* Phone Hotline */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "flex-start",
+                background: "var(--color-bg-alt, #f8fafc)",
+                padding: "16px 14px",
+                borderRadius: "10px",
+                border: "1px solid var(--color-border, #e2e8f0)",
+                transition: "all 0.2s ease"
+              }}
+            >
               <Phone size={20} style={{ color: "#e50914", flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800 }}>{isHindi ? "फोन हेल्पलाइन" : "Phone Hotline"}</h5>
-                <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.45 }}>
-                  {data.phone1}<br />
-                  {data.phone2}
-                </p>
+                <h5 style={{ margin: "0 0 4px 0", fontSize: "0.9rem", fontWeight: 800, color: "var(--color-text, #0f172a)" }}>
+                  {isHindi ? "फोन हेल्पलाइन" : "Phone Hotline"}
+                </h5>
+                <div style={{ margin: 0, fontSize: "0.82rem", color: "#64748b", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {data.phone1 && (
+                    <a
+                      href={`tel:${data.phone1.replace(/[^0-9+]/g, "")}`}
+                      style={{ color: "#16a34a", textDecoration: "none", fontWeight: 700 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                      onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    >
+                      📞 {data.phone1}
+                    </a>
+                  )}
+                  {data.phone2 && (
+                    <a
+                      href={`tel:${data.phone2.replace(/[^0-9+]/g, "")}`}
+                      style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                      onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    >
+                      {data.phone2}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>

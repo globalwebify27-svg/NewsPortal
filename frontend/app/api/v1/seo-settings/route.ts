@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -86,6 +87,26 @@ export async function POST(request: NextRequest) {
     try {
       fs.writeFileSync(ALT_DB_FILE_PATH, jsonStr, "utf-8");
     } catch (e) {}
+
+    // Purge Next.js page cache for every path that was updated
+    // so the new title/meta shows immediately on the next page visit
+    try {
+      // Always purge the homepage
+      revalidatePath("/");
+
+      // Purge every specific page path that was saved
+      if (Array.isArray(body)) {
+        const uniquePaths = new Set<string>();
+        body.forEach((item: any) => {
+          if (item?.path && typeof item.path === "string") {
+            uniquePaths.add(item.path);
+          }
+        });
+        uniquePaths.forEach((p) => revalidatePath(p));
+      }
+    } catch (rvErr) {
+      console.warn("revalidatePath failed (safe to ignore in dev):", rvErr);
+    }
 
     return NextResponse.json(
       { success: true, data: body, message: "SEO settings saved successfully" },

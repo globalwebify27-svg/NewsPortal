@@ -297,7 +297,7 @@ export default async function CategoryArticlePage({
   // If /education/board-exams or /sports/cricket → render section filter page
   const matchedSubName = isSubCategoryRoute(section, slug);
   if (matchedSubName) {
-    return <SectionClientContent initialSubCat={matchedSubName} />;
+    return <SectionClientContent section={section} initialSubCat={matchedSubName} />;
   }
 
   const article = await getArticleData(slug);

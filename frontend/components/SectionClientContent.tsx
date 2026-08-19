@@ -67,10 +67,16 @@ function formatCardTime(dateStr?: string) {
   } catch { return "02:15 PM"; }
 }
 
-export default function SectionClientContent({ initialSubCat }: { initialSubCat?: string } = {}) {
+export default function SectionClientContent({
+  section: propSection,
+  initialSubCat,
+}: {
+  section?: string;
+  initialSubCat?: string;
+} = {}) {
   const params = useParams();
   const router = useRouter();
-  const rawSection = (params?.section as string) || "india";
+  const rawSection = propSection || (params?.section as string) || "india";
   const section = rawSection.toLowerCase();
   const { lang } = useLanguage();
 
@@ -101,11 +107,11 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
   // Sync selectedState when path changes (e.g. user navigates /jharkhand -> /bihar)
   useEffect(() => {
     if (detectedStateFromPath) {
+      // Direct state route like /jharkhand — lock to that state
       setSelectedState(detectedStateFromPath.code);
     } else if (section === "india") {
-      // Keep existing selected state or ALL for /india
-      const stored = sessionStorage.getItem("ga_selected_state");
-      setSelectedState(stored || "ALL");
+      // /india page: always show All India by default, not the geo-detected state
+      setSelectedState("ALL");
     }
     setActiveDistrict("ALL");
   }, [section]);
@@ -127,27 +133,28 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
       let combined: Article[] = [];
 
       try {
-        let fetchUrl = `${API_ENDPOINTS.articles}?category=${section}&limit=50`;
+        let fetchUrl: string;
 
         if (detectedStateFromPath) {
-          // Direct state path like /jharkhand - fetch by state code
-          fetchUrl = `${API_ENDPOINTS.articles}?state=${detectedStateFromPath.code}&limit=50`;
+          // /jharkhand, /bihar etc — fetch articles tagged with this state
+          fetchUrl = `${API_ENDPOINTS.articles}?state=${detectedStateFromPath.code}&limit=100`;
         } else if (section === "india" || section === "state" || section === "states") {
           if (selectedState && selectedState !== "ALL") {
-            fetchUrl = `${API_ENDPOINTS.articles}?state=${selectedState}&limit=50`;
+            // User picked a specific state from dropdown on /india — fetch that state
+            fetchUrl = `${API_ENDPOINTS.articles}?state=${selectedState}&limit=100`;
           } else {
-            // All India
-            fetchUrl = `${API_ENDPOINTS.articles}?category=india&limit=50`;
+            // All India view — fetch all india-category articles (includes national + all states)
+            fetchUrl = `${API_ENDPOINTS.articles}?category=india&limit=150`;
           }
+        } else {
+          fetchUrl = `${API_ENDPOINTS.articles}?category=${section}&limit=100`;
         }
 
         const res = await fetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
           const list = data?.data?.articles || data?.articles || data?.data || [];
-          if (Array.isArray(list)) {
-            combined = list;
-          }
+          if (Array.isArray(list)) combined = list;
         }
       } catch (err) {
         console.warn("API fetch error for section:", section, err);
@@ -164,60 +171,88 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
   const selectedStateObj = detectedStateFromPath || INDIAN_STATES.find(s => s.code === selectedState);
   const stateDistricts = selectedStateObj ? getDistrictsForState(selectedStateObj.code) : [];
 
-  const filteredArticles = articles.filter((item) => {
-    // 1. Sub-category filter
-    if (activeSubCat !== "ALL") {
-      const itemSub = item.subCategory || item.category?.subCategory || "";
-      if (!isSubCategoryMatch(itemSub, activeSubCat)) {
-        return false;
-      }
-    }
 
-    // 2. District filter
-    if (activeDistrict !== "ALL" && stateDistricts.length > 0) {
-      const itemDist = (item.district || "").toLowerCase().trim();
-      const targetDist = activeDistrict.toLowerCase().trim();
-      const distObj = stateDistricts.find(d => d.nameEn.toLowerCase() === targetDist);
 
-      const enName = distObj ? distObj.nameEn.toLowerCase() : targetDist;
-      const hiName = distObj ? distObj.nameHi.toLowerCase() : "";
 
-      const distMatches =
-        itemDist === enName ||
-        itemDist === hiName ||
-        itemDist.includes(enName) ||
-        enName.includes(itemDist) ||
-        (hiName && itemDist.includes(hiName)) ||
-        (hiName && hiName.includes(itemDist)) ||
-        item.title.toLowerCase().includes(enName) ||
-        (hiName && item.title.toLowerCase().includes(hiName)) ||
-        (item.summary && item.summary.toLowerCase().includes(enName)) ||
-        (hiName && item.summary && item.summary.toLowerCase().includes(hiName));
+  /**
+   * ADMIN → FRONTEND MAPPING FOR INDIA / STATE PAGES
+   * -------------------------------------------------------
+   * Admin saves:                        Shows on frontend:
+   * SubCat="National News"              /india → चालू सब-टैब जो बाधा है बनाएं
+   * + State="National/All India"        ⇒ राष्ट्रीय समाचार sub-tab
+   * State="Jharkhand"                   ⇒ /jharkhand page, all sub-tabs
+   * State="Jharkhand"+District="Ranchi" ⇒ /jharkhand, Ranchi district filter
+   */
 
-      if (!distMatches) return false;
-    }
+  // Helper: is this a "national" state value (not a specific Indian state)
+  const NATIONAL_STATE_VALUES = ["national", "all india", "all", "national / all india", "pur bharat", "पूरा भारत", "national/all india"];
+  const isNationalState = (st: string) => {
+    const lower = st.toLowerCase().trim();
+    return NATIONAL_STATE_VALUES.some(v => lower === v || lower.includes(v));
+  };
 
-    return true;
+  // Sub-category pill filter (applied first)
+  const subCatFiltered = articles.filter((item) => {
+    if (activeSubCat === "ALL") return true;
+    const itemSub = item.subCategory || item.category?.subCategory || "";
+    return isSubCategoryMatch(itemSub, activeSubCat);
   });
 
-  // For /india or /jharkhand etc with a state selected, filter client-side too for precision
-  const stateMatchedArticles = (selectedStateObj && selectedState !== "ALL" && isStatePage)
-    ? filteredArticles.filter((item) => {
-      const stLower = (item.state || "national").toLowerCase().trim();
-      if (stLower === "national" || stLower === "all india" || stLower === "all") return true;
-      const nameEn = selectedStateObj.nameEn.toLowerCase();
-      const code = selectedStateObj.code.toLowerCase();
-      const slug = selectedStateObj.slug.toLowerCase();
-      return stLower === nameEn || stLower === code || stLower === slug || stLower.includes(nameEn);
-    })
-    : filteredArticles;
+  // District filter
+  const districtFiltered = subCatFiltered.filter((item) => {
+    if (activeDistrict === "ALL" || stateDistricts.length === 0) return true;
+    const itemDist = (item.district || "").toLowerCase().trim();
+    const targetDist = activeDistrict.toLowerCase().trim();
+    const distObj = stateDistricts.find(d => d.nameEn.toLowerCase() === targetDist);
+    const enName = distObj ? distObj.nameEn.toLowerCase() : targetDist;
+    const hiName = distObj ? distObj.nameHi.toLowerCase() : "";
+    return (
+      itemDist === enName || itemDist === hiName ||
+      itemDist.includes(enName) || enName.includes(itemDist) ||
+      (hiName && itemDist.includes(hiName)) ||
+      item.title.toLowerCase().includes(enName) ||
+      (hiName && item.title.toLowerCase().includes(hiName))
+    );
+  });
 
-  const displayArticles = stateMatchedArticles;
+  // State-level filter — the main mapping logic
+  const displayArticles = (() => {
+    if (!isStatePage) return districtFiltered; // non-india sections: no state filter
+
+    if (selectedStateObj) {
+      // SPECIFIC STATE SELECTED (e.g. Jharkhand): only show articles tagged with that state
+      return districtFiltered.filter((item) => {
+        const stLower = (item.state || "").toLowerCase().trim();
+        if (!stLower) return false;
+        const nameEn = selectedStateObj.nameEn.toLowerCase();
+        const nameHi = selectedStateObj.nameHi.toLowerCase();
+        const code = selectedStateObj.code.toLowerCase();
+        const slug = selectedStateObj.slug.toLowerCase();
+        return (
+          stLower === nameEn || stLower === code || stLower === slug ||
+          stLower.includes(nameEn) || stLower.includes(nameHi) || stLower.includes(slug)
+        );
+      });
+    }
+
+    // ALL INDIA VIEW (/india page, no state selected)
+    // • "National News" sub-tab → articles where state = National / All India
+    // • "All" sub-tab         → all india-category articles (national + state-specific)
+    if (activeSubCat === "National News" || activeSubCat === "राष्ट्रीय समाचार") {
+      return districtFiltered.filter((item) => {
+        const stLower = (item.state || "").toLowerCase().trim();
+        return isNationalState(stLower);
+      });
+    }
+
+    // All India, any sub-tab: show everything returned by the API
+    return districtFiltered;
+  })();
 
   const sectionDisplayName = isStatePage
     ? (selectedStateObj
-      ? (lang === "HI" ? `${selectedStateObj.nameHi} (भारत समाचार)` : `${selectedStateObj.nameEn} (India News)`)
-      : (lang === "HI" ? "भारत समाचार (All India News)" : "India News (All India Headlines)"))
+      ? (lang === "HI" ? `${selectedStateObj.nameHi} समाचार` : `${selectedStateObj.nameEn} News`)
+      : (lang === "HI" ? "भारत समाचार" : "India News"))
     : (section.charAt(0).toUpperCase() + section.slice(1));
 
   return (
@@ -345,7 +380,8 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
         </div>
       )}
 
-      {availableSubCats.length > 0 && !(selectedStateObj && (section === "india" || section === "state" || section === "states")) && (
+      {/* SUB-CATEGORY PILLS — only on /india and other category pages, NOT on state routes like /jharkhand */}
+      {availableSubCats.length > 0 && !detectedStateFromPath && (
         <div className="sub-category-pills" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px" }}>
           <button
             onClick={() => setActiveSubCat("ALL")}

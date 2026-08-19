@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Share2, Check } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface SocialShareProps {
   title: string;
@@ -150,110 +151,130 @@ export default function SocialShareButtons({
       }}
     >
       {/* WhatsApp */}
-      <button
-        type="button"
-        onClick={handleWhatsApp}
-        className="share-btn share-whatsapp"
-        title="Share on WhatsApp"
-        aria-label="Share on WhatsApp"
-        style={{
-          background: "#25D366",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "transform 0.15s ease",
-        }}
-      >
-        <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.762.459 3.481 1.332 5.004L2 22l5.148-1.348c1.472.803 3.136 1.226 4.86 1.227h.004c5.506 0 9.989-4.478 9.99-9.984 0-2.668-1.039-5.176-2.927-7.065C17.187 3.041 14.68 2 12.012 2zm5.833 14.202c-.247.694-1.439 1.365-1.996 1.423-.518.054-1.189.082-3.418-.838-2.846-1.174-4.664-4.08-4.806-4.27-.14-.188-1.144-1.523-1.144-2.905 0-1.383.722-2.062.979-2.344.257-.282.564-.352.752-.352.188 0 .376.002.54.01.174.008.411-.066.643.49.247.593.847 2.07.922 2.222.075.152.125.328.025.526-.1.198-.15.32-.298.497-.149.176-.312.394-.446.529-.149.149-.304.312-.131.608.173.296.772 1.274 1.657 2.062 1.139 1.015 2.1 1.328 2.396 1.477.296.149.471.125.644-.075.173-.199.742-.865.94-1.162.198-.297.396-.247.668-.149.272.099 1.73.816 2.027.964.297.149.495.223.569.347.075.124.075.719-.172 1.413z" />
-        </svg>
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleWhatsApp}
+            className="share-btn share-whatsapp"
+            aria-label="Share on WhatsApp"
+            style={{
+              background: "#25D366",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "50%",
+              width: size === "sm" ? "28px" : "34px",
+              height: size === "sm" ? "28px" : "34px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.762.459 3.481 1.332 5.004L2 22l5.148-1.348c1.472.803 3.136 1.226 4.86 1.227h.004c5.506 0 9.989-4.478 9.99-9.984 0-2.668-1.039-5.176-2.927-7.065C17.187 3.041 14.68 2 12.012 2zm5.833 14.202c-.247.694-1.439 1.365-1.996 1.423-.518.054-1.189.082-3.418-.838-2.846-1.174-4.664-4.08-4.806-4.27-.14-.188-1.144-1.523-1.144-2.905 0-1.383.722-2.062.979-2.344.257-.282.564-.352.752-.352.188 0 .376.002.54.01.174.008.411-.066.643.49.247.593.847 2.07.922 2.222.075.152.125.328.025.526-.1.198-.15.32-.298.497-.149.176-.312.394-.446.529-.149.149-.304.312-.131.608.173.296.772 1.274 1.657 2.062 1.139 1.015 2.1 1.328 2.396 1.477.296.149.471.125.644-.075.173-.199.742-.865.94-1.162.198-.297.396-.247.668-.149.272.099 1.73.816 2.027.964.297.149.495.223.569.347.075.124.075.719-.172 1.413z" />
+            </svg>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p style={{ margin: 0 }}>WhatsApp पर शेयर करें</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Twitter / X */}
-      <button
-        type="button"
-        onClick={handleTwitter}
-        className="share-btn share-twitter"
-        title="Share on X (Twitter)"
-        aria-label="Share on X"
-        style={{
-          background: "#000000",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "transform 0.15s ease",
-        }}
-      >
-        <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleTwitter}
+            className="share-btn share-twitter"
+            aria-label="Share on X"
+            style={{
+              background: "#000000",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "50%",
+              width: size === "sm" ? "28px" : "34px",
+              height: size === "sm" ? "28px" : "34px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p style={{ margin: 0 }}>X (Twitter) पर शेयर करें</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Facebook */}
-      <button
-        type="button"
-        onClick={handleFacebook}
-        className="share-btn share-facebook"
-        title="Share on Facebook"
-        aria-label="Share on Facebook"
-        style={{
-          background: "#1877F2",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "transform 0.15s ease",
-        }}
-      >
-        <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleFacebook}
+            className="share-btn share-facebook"
+            aria-label="Share on Facebook"
+            style={{
+              background: "#1877F2",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "50%",
+              width: size === "sm" ? "28px" : "34px",
+              height: size === "sm" ? "28px" : "34px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            <svg width={currentIconSize} height={currentIconSize} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p style={{ margin: 0 }}>Facebook पर शेयर करें</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Native / Copy Link */}
-      <button
-        type="button"
-        onClick={handleNativeShare}
-        className={`share-btn share-copy ${copied ? "copied" : ""}`}
-        title={copied ? "Link Copied!" : "Copy Link / Share"}
-        aria-label="Copy link or share"
-        style={{
-          background: copied ? "#10b981" : "#475569",
-          color: "#ffffff",
-          border: "none",
-          borderRadius: "50%",
-          width: size === "sm" ? "28px" : "34px",
-          height: size === "sm" ? "28px" : "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-        }}
-      >
-        {copied ? (
-          <Check size={currentIconSize} style={{ color: "#ffffff" }} />
-        ) : (
-          <Share2 size={currentIconSize} />
-        )}
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            className={`share-btn share-copy ${copied ? "copied" : ""}`}
+            aria-label="Copy link or share"
+            style={{
+              background: copied ? "#10b981" : "#475569",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "50%",
+              width: size === "sm" ? "28px" : "34px",
+              height: size === "sm" ? "28px" : "34px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {copied ? <Check size={currentIconSize} /> : <Share2 size={currentIconSize} />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p style={{ margin: 0 }}>{copied ? "लिंक कॉपी हो गया!" : "लिंक कॉपी करें / शेयर करें"}</p>
+        </TooltipContent>
+      </Tooltip>
 
       {copied && (
         <span
