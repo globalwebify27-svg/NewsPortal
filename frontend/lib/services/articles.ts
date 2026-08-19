@@ -13,6 +13,7 @@ export interface ArticleQueryParams {
   page?: number;
   limit?: number;
   category?: string;
+  subCategory?: string;
   tag?: string;
   search?: string;
   status?: string;
@@ -44,6 +45,7 @@ const ARTICLE_LIST_SELECT = {
   updatedAt: true,
   state: true,
   district: true,
+  subCategory: true,
   category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
   author: { select: { id: true, name: true, avatar: true } },
 };
@@ -367,6 +369,7 @@ export async function createOrUpdateArticle(data: any) {
       authorId: authorId,
       state: data.state || "National",
       district: data.district || "All",
+      subCategory: data.subCategory || (typeof data.category === "object" ? data.category?.subCategory : null) || "General",
     };
 
     let articleRecord;

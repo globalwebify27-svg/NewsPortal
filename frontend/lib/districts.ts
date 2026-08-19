@@ -131,10 +131,22 @@ export async function autoDetectUserCity(): Promise<DetectedLocation | null> {
 }
 
 async function detectLocationInternal(): Promise<DetectedLocation | null> {
+  const fetchWithTimeout = async (url: string, timeoutMs = 1200) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch {
+      clearTimeout(timer);
+      return null;
+    }
+  };
 
   try {
-    const res = await fetch("https://ipwho.is/", { cache: "no-store" });
-    if (res.ok) {
+    const res = await fetchWithTimeout("https://ipwho.is/");
+    if (res && res.ok) {
       const data = await res.json();
       if (data.success) {
         const cityStr = (data.city || "").trim();
@@ -207,8 +219,8 @@ async function detectLocationInternal(): Promise<DetectedLocation | null> {
 
   // Provider 2: ipapi.co
   try {
-    const res2 = await fetch("https://ipapi.co/json/", { cache: "no-store" });
-    if (res2.ok) {
+    const res2 = await fetchWithTimeout("https://ipapi.co/json/");
+    if (res2 && res2.ok) {
       const data2 = await res2.json();
       const cityStr = (data2.city || "").trim();
       const regionStr = (data2.region || data2.region_code || "").trim();
@@ -257,8 +269,8 @@ async function detectLocationInternal(): Promise<DetectedLocation | null> {
 
   // Provider 3: ip-api.com
   try {
-    const res3 = await fetch("https://ip-api.com/json/?fields=city,regionName,countryCode,country", { cache: "no-store" });
-    if (res3.ok) {
+    const res3 = await fetchWithTimeout("https://ip-api.com/json/?fields=city,regionName,countryCode,country");
+    if (res3 && res3.ok) {
       const data3 = await res3.json();
       const cName = (data3.city || "").trim();
       const rName = (data3.regionName || "").trim();

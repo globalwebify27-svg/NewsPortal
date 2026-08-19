@@ -11,7 +11,7 @@ import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/
 import { API_ENDPOINTS } from "@/lib/config";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
 import { getDistrictsForState } from "@/lib/districts";
-import { getSubCategories } from "@/lib/subCategories";
+import { getSubCategories, isSubCategoryMatch } from "@/lib/subCategories";
 
 // Returns state if section param matches a state slug/code/name, else null
 function detectStateFromSection(section: string): IndianState | null {
@@ -167,36 +167,9 @@ export default function SectionClientContent({ initialSubCat }: { initialSubCat?
   const filteredArticles = articles.filter((item) => {
     // 1. Sub-category filter
     if (activeSubCat !== "ALL") {
-      const itemSub = (item.subCategory || item.category?.subCategory || "").toLowerCase().trim();
-      if (!itemSub || itemSub === "general") {
+      const itemSub = item.subCategory || item.category?.subCategory || "";
+      if (!isSubCategoryMatch(itemSub, activeSubCat)) {
         return false;
-      }
-
-      const targetSub = activeSubCat.toLowerCase().trim().replace(/-/g, " ");
-      const targetSubSlug = activeSubCat.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
-      const subItem = availableSubCats.find(
-        (s) =>
-          s.en.toLowerCase() === targetSub ||
-          s.hi.toLowerCase() === targetSub ||
-          s.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") === targetSubSlug
-      );
-
-      if (subItem) {
-        const enLower = subItem.en.toLowerCase().trim();
-        const hiLower = subItem.hi.toLowerCase().trim();
-        const isMatch =
-          itemSub === enLower ||
-          itemSub === hiLower ||
-          itemSub.includes(enLower) ||
-          enLower.includes(itemSub) ||
-          itemSub.includes(hiLower) ||
-          hiLower.includes(itemSub);
-
-        if (!isMatch) return false;
-      } else {
-        if (!itemSub.includes(targetSub) && !targetSub.includes(itemSub)) {
-          return false;
-        }
       }
     }
 

@@ -42,9 +42,32 @@ export const INDIAN_STATES: IndianState[] = [
  * Automatically detects the user's Indian state using IP Geolocation services
  */
 export async function autoDetectUserIndianState(): Promise<IndianState | null> {
+  if (typeof window !== "undefined") {
+    try {
+      const cachedCode = sessionStorage.getItem("ga_selected_state");
+      if (cachedCode) {
+        const found = INDIAN_STATES.find((s) => s.code === cachedCode);
+        if (found) return found;
+      }
+    } catch (_) {}
+  }
+
+  const fetchWithTimeout = async (url: string, timeoutMs = 1200) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch {
+      clearTimeout(timer);
+      return null;
+    }
+  };
+
   try {
-    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
-    if (res.ok) {
+    const res = await fetchWithTimeout("https://ipapi.co/json/");
+    if (res && res.ok) {
       const data = await res.json();
       const region = (data.region || data.region_code || "").toLowerCase();
       const city = (data.city || "").toLowerCase();
@@ -66,8 +89,8 @@ export async function autoDetectUserIndianState(): Promise<IndianState | null> {
   } catch (e) {}
 
   try {
-    const res2 = await fetch("https://ip-api.com/json/?fields=regionName,city,countryCode", { cache: "no-store" });
-    if (res2.ok) {
+    const res2 = await fetchWithTimeout("https://ip-api.com/json/?fields=regionName,city,countryCode");
+    if (res2 && res2.ok) {
       const data2 = await res2.json();
       const rName = (data2.regionName || "").toLowerCase();
       if (rName) {

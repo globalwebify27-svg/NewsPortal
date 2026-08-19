@@ -13,8 +13,10 @@ function buildSubCategorySlugMap(): Map<string, { category: string; subName: str
   const map = new Map<string, { category: string; subName: string }>();
   for (const [category, subs] of Object.entries(MASTER_SUB_CATEGORIES)) {
     for (const sub of subs) {
-      const slug = sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      map.set(`${category}/${slug}`, { category, subName: sub.en });
+      const enSlug = sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const hiSlug = sub.hi.toLowerCase().trim().replace(/[^a-z0-9\u0900-\u097F]+/g, "-").replace(/^-+|-+$/g, "");
+      map.set(`${category}/${enSlug}`, { category, subName: sub.en });
+      if (hiSlug) map.set(`${category}/${hiSlug}`, { category, subName: sub.en });
     }
   }
   return map;
@@ -23,9 +25,26 @@ function buildSubCategorySlugMap(): Map<string, { category: string; subName: str
 const SUB_CATEGORY_SLUG_MAP = buildSubCategorySlugMap();
 
 function isSubCategoryRoute(section: string, slug: string): string | null {
-  const key = `${section.toLowerCase()}/${slug.toLowerCase()}`;
+  const secLower = section.toLowerCase();
+  const slugLower = slug.toLowerCase();
+  const key = `${secLower}/${slugLower}`;
+
   const match = SUB_CATEGORY_SLUG_MAP.get(key);
-  return match ? match.subName : null;
+  if (match) return match.subName;
+
+  // Search across all MASTER_SUB_CATEGORIES for matching subcategory slug
+  for (const [category, subs] of Object.entries(MASTER_SUB_CATEGORIES)) {
+    if (secLower.includes(category) || category.includes(secLower)) {
+      for (const sub of subs) {
+        const enSlug = sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        if (enSlug === slugLower || sub.en.toLowerCase() === slugLower) {
+          return sub.en;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function isStateRoute(slug: string): boolean {

@@ -417,7 +417,8 @@ export default function AdminArticlesPage() {
         : autoSlug);
     const finalHeight = formImageHeight === "custom" ? (formCustomHeight ? (formCustomHeight.endsWith("px") ? formCustomHeight : `${formCustomHeight}px`) : "auto") : formImageHeight;
 
-    const activeCat = formCategories.length > 0 ? formCategories[0] : formCategory;
+    const activeCat = formCategory || (formCategories.length > 0 ? formCategories[0] : "Education");
+    const finalCategories = Array.from(new Set([activeCat, ...formCategories]));
 
     const isEditorRole = adminRole === "editor" || adminRole.includes("staff");
     const isChiefOrAdmin = isChiefOrSuperAdmin(adminRole);
@@ -462,8 +463,8 @@ export default function AdminArticlesPage() {
       summary: formSummary,
       body: formContent,
       featuredImage: formImage || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&auto=format&fit=crop&q=60",
-      category: { name: activeCat, slug: activeCat.toLowerCase(), color: getCategoryColor(activeCat), subCategory: formSubCategory },
-      categories: formCategories.length > 0 ? formCategories : [activeCat],
+      category: { name: activeCat, slug: activeCat.toLowerCase().replace(/\s+/g, "-"), color: getCategoryColor(activeCat), subCategory: formSubCategory },
+      categories: finalCategories,
       subCategory: formSubCategory,
       author: { name: (formAuthor && formAuthor.trim()) ? formAuthor.trim() : (adminUserName && adminUserName !== "Global Admin" ? adminUserName : "Global Awaaz Admin") },
       authorId: (formAuthor && formAuthor.trim()) ? formAuthor.trim() : adminUserName,
@@ -1092,7 +1093,6 @@ export default function AdminArticlesPage() {
                             }
                           } else {
                             setFormCategories([...formCategories, catName]);
-                            setFormCategory(catName);
                           }
                         }}
                         style={{
@@ -1161,11 +1161,14 @@ export default function AdminArticlesPage() {
                       const newCat = e.target.value;
                       setFormCategory(newCat);
                       if (!formCategories.includes(newCat)) {
-                        setFormCategories([newCat, ...formCategories]);
+                        setFormCategories([newCat, ...formCategories.filter(c => c !== formCategory)]);
                       }
                       const subs = getSubCategories(newCat);
-                      if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
-                      else setFormSubCategory("General");
+                      const isCurrentSubValid = subs.some(s => s.en.toLowerCase() === formSubCategory.toLowerCase() || s.hi.toLowerCase() === formSubCategory.toLowerCase());
+                      if (!isCurrentSubValid) {
+                        if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
+                        else setFormSubCategory("General");
+                      }
                     }}
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >

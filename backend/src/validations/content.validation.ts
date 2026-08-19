@@ -31,6 +31,9 @@ export const createArticleSchema = z.object({
   isFactChecked: z.boolean().default(false),
   factCheckVerdict: z.nativeEnum(FactCheckVerdict).optional().nullable(),
   factCheckNote: z.string().optional(),
+  state: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
+  subCategory: z.string().optional().nullable(),
 });
 
 export const updateArticleSchema = createArticleSchema.partial();

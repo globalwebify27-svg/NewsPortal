@@ -97,3 +97,45 @@ export function getSubCategories(categoryKey: string): SubCategoryItem[] {
 
   return [];
 }
+
+export function slugifySubCategory(text: string): string {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u0900-\u097F]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Check whether an article's stored subCategory matches a requested target subCategory
+ */
+export function isSubCategoryMatch(articleSub?: string, targetSub?: string): boolean {
+  if (!targetSub || targetSub === "ALL" || targetSub === "General") return true;
+  if (!articleSub || articleSub === "General") return false;
+
+  const rawArt = articleSub.trim().toLowerCase();
+  const rawTarget = targetSub.trim().toLowerCase();
+
+  if (rawArt === rawTarget) return true;
+
+  const slugArt = slugifySubCategory(articleSub);
+  const slugTarget = slugifySubCategory(targetSub);
+  if (slugArt && slugTarget && slugArt === slugTarget) return true;
+
+  // Search across all MASTER_SUB_CATEGORIES items for language & synonym pairs
+  for (const items of Object.values(MASTER_SUB_CATEGORIES)) {
+    for (const sub of items) {
+      const enLower = sub.en.toLowerCase();
+      const hiLower = sub.hi.toLowerCase();
+      const enSlug = slugifySubCategory(sub.en);
+
+      const targetIsSub = rawTarget === enLower || rawTarget === hiLower || slugTarget === enSlug;
+      const artIsSub = rawArt === enLower || rawArt === hiLower || slugArt === enSlug;
+
+      if (targetIsSub && artIsSub) return true;
+    }
+  }
+
+  return rawArt.includes(rawTarget) || rawTarget.includes(rawArt);
+}
