@@ -2919,3 +2919,94 @@ h3[title]:hover,
 h4[title]:hover {
   color: #e50914 !important;
 }
+
+/* GLOBAL AUTOMATIC TOOLTIP SYSTEM STYLES */
+.global-auto-tooltip {
+  animation: ga-tooltip-pop 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: min(270px, 82vw);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes ga-tooltip-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+.global-auto-tooltip .tooltip-inner-box {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.global-auto-tooltip .tooltip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(229, 9, 20, 0.25);
+  color: #ff5252;
+  border: 1px solid rgba(229, 9, 20, 0.4);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.global-auto-tooltip .tooltip-badge-icon {
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.global-auto-tooltip .tooltip-badge-label {
+  font-weight: 800;
+}
+
+.global-auto-tooltip .tooltip-text-content {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.global-auto-tooltip .tooltip-arrow {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #0f172a;
+  transform: rotate(45deg);
+}
+
+.global-auto-tooltip .tooltip-arrow-top {
+  bottom: -2.5px;
+  left: calc(50% - 2.5px);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.global-auto-tooltip .tooltip-arrow-bottom {
+  top: -2.5px;
+  left: calc(50% - 2.5px);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}

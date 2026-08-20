@@ -160,6 +160,7 @@ export const TooltipTrigger = forwardRef<HTMLElement, TooltipTriggerProps>(
         onMouseLeave: handleMouseLeave,
         onFocus: handleFocus,
         onBlur: handleBlur,
+        "data-tooltip-trigger": "true",
         ...props,
       });
     }
@@ -171,6 +172,7 @@ export const TooltipTrigger = forwardRef<HTMLElement, TooltipTriggerProps>(
         onMouseLeave={handleMouseLeave}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        data-tooltip-trigger="true"
         tabIndex={0}
         style={{ display: "inline-flex", cursor: "pointer" }}
         {...props}

@@ -206,16 +206,21 @@ export default function HomeClient({
     };
   }, [loadStickyAdSettings, loadVideoAdSettings]);
 
-  // Auto-scroll Carousel timer for YouTube / static slides
+  // Auto-scroll Carousel timer for Image ads & static slides (3-second auto scroll)
   useEffect(() => {
     if (!videoAdEnabled || videoAdsList.length <= 1) return;
     const activeAd = videoAdsList[currentAdIndex];
-    const isYouTube = activeAd?.url && (activeAd.url.includes("youtube.com") || activeAd.url.includes("youtu.be") || activeAd.url.includes("embed/"));
-    if (isYouTube || !activeAd?.url) {
-      const timer = setInterval(() => {
+    const rawUrl = activeAd?.url ? activeAd.url.toLowerCase() : "";
+    const isYouTube = rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be") || rawUrl.includes("embed/");
+    const isMp4 = rawUrl.endsWith(".mp4") || rawUrl.endsWith(".webm") || rawUrl.endsWith(".mov");
+
+    // For images or static banner ads: auto-scroll every 3 seconds (3000ms)!
+    if (!isMp4) {
+      const scrollDuration = isYouTube ? 6000 : 3000;
+      const timer = setTimeout(() => {
         setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
-      }, 9000);
-      return () => clearInterval(timer);
+      }, scrollDuration);
+      return () => clearTimeout(timer);
     }
   }, [videoAdEnabled, videoAdsList, currentAdIndex]);
 
@@ -1007,7 +1012,7 @@ export default function HomeClient({
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
-                      ) : (
+                      ) : cleanAdUrl.toLowerCase().endsWith(".mp4") || cleanAdUrl.toLowerCase().endsWith(".webm") || cleanAdUrl.toLowerCase().endsWith(".mov") ? (
                         <video
                           key={`mp4_${currentAdIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl}
@@ -1021,6 +1026,13 @@ export default function HomeClient({
                               setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
                             }
                           }}
+                          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                        />
+                      ) : (
+                        <img
+                          key={`img_${currentAdIndex}_${cleanAdUrl}`}
+                          src={cleanAdUrl}
+                          alt={activeAd?.title || "Ad Banner"}
                           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                         />
                       )

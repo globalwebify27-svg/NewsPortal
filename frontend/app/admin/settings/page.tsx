@@ -1242,10 +1242,10 @@ export default function AdminSettingsPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
             <div>
               <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
-                🎥 Sidebar Video Ads Playlist (3-4 ऑटोप्ले एवं ऑटो-स्क्रॉल वीडियो विज्ञापन)
+                🎥 Sidebar Ads Playlist (ऑटोप्ले वीडियो एवं 3-सेकंड ऑटो-स्क्रॉल फोटो विज्ञापन)
               </h3>
               <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
-                Add 3 to 4 video advertisement slots! On the homepage, ads will autoplay and automatically scroll / slide to the next ad when finished.
+                Add video (YouTube/MP4) or image (JPG, PNG, WEBP, GIF) ad slots! Image ads will automatically scroll / slide every 3 seconds on the homepage.
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -1279,12 +1279,12 @@ export default function AdminSettingsPage() {
           {/* Recommended Best Practices Box */}
           <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "12px 16px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "#1e40af" }}>
-              💡 Best Practices for Video Advertisements:
+              💡 Best Practices for Advertisements:
             </span>
             <span style={{ fontSize: "0.78rem", color: "#1e3a8a", lineHeight: 1.5 }}>
-              • <strong>Option A (Fastest & 100% Free - Recommended):</strong> Paste any <strong>YouTube video or Shorts link</strong> (e.g. <code>https://www.youtube.com/watch?v=...</code>). It streams in 4K/1080p with zero server bandwidth costs.
+              • <strong>Image Banner Ads (Auto-scroll 3s):</strong> Upload <strong>JPG, PNG, WEBP, or GIF images</strong> or paste an image URL. They will automatically slide every 3 seconds.
               <br />
-              • <strong>Option B (Direct MP4 Upload):</strong> Click <strong>Upload MP4</strong> to upload video files directly. They stream live via <code>/uploads/...</code> proxy.
+              • <strong>Video Ads (YouTube / MP4):</strong> Paste any <strong>YouTube video / Shorts link</strong> or upload an <strong>MP4 video</strong> file.
             </span>
           </div>
 
@@ -1299,11 +1299,11 @@ export default function AdminSettingsPage() {
                 onClick={handleAddVideoAdItem}
                 style={{ background: "#0f172a", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
               >
-                <Plus size={14} /> Add Video Ad Slot
+                <Plus size={14} /> Add Ad Slot
               </button>
             </div>
 
-            {/* List of Video Ad Form Slots */}
+            {/* List of Video & Image Ad Form Slots */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {sidebarVideoAdsList.map((adItem, index) => (
                 <div key={adItem.id} style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", display: "grid", gridTemplateColumns: "1fr 280px", gap: "20px" }}>
@@ -1311,7 +1311,7 @@ export default function AdminSettingsPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ background: "#e50914", color: "#fff", padding: "3px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800 }}>
-                        📢 VIDEO AD #{index + 1}
+                        📢 AD SLOT #{index + 1}
                       </span>
                       {sidebarVideoAdsList.length > 1 && (
                         <button
@@ -1326,21 +1326,21 @@ export default function AdminSettingsPage() {
 
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-                        🎬 Video URL (YouTube Link or Upload MP4 Video)
+                        🎬 Ad Media URL (Image Banner, MP4 Video, or YouTube Link)
                       </label>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <input
-                          type="url"
-                          placeholder="https://www.youtube.com/watch?v=... or MP4 URL"
+                          type="text"
+                          placeholder="Image URL, MP4 Video URL, or YouTube Link"
                           value={adItem.url}
                           onChange={(e) => handleUpdateVideoAdItem(adItem.id, "url", e.target.value)}
                           style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
                         />
                         <label style={{ background: sidebarVideoUploadingId === adItem.id ? "#64748b" : "#0f172a", color: "#ffffff", padding: "8px 12px", borderRadius: "8px", fontWeight: 800, fontSize: "0.78rem", cursor: sidebarVideoUploadingId === adItem.id ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-                          {sidebarVideoUploadingId === adItem.id ? "Uploading..." : "Upload MP4"}
+                          {sidebarVideoUploadingId === adItem.id ? "Uploading..." : "Upload File"}
                           <input
                             type="file"
-                            accept="video/mp4,video/webm,video/quicktime"
+                            accept="image/*,video/mp4,video/webm,video/quicktime"
                             onChange={(e) => handleVideoAdFileUploadForItem(adItem.id, e)}
                             disabled={sidebarVideoUploadingId === adItem.id}
                             style={{ display: "none" }}
@@ -1351,7 +1351,7 @@ export default function AdminSettingsPage() {
 
                     <div>
                       <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-                        🏷️ Video Ad Headline / Business Title
+                        🏷️ Ad Headline / Business Title
                       </label>
                       <input
                         type="text"
@@ -1381,13 +1381,13 @@ export default function AdminSettingsPage() {
                     <div style={{ background: "#e50914", color: "#fff", padding: "4px 8px", fontSize: "0.68rem", fontWeight: 800 }}>
                       PREVIEW AD #{index + 1}
                     </div>
-                    <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000" }}>
+                    <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {(() => {
                         const cleanUrl = cleanVideoUrl(adItem.url);
                         if (!cleanUrl) {
                           return (
                             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
-                              No video added yet
+                              No ad media added yet
                             </div>
                           );
                         }
@@ -1400,8 +1400,13 @@ export default function AdminSettingsPage() {
                             />
                           );
                         }
+                        if (cleanUrl.toLowerCase().endsWith(".mp4") || cleanUrl.toLowerCase().endsWith(".webm") || cleanUrl.toLowerCase().endsWith(".mov")) {
+                          return (
+                            <video src={cleanUrl} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          );
+                        }
                         return (
-                          <video src={cleanUrl} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <img src={cleanUrl} alt={`Preview ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                         );
                       })()}
                     </div>

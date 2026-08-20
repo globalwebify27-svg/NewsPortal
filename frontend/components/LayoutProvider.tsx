@@ -6,6 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SeoHeadManager from "@/components/SeoHeadManager";
+import GlobalAutoTooltip from "@/components/GlobalAutoTooltip";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { Home, Video, Trophy, MapPin, LayoutGrid } from "lucide-react";
 
@@ -53,6 +54,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
   if (isAdmin) {
     return (
       <LanguageProvider>
+        <GlobalAutoTooltip />
         <div className="admin-page-root">{children}</div>
       </LanguageProvider>
     );
@@ -60,6 +62,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
 
   return (
     <LanguageProvider>
+      <GlobalAutoTooltip />
       <SeoHeadManager />
       <Header />
       <main className="main-content container">{children}</main>
