@@ -8,7 +8,6 @@ import {
   Mail,
   Eye,
   EyeOff,
-  Zap,
   AlertCircle,
   ArrowRight,
   ShieldCheck,
@@ -49,57 +48,34 @@ function LoginForm() {
 
     setIsSubmitting(true);
 
-    // 1. Super Admin Check
-    const isSuperAdminUser = cleanEmail === "global2409" || cleanEmail === "global2409@globalawaaz.com";
-    const isSuperAdminPass = cleanPassword === "Global@#2409";
-
-    if (isSuperAdminUser && isSuperAdminPass) {
-      const userEmail = "Global Awaaz Admin";
-      sessionStorage.setItem("ga_admin_logged_in", "true");
-      sessionStorage.setItem("ga_admin_user", userEmail);
-      sessionStorage.setItem("ga_actual_role", "super_admin");
-      sessionStorage.setItem("ga_admin_role", "super_admin");
-      setLoggedInUser(userEmail);
-      setIsSubmitting(false);
-      router.push(redirectUrl);
-      return;
-    }
-
-    // 2. Created Staff Users DB API Check (/api/v1/staff)
     try {
-      const res = await fetch("/api/v1/staff");
+      // All auth logic runs server-side — no credentials in client bundle
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      });
+
       const json = await res.json();
-      const staffUsers: any[] = (json && json.success && Array.isArray(json.data)) ? json.data : [];
 
-      const matched = staffUsers.find(
-        (u: any) =>
-          (u.email?.toLowerCase() === cleanEmail || (u.name && u.name.toLowerCase() === cleanEmail)) &&
-          u.password === cleanPassword
-      );
-
-      if (matched) {
-        const userName = matched.name || matched.email;
-        const role = (matched.roleSlug || "editor").toLowerCase();
+      if (json.success && json.user) {
         sessionStorage.setItem("ga_admin_logged_in", "true");
-        sessionStorage.setItem("ga_admin_user", userName);
-        sessionStorage.setItem("ga_actual_role", role);
-        sessionStorage.setItem("ga_admin_role", role);
-        setLoggedInUser(userName);
-        setIsSubmitting(false);
+        sessionStorage.setItem("ga_admin_user", json.user.name);
+        sessionStorage.setItem("ga_actual_role", json.user.role);
+        sessionStorage.setItem("ga_admin_role", json.user.role);
+        setLoggedInUser(json.user.name);
         router.push(redirectUrl);
         return;
       }
-    } catch (err) {}
 
-    setIsSubmitting(false);
-    setErrorMsg("Authentication failed. Invalid Admin ID or Password.");
+      setErrorMsg(json.message || "Authentication failed. Invalid Admin ID or Password.");
+    } catch (err) {
+      setErrorMsg("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleFillDemoCredentials = () => {
-    setEmail("Global2409");
-    setPassword("Global@#2409");
-    setErrorMsg("");
-  };
 
   const handleLogout = () => {
     sessionStorage.removeItem("ga_admin_logged_in");
@@ -281,28 +257,6 @@ function LoginForm() {
               </div>
             </div>
 
-            {/* 1-Click Auto Fill Demo Credentials Badge */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "10px 12px" }}>
-              <div style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                <Zap size={14} style={{ color: "#e50914" }} /> Demo Credentials:
-              </div>
-              <button
-                type="button"
-                onClick={handleFillDemoCredentials}
-                style={{
-                  background: "rgba(229,9,20,0.15)",
-                  color: "#f87171",
-                  border: "1px solid rgba(229,9,20,0.3)",
-                  padding: "4px 10px",
-                  borderRadius: "6px",
-                  fontSize: "0.76rem",
-                  fontWeight: 800,
-                  cursor: "pointer"
-                }}
-              >
-                Auto-Fill Demo ID & Pass
-              </button>
-            </div>
 
             <button
               type="submit"

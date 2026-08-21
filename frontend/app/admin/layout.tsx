@@ -119,61 +119,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const userEmail = emailInput.trim().toLowerCase();
     const pass = passwordInput;
 
-    // 1. Super Admin Account Match
-    const isSuperAdminMatch =
-      (userEmail === "global2409@globalawaaz.com" || userEmail === "global2409") &&
-      pass === "Global@#2409";
-
-    // 2. Dynamically Created Staff Accounts (Server Database Endpoint)
-    let matchedCreatedUser: { name: string; email: string; roleSlug: AdminRoleSlug } | null = null;
     try {
-      const res = await fetch("/api/v1/staff");
-      const json = await res.json();
-      const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-      const found = storedUsers.find((u: any) => {
-        const emailMatch = u.email && u.email.toLowerCase() === userEmail;
-        const nameMatch = u.name && u.name.toLowerCase() === userEmail;
-        const passMatch = u.password && u.password === pass;
-        return (emailMatch || nameMatch) && passMatch;
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, password: pass }),
       });
-      if (found) {
-        let slug = (found.roleSlug || found.role || "editor").toLowerCase();
-        if (slug.includes("super")) slug = "super_admin";
-        else if (slug.includes("chief")) slug = "chief_editor";
-        else if (slug.includes("admin")) slug = "super_admin";
-        else slug = "editor";
 
-        matchedCreatedUser = {
-          name: found.name || found.email,
-          email: found.email,
-          roleSlug: slug as AdminRoleSlug
-        };
+      const json = await res.json();
+
+      if (json.success && json.user) {
+        let role = (json.user.role || "editor").toLowerCase();
+        if (role.includes("super")) role = "super_admin";
+        else if (role.includes("chief")) role = "chief_editor";
+        else if (role.includes("admin")) role = "super_admin";
+        else role = "editor";
+
+        sessionStorage.setItem("ga_admin_logged_in", "true");
+        sessionStorage.setItem("ga_admin_user", json.user.name);
+        sessionStorage.setItem("ga_actual_role", role);
+        sessionStorage.setItem("ga_admin_role", role);
+        setAdminUser(json.user.name);
+        setActualRole(role as AdminRoleSlug);
+        setAdminRole(role as AdminRoleSlug);
+        setIsAuthenticated(true);
+      } else {
+        setLoginError(json.message || "Invalid Admin credentials. Access denied.");
       }
-    } catch (err) { }
-
-    if (isSuperAdminMatch) {
-      sessionStorage.setItem("ga_admin_logged_in", "true");
-      sessionStorage.setItem("ga_admin_user", "Global Awaaz Admin");
-      sessionStorage.setItem("ga_actual_role", "super_admin");
-      sessionStorage.setItem("ga_admin_role", "super_admin");
-      setAdminUser("Global Awaaz Admin");
-      setActualRole("super_admin");
-      setAdminRole("super_admin");
-      setIsAuthenticated(true);
-      setIsSubmitting(false);
-    } else if (matchedCreatedUser) {
-      const role = matchedCreatedUser.roleSlug;
-      sessionStorage.setItem("ga_admin_logged_in", "true");
-      sessionStorage.setItem("ga_admin_user", matchedCreatedUser.name || matchedCreatedUser.email);
-      sessionStorage.setItem("ga_actual_role", role);
-      sessionStorage.setItem("ga_admin_role", role);
-      setAdminUser(matchedCreatedUser.name || matchedCreatedUser.email);
-      setActualRole(role);
-      setAdminRole(role);
-      setIsAuthenticated(true);
-      setIsSubmitting(false);
-    } else {
-      setLoginError("Invalid Admin credentials. Access denied.");
+    } catch (err) {
+      setLoginError("Network error. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };

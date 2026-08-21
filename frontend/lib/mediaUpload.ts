@@ -69,57 +69,32 @@ export function cleanVideoUrl(rawUrl: string): string {
 export async function uploadMediaDirectly(file: File): Promise<string> {
   if (!file) throw new Error("No file provided");
 
-  const hostingerUploadUrl = process.env.NEXT_PUBLIC_HOSTINGER_UPLOAD_URL || "https://yellowgreen-rook-384455.hostingersite.com/upload.php";
-  const hostingerSecret = "GlobalAwaazMediaSecret2026";
+  // All uploads route through the server-side API.
+  // The Hostinger URL and secret key are kept in server env vars — never exposed to the browser.
+  const sanitizedFileName = file.name.toLowerCase().replace(/[^a-z0-9._-]/g, "-").replace(/-+/g, "-");
+  const renamedFile = new File([file], sanitizedFileName, { type: file.type });
 
-  // 1. Direct Upload to Hostinger PHP Storage Bridge (Bypasses Vercel 4.5MB Limit)
-  try {
-    const sanitizedFileName = file.name.toLowerCase().replace(/[^a-z0-9._-]/g, "-").replace(/-+/g, "-");
-    const renamedFile = new File([file], sanitizedFileName, { type: file.type });
-
-    const formData = new FormData();
-    formData.append("file", renamedFile);
-
-    const response = await fetch(hostingerUploadUrl, {
-      method: "POST",
-      headers: {
-        "X-Api-Key": hostingerSecret,
-      },
-      body: formData,
-    });
-
-    if (response.ok) {
-      const resJson = await response.json();
-      if (resJson.success && resJson.url) {
-        return cleanVideoUrl(resJson.url as string);
-      }
-    }
-  } catch (directErr) {
-    console.warn("Direct Hostinger upload failed, attempting Next.js API fallback:", directErr);
-  }
-
-  // 2. Fallback to /api/v1/media/upload
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", renamedFile);
 
-  const fallbackRes = await fetch("/api/v1/media/upload", {
+  const res = await fetch("/api/v1/media/upload", {
     method: "POST",
     body: formData,
   });
 
-  if (!fallbackRes.ok) {
-    const errText = await fallbackRes.text();
-    if (fallbackRes.status === 413 || errText.includes("TOO_LARGE")) {
-      throw new Error("File size exceeds serverless limit. Please compress video or upload under 50MB.");
+  if (!res.ok) {
+    const errText = await res.text();
+    if (res.status === 413 || errText.includes("TOO_LARGE")) {
+      throw new Error("File size exceeds serverless limit. Please compress the file or upload under 50MB.");
     }
-    throw new Error(`Upload server error (${fallbackRes.status})`);
+    throw new Error(`Upload server error (${res.status})`);
   }
 
-  const fallbackJson = await fallbackRes.json();
-  if (fallbackJson.success && (fallbackJson.url || fallbackJson.data?.url)) {
-    const raw = fallbackJson.url || fallbackJson.data?.url;
-    return cleanVideoUrl(raw);
+  const json = await res.json();
+  if (json.success && (json.url || json.data?.url)) {
+    return cleanVideoUrl(json.url || json.data?.url);
   }
 
-  throw new Error(fallbackJson.message || fallbackJson.error || "Media upload failed");
+  throw new Error(json.message || json.error || "Media upload failed");
 }
+
