@@ -1,11 +1,25 @@
 import React from "react";
 import type { Metadata } from "next";
+import { Inter, Noto_Sans_Devanagari } from "next/font/google";
 import "./styles.css";
-import "./admin.css";
 import "./globals.css";
 import Script from "next/script";
 import LayoutProvider from "@/components/LayoutProvider";
 import { generateNewsOrganizationSchema, generateWebSiteSchema } from "@/lib/schema";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari", "latin"],
+  display: "swap",
+  variable: "--font-noto-devanagari",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
 
 const isNoIndex = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
 
@@ -99,20 +113,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const websiteSchema = generateWebSiteSchema();
 
   return (
-    <html lang="hi" data-theme="light" suppressHydrationWarning>
+    <html lang="hi" data-theme="light" className={`${inter.variable} ${notoDevanagari.variable}`} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap"
-          rel="stylesheet"
-        />
         <link rel="alternate" type="application/rss+xml" title="GLOBAL AWAAZ RSS Feed" href="https://globalawaaz.com/feed.xml" />
         <script
           id="jsonld-website"

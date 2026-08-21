@@ -5,6 +5,28 @@ import { API_ENDPOINTS } from "@/lib/config";
 import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import { getArticleBySlug } from "@/lib/services/articles";
+import { prisma } from "@/lib/prisma";
+
+// =============================================================================
+// Full-Page Incremental Static Regeneration (ISR)
+// Serves instantly from edge cache, revalidates in the background every 60s
+// =============================================================================
+export const revalidate = 60;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  try {
+    const articles = await prisma.article.findMany({
+      where: { status: "PUBLISHED" },
+      select: { slug: true },
+      take: 40,
+      orderBy: { createdAt: "desc" },
+    });
+    return articles.map((art) => ({ slug: art.slug }));
+  } catch (err) {
+    return [];
+  }
+}
 
 async function getArticleData(slug: string): Promise<ArticleDetail | null> {
   const targetSlug = decodeURIComponent(slug).trim().toLowerCase();

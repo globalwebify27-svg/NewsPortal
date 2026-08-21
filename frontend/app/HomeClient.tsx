@@ -881,7 +881,8 @@ export default function HomeClient({
                         src={getArticleImage(activeSlide, trendingSlideIndex)}
                         alt={activeSlide.title}
                         title={activeSlide.title}
-                        loading="lazy"
+                        loading="eager"
+                        fetchPriority="high"
                         decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
@@ -958,7 +959,7 @@ export default function HomeClient({
                       {idx + 1}
                     </div>
                     <div style={{ width: "75px", height: "54px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
-                      <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading={idx === 0 ? "eager" : "lazy"} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h4 title={item.title} style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
@@ -1008,6 +1009,7 @@ export default function HomeClient({
                           key={`yt_${currentAdIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl.includes("embed/") ? cleanAdUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanAdUrl)}?autoplay=1&mute=1&controls=1&rel=0`}
                           title={activeAd.title}
+                          loading="lazy"
                           style={{ width: "100%", height: "100%", border: "none", display: "block" }}
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -1018,6 +1020,7 @@ export default function HomeClient({
                           src={cleanAdUrl}
                           autoPlay
                           muted
+                          preload="none"
                           loop={!isMultiple}
                           playsInline
                           controls

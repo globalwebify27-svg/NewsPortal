@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Metadata } from "next";
 import ArticleClientContent, { ArticleDetail } from "@/components/ArticleClientContent";
 import SectionClientContent from "@/components/SectionClientContent";
@@ -7,6 +8,13 @@ import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import { MASTER_SUB_CATEGORIES } from "@/lib/subCategories";
 import { INDIAN_STATES } from "@/lib/states";
+
+// =============================================================================
+// Full-Page Incremental Static Regeneration (ISR)
+// Background revalidation every 60 seconds
+// =============================================================================
+export const revalidate = 60;
+export const dynamicParams = true;
 
 // Build a reverse map: sub-slug -> { category, subName }
 function buildSubCategorySlugMap(): Map<string, { category: string; subName: string }> {
@@ -297,7 +305,11 @@ export default async function CategoryArticlePage({
   // If /education/board-exams or /sports/cricket → render section filter page
   const matchedSubName = isSubCategoryRoute(section, slug);
   if (matchedSubName) {
-    return <SectionClientContent section={section} initialSubCat={matchedSubName} />;
+    return (
+      <Suspense fallback={<div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading Section...</div>}>
+        <SectionClientContent section={section} initialSubCat={matchedSubName} />
+      </Suspense>
+    );
   }
 
   const article = await getArticleData(slug);

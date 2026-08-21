@@ -3,6 +3,31 @@ import type { Metadata } from "next";
 import SectionClientContent from "@/components/SectionClientContent";
 import { getSeoConfigForPath } from "@/lib/seo";
 
+// =============================================================================
+// Full-Page Incremental Static Regeneration (ISR)
+// Background revalidation every 60 seconds
+// =============================================================================
+export const revalidate = 60;
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return [
+    { section: "india" },
+    { section: "world" },
+    { section: "business" },
+    { section: "technology" },
+    { section: "sports" },
+    { section: "entertainment" },
+    { section: "science" },
+    { section: "health" },
+    { section: "opinion" },
+    { section: "jharkhand" },
+    { section: "bihar" },
+    { section: "uttar-pradesh" },
+    { section: "delhi" },
+  ];
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -108,10 +133,12 @@ export default async function SectionPage({
   }
 
   return (
-    <SectionClientContent
-      section={resolvedParams?.section}
-      initialArticles={initialArticles}
-    />
+    <React.Suspense fallback={<div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading Section...</div>}>
+      <SectionClientContent
+        section={resolvedParams?.section}
+        initialArticles={initialArticles}
+      />
+    </React.Suspense>
   );
 }
 

@@ -13,11 +13,11 @@
   --color-green-light: #e3fcef;
   --color-red-light: #ffebe6;
 
-  /* Typography - Multi-lingual Editorial Stack */
-  --font-serif: "Playfair Display", "Noto Serif Devanagari", Georgia, serif;
-  --font-sans: "Inter", "Noto Sans Devanagari", system-ui, -apple-system, sans-serif;
-  --font-devanagari-serif: "Noto Serif Devanagari", "Playfair Display", Georgia, serif;
-  --font-devanagari-sans: "Noto Sans Devanagari", "Inter", system-ui, sans-serif;
+  /* Typography - Multi-lingual Editorial Stack with Next.js Font Optimization */
+  --font-serif: "Playfair Display", var(--font-noto-devanagari), Georgia, serif;
+  --font-sans: var(--font-inter), var(--font-noto-devanagari), system-ui, -apple-system, sans-serif;
+  --font-devanagari-serif: var(--font-noto-devanagari), "Playfair Display", Georgia, serif;
+  --font-devanagari-sans: var(--font-noto-devanagari), var(--font-inter), system-ui, sans-serif;
 
   /* Spacing System (8px Grid) */
   --space-1: 0.25rem;
