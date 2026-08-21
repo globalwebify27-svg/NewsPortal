@@ -104,7 +104,8 @@ async function main() {
   console.log("✅ Default system roles & permissions matrix seeded");
 
   // 1. Create SuperAdmin Users
-  const adminPassword = await bcrypt.hash("Global@#2409", 12);
+  const rawAdminPassword = process.env.SUPER_ADMIN_PASSWORD || "Global@#2409";
+  const adminPassword = await bcrypt.hash(rawAdminPassword, 12);
   const superAdmin = await prisma.user.upsert({
     where: { email: "global2409@globalawaaz.com" },
     update: { password: adminPassword, roleId: superAdminRole.id, isVerified: true, isActive: true },

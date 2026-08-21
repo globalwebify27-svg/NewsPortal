@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // 1. Security Secret Key check
-$SECRET_KEY = "GlobalAwaazMediaSecret2026";
+$SECRET_KEY = getenv('HOSTINGER_MEDIA_SECRET') ?: "GlobalAwaazMediaSecret2026";
 $headers = getallheaders();
 $apiKey = isset($headers['X-Api-Key']) ? $headers['X-Api-Key'] : (isset($_SERVER['HTTP_X_API_KEY']) ? $_SERVER['HTTP_X_API_KEY'] : '');
 
