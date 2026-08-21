@@ -284,10 +284,14 @@ export default function HomeClient({
   }, [activeVideoModal]);
 
   useEffect(() => {
+    // If SSR/ISR already provided initialArticles, do NOT re-fetch immediately on mount.
+    // This prevents re-rendering the entire DOM, eliminates layout shifts, and keeps LCP sub-2s.
+    if (initialArticles && initialArticles.length > 0) {
+      return;
+    }
+
     async function fetchArticles() {
-      if (initialArticles.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true);
       let apiList: Article[] = [];
       try {
         const res = await fetch(API_ENDPOINTS.articles);
@@ -310,7 +314,7 @@ export default function HomeClient({
     }
 
     fetchArticles();
-  }, []);
+  }, [initialArticles]);
 
   useEffect(() => {
     const syncLocation = async () => {
@@ -461,12 +465,12 @@ export default function HomeClient({
   // Prioritize Geo-Location / Selected State articles at the top of the feed
   const displayList = geoMatchedList.length > 0 ? [...geoMatchedList, ...nonGeoMatchedList] : activeArticles;
 
-  // Hero Selection: Geo/Selected State Hero -> Admin Hero -> First Available Article
+  // Hero Selection: Editorial Hero -> Geo/Selected State Hero -> First Available Article
+  const explicitHero = activeArticles.find((a) => a.isHero && a.status !== "DRAFT") || activeArticles.find((a) => a.isHero);
   const cityHero = geoMatchedList.find((a) => a.district && (a.district.toLowerCase().includes(userCityLower) || userCityLower.includes(a.district.toLowerCase())));
   const stateHero = geoMatchedList.find((a) => a.state);
-  const explicitHero = activeArticles.find((a) => a.isHero && a.status !== "DRAFT") || activeArticles.find((a) => a.isHero);
 
-  const mainHero = cityHero || stateHero || explicitHero || displayList[0];
+  const mainHero = explicitHero || cityHero || stateHero || displayList[0];
   const trendingSliderArticles = displayList.length > 0 ? displayList.slice(0, 10) : [mainHero].filter(Boolean);
 
   const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
@@ -656,6 +660,8 @@ export default function HomeClient({
               borderRadius: "12px",
               overflow: "hidden",
               marginBottom: "24px",
+              minHeight: "80px",
+              contain: "layout",
               boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
               backdropFilter: "blur(12px)"
             }}
