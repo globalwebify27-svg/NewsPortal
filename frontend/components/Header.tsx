@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NewsTicker from "./NewsTicker";
+import MarketTicker from "./MarketTicker";
 import {
   Calendar,
   Facebook,
@@ -460,6 +461,9 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Live Market Data Ticker Bar — Gold, Silver, Sensex, Nifty, USD/INR, Bitcoin */}
+      <MarketTicker />
 
       {/* Sticky Header */}
       <header className="sticky-header">

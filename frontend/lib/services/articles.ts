@@ -47,6 +47,12 @@ const ARTICLE_LIST_SELECT = {
   state: true,
   district: true,
   subCategory: true,
+  adTitle: true,
+  adSubtitle: true,
+  adLink: true,
+  adImage: true,
+  adBadge: true,
+  customAds: true,
   category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
   author: { select: { id: true, name: true, avatar: true } },
 };
@@ -221,6 +227,15 @@ export async function getArticleBySlug(slug: string) {
     }
 
     if (article) {
+      let customAdsArray: any[] = [];
+      if (article.customAds && typeof article.customAds === "string") {
+        try {
+          customAdsArray = JSON.parse(article.customAds);
+        } catch (e) {}
+      } else if (Array.isArray(article.customAds)) {
+        customAdsArray = article.customAds;
+      }
+
       const rawAuthorName = article.author?.name;
       const submittedByName = (article as any).submittedBy;
       const authorName = (rawAuthorName && rawAuthorName !== "Global Awaaz Admin" && rawAuthorName !== "Global Admin")
@@ -229,6 +244,7 @@ export async function getArticleBySlug(slug: string) {
 
       const result = {
         ...article,
+        customAds: customAdsArray.length > 0 ? customAdsArray : (article.customAds || undefined),
         author: {
           ...article.author,
           name: authorName,
@@ -387,6 +403,12 @@ export async function createOrUpdateArticle(data: any) {
       state: data.state || "National",
       district: data.district || "All",
       subCategory: data.subCategory || (typeof data.category === "object" ? data.category?.subCategory : null) || "General",
+      adTitle: data.adTitle || null,
+      adSubtitle: data.adSubtitle || null,
+      adLink: data.adLink || null,
+      adImage: data.adImage || null,
+      adBadge: data.adBadge || "SPONSORED",
+      customAds: data.customAds ? (typeof data.customAds === "string" ? data.customAds : JSON.stringify(data.customAds)) : null,
     };
 
     let articleRecord;

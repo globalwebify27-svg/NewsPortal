@@ -2741,24 +2741,64 @@
 /* ========================================================
    ARTICLE PAGE RESPONSIVE 3-COLUMN LAYOUT (DESKTOP & MOBILE)
    ======================================================== */
+/* Ensure ancestor elements allow CSS position: sticky to function without overflow clipping */
+html,
+body {
+  overflow-x: visible !important;
+}
+
+main.main-content,
+.main-content.container,
+.article-page-wrapper {
+  overflow: visible !important;
+}
+
 .article-3col-grid {
   display: grid;
-  grid-template-columns: 1fr 2.2fr 1fr;
+  grid-template-columns: 280px 1fr 300px;
   grid-template-areas: "left center right";
   gap: 24px;
   align-items: start;
+  overflow: visible !important;
 }
 
 .article-left-col {
   grid-area: left;
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 70px !important;
+  align-self: start !important;
+  max-height: calc(100vh - 85px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  z-index: 10;
+}
+
+.article-left-col::-webkit-scrollbar {
+  display: none;
 }
 
 .article-center-col {
   grid-area: center;
+  min-width: 0;
 }
 
 .article-right-col {
   grid-area: right;
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 70px !important;
+  align-self: start !important;
+  max-height: calc(100vh - 85px) !important;
+  overflow-y: auto !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  z-index: 10;
+}
+
+.article-right-col::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 1080px) {
@@ -3009,4 +3049,107 @@ h4[title]:hover {
   left: calc(50% - 2.5px);
   border-left: 1px solid rgba(255, 255, 255, 0.12);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ========================================================
+   LIVE MARKET TICKER BAR
+   ======================================================== */
+
+/* Pulse for the live green dot */
+@keyframes market-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.88);
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, 0);
+  }
+}
+
+/* Seamless left-scroll marquee */
+@keyframes market-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Price flash effects */
+@keyframes market-flash-green {
+  0%   { background-color: transparent; }
+  25%  { background-color: rgba(74, 222, 128, 0.22); }
+  100% { background-color: transparent; }
+}
+@keyframes market-flash-red {
+  0%   { background-color: transparent; }
+  25%  { background-color: rgba(248, 113, 113, 0.22); }
+  100% { background-color: transparent; }
+}
+
+.market-ticker-bar {
+  --market-ticker-bg: #08080f;
+}
+
+/* The scrolling belt — CSS handles all animation */
+.market-ticker-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding-left: 12px;
+  white-space: nowrap;
+  /* Animate: scroll the full duplicated list (50% = one copy width) */
+  animation: market-marquee 22s linear infinite;
+  will-change: transform;
+}
+
+.market-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  animation: market-pulse 1.6s ease-in-out infinite;
+}
+
+.flash-green {
+  animation: market-flash-green 1.4s ease forwards;
+  border-radius: 6px;
+}
+
+.flash-red {
+  animation: market-flash-red 1.4s ease forwards;
+  border-radius: 6px;
+}
+
+.market-ticker-item {
+  transition: opacity 0.2s ease;
+}
+
+.market-ticker-item:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  #marketTickerBar {
+    height: 28px !important;
+  }
+  .market-ticker-track {
+    height: 28px !important;
+    animation-duration: 12s;
+    gap: 6px !important;
+  }
+  .market-ticker-item {
+    padding: 1px 7px 1px 5px !important;
+    gap: 4px !important;
+  }
+  .market-ticker-item span {
+    font-size: 0.6rem !important;
+  }
+  .market-live-dot {
+    width: 5px !important;
+    height: 5px !important;
+  }
 }

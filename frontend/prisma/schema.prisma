@@ -223,6 +223,13 @@ model Article {
   state        String?       @db.VarChar(100)
   district     String?       @db.VarChar(100)
   subCategory  String?       @db.VarChar(100)
+  // Custom Article Advertisements
+  adTitle      String?       @db.VarChar(300)
+  adSubtitle   String?       @db.VarChar(500)
+  adLink       String?       @db.VarChar(500)
+  adImage      String?       @db.Text
+  adBadge      String?       @db.VarChar(100)
+  customAds    String?       @db.LongText
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

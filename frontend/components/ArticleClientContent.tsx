@@ -333,7 +333,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
       }];
 
   return (
-    <div className="article-page-wrapper" style={{ maxWidth: "1440px", margin: "16px auto 80px auto", padding: "0 16px" }}>
+    <div className="article-page-wrapper" style={{ maxWidth: "1440px", margin: "16px auto 80px auto", padding: "0 16px", overflow: "visible" }}>
       {/* 3-COLUMN RESPONSIVE LAYOUT: Center Main Column (FIRST in DOM for SEO H1 priority) | Left | Right */}
       <div className="article-3col-grid">
         {/* ========================================================
@@ -715,11 +715,11 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           className="article-left-col"
           style={{
             position: "sticky",
-            top: "90px",
+            top: "70px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            maxHeight: "calc(100vh - 110px)",
+            maxHeight: "calc(100vh - 85px)",
             overflowY: "auto",
             scrollbarWidth: "none"
           }}
@@ -910,11 +910,11 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           className="article-right-col"
           style={{
             position: "sticky",
-            top: "90px",
+            top: "70px",
             display: "flex",
             flexDirection: "column",
             gap: "18px",
-            maxHeight: "calc(100vh - 110px)",
+            maxHeight: "calc(100vh - 85px)",
             overflowY: "auto",
             scrollbarWidth: "none"
           }}
