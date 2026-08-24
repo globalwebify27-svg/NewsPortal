@@ -50,12 +50,12 @@ function formatAvatarUrl(imgUrl?: string): string {
   let url = imgUrl.trim();
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
-  if (url.includes("uploads/")) {
-    const idx = url.indexOf("uploads/");
-    url = "/" + url.slice(idx);
-  }
-  if (url.startsWith("/public/uploads/")) {
-    url = url.replace("/public/uploads/", "/uploads/");
+  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
+    const pathPart = url
+      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
+      .replace("//yellowgreen-rook-384455.hostingersite.com", "");
+    url = `https://www.globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
   }
   return url;
 }
