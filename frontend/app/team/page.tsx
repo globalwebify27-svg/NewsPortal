@@ -12,7 +12,6 @@ import {
   Facebook,
   Instagram,
   Search,
-  Sparkles,
   ShieldCheck,
   ChevronRight,
   Award,
@@ -108,11 +107,6 @@ export default function PublicTeamPage() {
           <div className="absolute bottom-0 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-100/80 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
-              <Sparkles className="w-4 h-4 text-red-600" />
-              <span>{isHi ? "हमारी संपादकीय टीम" : "Editorial Leadership"}</span>
-            </div>
-
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-3 max-w-4xl mx-auto leading-tight">
               {isHi ? (
                 <>
