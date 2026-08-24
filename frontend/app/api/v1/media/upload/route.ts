@@ -42,9 +42,20 @@ export async function POST(request: NextRequest) {
     const sanitizeName = path.basename(file.name, path.extname(file.name)).toLowerCase().replace(/[^a-z0-9]/g, "-");
     const uniqueFilename = `${sanitizeName}_${Date.now()}${fileExt}`;
 
-    let publicUrl = "";
+    // 1. ALWAYS save file to local disk (public/uploads/) first
+    let publicUrl = `/uploads/${uniqueFilename}`;
+    try {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filePath = path.join(uploadsDir, uniqueFilename);
+      await fs.promises.writeFile(filePath, buffer);
+    } catch (fsErr: any) {
+      console.warn("Local disk write warning:", fsErr?.message);
+    }
 
-    // OPTION A: Hostinger Remote PHP Upload Bridge
+    // 2. Also attempt Hostinger Remote PHP Upload Bridge sync if configured
     const hostingerUploadUrl = process.env.HOSTINGER_UPLOAD_URL || "https://yellowgreen-rook-384455.hostingersite.com/upload.php";
     const hostingerSecret = process.env.HOSTINGER_MEDIA_SECRET || "GlobalAwaazMediaSecret2026";
 
@@ -65,7 +76,8 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           const resJson = await response.json();
           if (resJson.success && resJson.url) {
-            publicUrl = cleanMediaUrl(resJson.url as string);
+            const cleaned = cleanMediaUrl(resJson.url as string);
+            if (cleaned) publicUrl = cleaned;
           } else {
             console.warn("Hostinger bridge returned non-success:", resJson);
           }
@@ -77,36 +89,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // OPTION B: Fallback Serverless Base64 / Local Disk
-    if (!publicUrl) {
-      const isServerless = Boolean(
-        process.env.VERCEL ||
-        process.env.NEXT_PUBLIC_VERCEL_ENV ||
-        process.env.AWS_LAMBDA_FUNCTION_NAME ||
-        process.env.NODE_ENV === "production"
-      );
-
-      if (isServerless) {
-        // On serverless hosts (e.g. Vercel), local disk is ephemeral and runtime uploads in /public/uploads/ return 404.
-        // Convert to Base64 Data URL so images display instantly on live site without git push.
-        const base64 = buffer.toString("base64");
-        publicUrl = `data:${mimeType};base64,${base64}`;
-      } else {
-        try {
-          const uploadsDir = path.join(process.cwd(), "public", "uploads");
-          if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-          }
-          const filePath = path.join(uploadsDir, uniqueFilename);
-          await fs.promises.writeFile(filePath, buffer);
-          publicUrl = `/uploads/${uniqueFilename}`;
-        } catch (fsErr: any) {
-          console.warn("Local disk write fallback:", fsErr?.message);
-          const base64 = buffer.toString("base64");
-          publicUrl = `data:${mimeType};base64,${base64}`;
-        }
-      }
-    }
+    // Final cleanup of publicUrl to ensure it starts with /uploads/
+    publicUrl = cleanMediaUrl(publicUrl) || `/uploads/${uniqueFilename}`;
 
     // Save record to database Media table
     let savedMedia: any = null;

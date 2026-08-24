@@ -12,17 +12,18 @@ function cleanImageUrl(imgUrl?: string | null): string | null {
   if (!imgUrl) return null;
   let url = imgUrl.trim();
 
-  // Fix malformed protocol (https// -> https:// or http// -> http://)
+  // Fix malformed protocol
   if (url.startsWith("https//")) url = url.replace("https//", "https://");
   if (url.startsWith("http//")) url = url.replace("http//", "http://");
 
-  // Rewrite Hostinger internal hostname to main domain
-  if (url.includes("yellowgreen-rook-384455.hostingersite.com")) {
-    const pathPart = url
-      .replace("https://yellowgreen-rook-384455.hostingersite.com", "")
-      .replace("http://yellowgreen-rook-384455.hostingersite.com", "")
-      .replace("//yellowgreen-rook-384455.hostingersite.com", "");
-    url = `https://www.globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
+  // Extract relative /uploads/ path if present
+  if (url.includes("uploads/")) {
+    const idx = url.indexOf("uploads/");
+    url = "/" + url.slice(idx);
+  }
+
+  if (url.startsWith("/public/uploads/")) {
+    url = url.replace("/public/uploads/", "/uploads/");
   }
 
   return url;

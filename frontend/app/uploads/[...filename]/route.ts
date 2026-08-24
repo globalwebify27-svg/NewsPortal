@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 export async function GET(
   req: NextRequest,
@@ -13,6 +15,49 @@ export async function GET(
       return new NextResponse("File not found", { status: 404 });
     }
 
+    const decodedFilename = decodeURIComponent(filenamePath);
+
+    // 1. Check local filesystem public/uploads directory first
+    const candidateLocalPaths = Array.from(new Set([
+      path.join(process.cwd(), "public", "uploads", filenamePath),
+      path.join(process.cwd(), "public", "uploads", decodedFilename),
+      path.join(process.cwd(), "public", "uploads", filenamePath.replace(/-/g, "_")),
+      path.join(process.cwd(), "public", "uploads", decodedFilename.replace(/-/g, "_")),
+      path.join(process.cwd(), "public", "uploads", filenamePath.replace(/-/g, " ")),
+      path.join(process.cwd(), "public", "uploads", decodedFilename.replace(/-/g, " ")),
+    ]));
+
+    for (const localPath of candidateLocalPaths) {
+      if (fs.existsSync(localPath)) {
+        try {
+          const fileBuffer = await fs.promises.readFile(localPath);
+          const ext = path.extname(localPath).toLowerCase();
+          const contentType =
+            ext === ".mp4" ? "video/mp4"
+            : ext === ".webm" ? "video/webm"
+            : ext === ".png" ? "image/png"
+            : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg"
+            : ext === ".webp" ? "image/webp"
+            : ext === ".svg" ? "image/svg+xml"
+            : ext === ".gif" ? "image/gif"
+            : "application/octet-stream";
+
+          const resHeaders = new Headers();
+          resHeaders.set("Content-Type", contentType);
+          resHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+          resHeaders.set("Accept-Ranges", "bytes");
+
+          return new NextResponse(fileBuffer, {
+            status: 200,
+            headers: resHeaders,
+          });
+        } catch (readErr) {
+          console.warn("Failed to read local upload file:", readErr);
+        }
+      }
+    }
+
+    // 2. Fallback to Hostinger remote storage server
     const hostingerOrigin =
       process.env.HOSTINGER_MEDIA_ORIGIN ||
       "https://yellowgreen-rook-384455.hostingersite.com";
@@ -22,9 +67,7 @@ export async function GET(
       fetchHeaders["range"] = req.headers.get("range")!;
     }
 
-    const decodedFilename = decodeURIComponent(filenamePath);
-
-    const candidatePaths = Array.from(new Set([
+    const candidateRemotePaths = Array.from(new Set([
       `/uploads/${filenamePath}`,
       `/public/uploads/${filenamePath}`,
       `/uploads/${decodedFilename}`,
@@ -37,7 +80,7 @@ export async function GET(
 
     let response: Response | null = null;
 
-    for (const relPath of candidatePaths) {
+    for (const relPath of candidateRemotePaths) {
       try {
         const testUrl = `${hostingerOrigin}${relPath}`;
         const res = await fetch(testUrl, { headers: fetchHeaders });
@@ -51,7 +94,7 @@ export async function GET(
     }
 
     if (!response || !response.ok) {
-      return new NextResponse(`File not found on storage server`, {
+      return new NextResponse(`File not found on local or storage server`, {
         status: 404,
       });
     }
