@@ -323,8 +323,15 @@ export const DEFAULT_SEO_PAGES: SeoPageConfig[] = [
 export const SEO_STORAGE_KEY = "ga_seo_settings";
 
 import { prisma } from "./prisma";
+import { serverCache, TTL } from "./cache";
 
 export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
+  const cacheKey = "seo:configs:all";
+  if (typeof window === "undefined") {
+    const cached = serverCache.get<SeoPageConfig[]>(cacheKey);
+    if (cached) return cached;
+  }
+
   try {
     let rawData: any = null;
 
@@ -378,7 +385,11 @@ export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
         (p) => !defaultPaths.has(p.path) && !p.path.startsWith("/india/")
       );
 
-      return [...merged, ...extraCustom];
+      const result = [...merged, ...extraCustom];
+      if (typeof window === "undefined") {
+        serverCache.set(cacheKey, result, TTL.SETTINGS);
+      }
+      return result;
     }
   } catch (e) {
     console.error("Error in getAllSeoConfigs:", e);

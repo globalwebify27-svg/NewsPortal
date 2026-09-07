@@ -93,6 +93,8 @@ export function xmlHeaders(revalidateSeconds = 3600): Record<string, string> {
 // Prisma query helpers
 // ---------------------------------------------------------------------------
 
+import { serverCache, TTL } from "./cache";
+
 /**
  * Minimal field projection used by all sitemap queries —
  * intentionally omits heavy body/summary columns for speed.
@@ -113,12 +115,18 @@ const SITEMAP_SELECT = {
  * Results are ordered newest first.
  */
 export async function fetchAllPublishedArticles(): Promise<SitemapArticle[]> {
+  const cacheKey = "sitemap:articles:all";
+  const cached = serverCache.get<SitemapArticle[]>(cacheKey);
+  if (cached) return cached;
+
   try {
-    return await prisma.article.findMany({
+    const articles = await prisma.article.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { publishedAt: "desc" },
       select: SITEMAP_SELECT,
     });
+    serverCache.set(cacheKey, articles, TTL.ARTICLES_LIST);
+    return articles;
   } catch (err) {
     console.error("[Sitemap] fetchAllPublishedArticles error:", err);
     return [];
@@ -131,9 +139,13 @@ export async function fetchAllPublishedArticles(): Promise<SitemapArticle[]> {
 export async function fetchRecentPublishedArticles(
   hours: number
 ): Promise<SitemapArticle[]> {
+  const cacheKey = `sitemap:articles:recent:${hours}`;
+  const cached = serverCache.get<SitemapArticle[]>(cacheKey);
+  if (cached) return cached;
+
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
   try {
-    return await prisma.article.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         status: "PUBLISHED",
         publishedAt: { gte: cutoff },
@@ -141,6 +153,8 @@ export async function fetchRecentPublishedArticles(
       orderBy: { publishedAt: "desc" },
       select: SITEMAP_SELECT,
     });
+    serverCache.set(cacheKey, articles, TTL.ARTICLES_LIST);
+    return articles;
   } catch (err) {
     console.error("[Sitemap] fetchRecentPublishedArticles error:", err);
     return [];
@@ -156,10 +170,14 @@ export async function fetchArticlesByMonth(
   year: number,
   month: number
 ): Promise<SitemapArticle[]> {
+  const cacheKey = `sitemap:articles:month:${year}-${month}`;
+  const cached = serverCache.get<SitemapArticle[]>(cacheKey);
+  if (cached) return cached;
+
   const from = new Date(year, month - 1, 1);          // 1st day of month
   const to   = new Date(year, month, 1);               // 1st day of next month
   try {
-    return await prisma.article.findMany({
+    const articles = await prisma.article.findMany({
       where: {
         status: "PUBLISHED",
         publishedAt: { gte: from, lt: to },
@@ -167,6 +185,8 @@ export async function fetchArticlesByMonth(
       orderBy: { publishedAt: "desc" },
       select: SITEMAP_SELECT,
     });
+    serverCache.set(cacheKey, articles, TTL.ARTICLES_LIST);
+    return articles;
   } catch (err) {
     console.error(`[Sitemap] fetchArticlesByMonth(${year}-${month}) error:`, err);
     return [];
@@ -178,13 +198,19 @@ export async function fetchArticlesByMonth(
  * Returns a deduplicated list of category slugs.
  */
 export async function fetchPublishedCategorySlugs(): Promise<string[]> {
+  const cacheKey = "sitemap:categories:slugs";
+  const cached = serverCache.get<string[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const rows = await prisma.article.findMany({
       where: { status: "PUBLISHED" },
       select: { category: { select: { slug: true } } },
       distinct: ["categoryId"],
     });
-    return Array.from(new Set(rows.map((r) => r.category?.slug).filter(Boolean) as string[]));
+    const slugs = Array.from(new Set(rows.map((r) => r.category?.slug).filter(Boolean) as string[]));
+    serverCache.set(cacheKey, slugs, TTL.CATEGORIES);
+    return slugs;
   } catch (err) {
     console.error("[Sitemap] fetchPublishedCategorySlugs error:", err);
     return [];
