@@ -264,7 +264,7 @@ export default function AdminArticlesPage() {
     loadInitialArticles();
   }, []);
 
-  const handleOpenModal = (art?: AdminArticle) => {
+  const handleOpenModal = async (art?: AdminArticle) => {
     if (art) {
       setEditingArticle(art);
       setFormTitle(art.title);
@@ -287,6 +287,26 @@ export default function AdminArticlesPage() {
       setFormIsHero(art.isHero || false);
       setFormIsSuperfast(art.isSuperfast || false);
       setFormIsTrending(art.isTrending || false);
+
+      // Async fallback: If body is missing on cached item, fetch full article
+      if (!art.body && (art.slug || art.id)) {
+        try {
+          const fetchTarget = art.slug || art.id;
+          fetch(`/api/v1/articles/${encodeURIComponent(fetchTarget)}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data && data.success && data.data) {
+                const full = data.data;
+                if (full.body) setFormContent(full.body);
+                if (full.seoTitle) setFormSeoTitle(full.seoTitle);
+                if (full.seoDescription || full.seoDesc) setFormSeoDescription(full.seoDescription || full.seoDesc);
+                if (full.seoKeywords) setFormSeoKeywords(full.seoKeywords);
+                if (full.canonicalUrl) setFormCanonicalUrl(full.canonicalUrl);
+              }
+            })
+            .catch(() => {});
+        } catch (e) {}
+      }
 
       setFormAdTitle(art.adTitle || "");
       setFormAdSubtitle(art.adSubtitle || "");

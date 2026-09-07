@@ -58,6 +58,23 @@ const ARTICLE_LIST_SELECT = {
   author: { select: { id: true, name: true, avatar: true } },
 };
 
+// Full select fields for Admin Control Center (includes body and SEO fields so editing works seamlessly)
+const ARTICLE_ADMIN_SELECT = {
+  ...ARTICLE_LIST_SELECT,
+  body: true,
+  bodyHi: true,
+  seoTitle: true,
+  seoDesc: true,
+  seoKeywords: true,
+  canonicalUrl: true,
+  submittedAt: true,
+  approvedBy: true,
+  approvedAt: true,
+  rejectedBy: true,
+  rejectedAt: true,
+  rejectionReason: true,
+};
+
 function parseCategories(raw: unknown, fallbackCat?: unknown): string[] {
   if (Array.isArray(raw)) return raw.map(String);
   if (typeof raw === "string" && raw.trim()) {
@@ -194,14 +211,15 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
         skip,
         take: limit,
         orderBy: { updatedAt: "desc" },
-        select: ARTICLE_LIST_SELECT,
+        select: ARTICLE_ADMIN_SELECT,
       }),
       prisma.article.count({ where })
     ]);
 
-    const mapped = articles.map((art) => ({
+    const mapped = articles.map((art: any) => ({
       ...art,
       categories: parseCategories(art.categories, art.category),
+      seoDescription: art.seoDesc || art.seoDescription || art.summary || "",
       isHero: !!art.isFeatured,
       status: (art.status || "PUBLISHED") as WorkflowArticleStatus
     }));
@@ -456,6 +474,10 @@ export async function createOrUpdateArticle(data: any) {
       adImage: data.adImage || null,
       adBadge: data.adBadge || "SPONSORED",
       customAds: data.customAds ? (typeof data.customAds === "string" ? data.customAds : JSON.stringify(data.customAds)) : null,
+      seoTitle: data.seoTitle || null,
+      seoDesc: data.seoDescription || data.seoDesc || null,
+      seoKeywords: data.seoKeywords || null,
+      canonicalUrl: data.canonicalUrl || null,
     };
 
     let articleRecord;
