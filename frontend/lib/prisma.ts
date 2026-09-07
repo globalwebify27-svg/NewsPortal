@@ -18,8 +18,6 @@ export const prisma =
         : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__prisma = prisma;
-}
+globalThis.__prisma = globalThis.__prisma ?? prisma;
 
 export default prisma;
