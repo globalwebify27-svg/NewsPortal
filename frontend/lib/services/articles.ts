@@ -47,6 +47,7 @@ const ARTICLE_LIST_SELECT = {
   state: true,
   district: true,
   subCategory: true,
+  categories: true,
   adTitle: true,
   adSubtitle: true,
   adLink: true,
@@ -56,6 +57,23 @@ const ARTICLE_LIST_SELECT = {
   category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
   author: { select: { id: true, name: true, avatar: true } },
 };
+
+function parseCategories(raw: unknown, fallbackCat?: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String);
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(String);
+    } catch (e) {
+      if (raw.includes(",")) return raw.split(",").map((c: string) => c.trim()).filter(Boolean);
+      return [raw.trim()];
+    }
+  }
+  const catName = (typeof fallbackCat === "object" && fallbackCat !== null && "name" in fallbackCat)
+    ? String((fallbackCat as { name?: unknown }).name)
+    : (typeof fallbackCat === "string" ? fallbackCat : null);
+  return catName ? [catName] : ["Top News"];
+}
 
 /**
  * Get Public Articles — Strictly Returns Status: "PUBLISHED" directly from MySQL DB
@@ -77,7 +95,12 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
     };
 
     if (params.category) {
-      where.category = { slug: params.category };
+      const catVal = params.category.trim();
+      where.OR = [
+        { category: { slug: catVal } },
+        { category: { name: { contains: catVal } } },
+        { categories: { contains: catVal } },
+      ];
     }
 
     if (params.state && params.state !== "ALL" && params.state !== "all") {
@@ -118,6 +141,7 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
 
     const mapped = articles.map((art) => ({
       ...art,
+      categories: parseCategories(art.categories, art.category),
       isHero: !!art.isFeatured,
       status: (art.status || "PUBLISHED") as WorkflowArticleStatus
     }));
@@ -152,23 +176,36 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
     if (params.search) {
       where.OR = [
         { title: { contains: params.search } },
-        { summary: { contains: params.search } }
+        { summary: { contains: params.search } },
       ];
     }
+
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(200, Math.max(1, Number(params.limit) || 50));
+    const skip = (page - 1) * limit;
 
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
+        skip,
+        take: limit,
         orderBy: { updatedAt: "desc" },
         select: ARTICLE_LIST_SELECT,
       }),
       prisma.article.count({ where })
     ]);
 
-    return { articles, total };
+    const mapped = articles.map((art) => ({
+      ...art,
+      categories: parseCategories(art.categories, art.category),
+      isHero: !!art.isFeatured,
+      status: (art.status || "PUBLISHED") as WorkflowArticleStatus
+    }));
+
+    return { articles: mapped, total, page, limit };
   } catch (e) {
     console.error("Error fetching admin articles from MySQL DB:", e);
-    return { articles: [], total: 0 };
+    return { articles: [], total: 0, page: 1, limit: 50 };
   }
 }
 
@@ -244,6 +281,7 @@ export async function getArticleBySlug(slug: string) {
 
       const result = {
         ...article,
+        categories: parseCategories((article as any).categories, article.category),
         customAds: customAdsArray.length > 0 ? customAdsArray : (article.customAds || undefined),
         author: {
           ...article.author,
@@ -403,6 +441,9 @@ export async function createOrUpdateArticle(data: any) {
       state: data.state || "National",
       district: data.district || "All",
       subCategory: data.subCategory || (typeof data.category === "object" ? data.category?.subCategory : null) || "General",
+      categories: data.categories
+        ? (typeof data.categories === "string" ? data.categories : JSON.stringify(Array.isArray(data.categories) ? data.categories : [data.categories]))
+        : null,
       adTitle: data.adTitle || null,
       adSubtitle: data.adSubtitle || null,
       adLink: data.adLink || null,

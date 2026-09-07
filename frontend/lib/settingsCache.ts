@@ -3,10 +3,10 @@
 // Prevents redundant API fetches and accelerates page loads dramatically
 // =============================================================================
 
-const cacheStore: Record<string, { data: any; timestamp: number }> = {};
-const CACHE_TTL_MS = 60000; // 60 seconds TTL
+const cacheStore: Record<string, { data: unknown; timestamp: number }> = {};
+const CACHE_TTL_MS = 300000; // 5 minutes default TTL — matches CDN cache headers
 
-export async function fetchWithCache<T = any>(url: string, ttlMs: number = CACHE_TTL_MS): Promise<T | null> {
+export async function fetchWithCache<T = unknown>(url: string, ttlMs: number = CACHE_TTL_MS): Promise<T | null> {
   const now = Date.now();
   if (cacheStore[url] && now - cacheStore[url].timestamp < ttlMs) {
     return cacheStore[url].data as T;

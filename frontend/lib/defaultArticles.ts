@@ -185,10 +185,24 @@ export function normalizeSlugDateToYyMmDd(rawSlug: string): string {
   });
 }
 
+export interface ArticleItemLike {
+  id?: string;
+  slug?: string;
+  title?: string;
+  featuredImage?: string;
+  image?: string;
+  format?: string;
+  youtubeId?: string;
+  videoUrl?: string;
+  createdAt?: string;
+  publishedAt?: string;
+  category?: { name?: string; slug?: string; color?: string } | null;
+}
+
 /**
  * formatArticleSlug — Normalizes and returns clean article slug with YY-MM-DD date suffix.
  */
-export function formatArticleSlug(article: any): string {
+export function formatArticleSlug(article?: ArticleItemLike | null): string {
   if (!article) return "news";
   const s = (article.slug ?? article.id ?? "news").toString();
   const cleaned = s.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
@@ -199,7 +213,7 @@ export function formatArticleSlug(article: any): string {
  * getArticleUrl — Returns the full URL path for an article.
  * Reads article.slug directly; slug was set once at save time.
  */
-export function getArticleUrl(article: any): string {
+export function getArticleUrl(article?: ArticleItemLike | null): string {
   if (!article) return "/top-news/article";
   const catSlug = (article.category?.slug || "top-news")
     .toLowerCase()
@@ -212,7 +226,7 @@ export function getArticleUrl(article: any): string {
   // Video articles or category 'videos' route directly to /videos
   if (catSlug === "videos" || article.format === "video") {
     if (article.youtubeId || (article.videoUrl && !article.slug)) {
-      const ytId = article.youtubeId || extractYouTubeId(article.videoUrl);
+      const ytId = article.youtubeId || (article.videoUrl ? extractYouTubeId(article.videoUrl) : "");
       if (ytId) return `/videos?v=${ytId}`;
     }
     return `/videos/${slug}`;
@@ -259,7 +273,7 @@ export function stripHtml(html?: string): string {
  * Resolves relative /uploads/ paths to full Hostinger storage URL in production and local paths in dev mode.
  * Also rewrites any Hostinger internal URLs to the main domain so they are never exposed publicly.
  */
-export function getArticleImage(article: any, index: number = 0): string {
+export function getArticleImage(article?: ArticleItemLike | null, index: number = 0): string {
   let img = "";
   if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 3) {
     img = article.featuredImage.trim();

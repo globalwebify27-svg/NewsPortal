@@ -223,6 +223,7 @@ model Article {
   state        String?       @db.VarChar(100)
   district     String?       @db.VarChar(100)
   subCategory  String?       @db.VarChar(100)
+  categories   String?       @db.LongText
   // Custom Article Advertisements
   adTitle      String?       @db.VarChar(300)
   adSubtitle   String?       @db.VarChar(500)

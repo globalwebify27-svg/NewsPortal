@@ -2104,12 +2104,14 @@
 .footer-bottom-bar {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 32px;
   font-size: 0.82rem;
   color: #64748b;
-  align-items: center;
+  text-align: center;
 }
 
 @media (max-width: 992px) {
@@ -3048,6 +3050,20 @@ h4[title]:hover {
   top: -2.5px;
   left: calc(50% - 2.5px);
   border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.global-auto-tooltip .tooltip-arrow-right {
+  left: -2.5px;
+  top: calc(50% - 2.5px);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.global-auto-tooltip .tooltip-arrow-left {
+  right: -2.5px;
+  top: calc(50% - 2.5px);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 

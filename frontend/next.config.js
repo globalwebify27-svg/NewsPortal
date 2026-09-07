@@ -15,12 +15,29 @@ const nextConfig = {
   },
 
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    // Tree-shake heavy packages at build time — only bundle icons actually imported
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-tooltip",
+      "date-fns",
+    ],
+    // Inline small CSS modules to reduce render-blocking stylesheets
+    optimizeCss: false, // keep false – globals.css is large, inlining would hurt TTFB
   },
 
-  // Aggressive HTTP cache headers — static assets cached 1 year, API 30s edge + 120s stale
+  // Aggressive HTTP cache headers + Global Security headers
   async headers() {
     return [
+      {
+        // Global Security Headers for all routes
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
       {
         // Immutable static assets (JS/CSS bundles have content-hash in filename)
         source: "/_next/static/:path*",
@@ -47,6 +64,34 @@ const nextConfig = {
         source: "/api/v1/categories",
         headers: [
           { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+        ],
+      },
+      {
+        // Logo & header settings — changes only when admin edits, cache 5 min
+        source: "/api/v1/logo-settings",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+        ],
+      },
+      {
+        // Social links — rarely changes, cache 5 min
+        source: "/api/v1/social-settings",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+        ],
+      },
+      {
+        // Ad settings — cache 2 min
+        source: "/api/v1/ad-settings",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=120, stale-while-revalidate=300" },
+        ],
+      },
+      {
+        // Videos — cache 30s
+        source: "/api/v1/videos",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=120" },
         ],
       },
     ];

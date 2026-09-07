@@ -27,7 +27,7 @@ import { convertImageToWebP } from "@/lib/webpConverter";
 import { getSubCategories } from "@/lib/subCategories";
 import { uploadMediaDirectly } from "@/lib/mediaUpload";
 
-export interface ArticleAdItem {
+interface ArticleAdItem {
   id: string;
   title?: string;
   subtitle?: string;
@@ -35,6 +35,26 @@ export interface ArticleAdItem {
   image?: string;
   badge?: string;
   placement?: "both" | "right" | "left" | "body";
+}
+
+function normalizeCategoriesArray(raw: any, fallbackCatName?: string): string[] {
+  if (Array.isArray(raw)) {
+    return raw.filter((x) => typeof x === "string" && x.trim().length > 0);
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((x) => typeof x === "string" && x.trim().length > 0);
+      }
+    } catch (e) {
+      if (raw.includes(",")) {
+        return raw.split(",").map((c: string) => c.trim()).filter(Boolean);
+      }
+      return [raw.trim()];
+    }
+  }
+  return fallbackCatName ? [fallbackCatName] : ["Education"];
 }
 
 interface AdminArticle {
@@ -227,7 +247,11 @@ export default function AdminArticlesPage() {
         if (json && (json.data || json.articles)) {
           const list = json.data || json.articles;
           if (Array.isArray(list)) {
-            setArticles(list);
+            const sanitized = list.map((a: any) => ({
+              ...a,
+              categories: normalizeCategoriesArray(a.categories, a.category?.name),
+            }));
+            setArticles(sanitized);
           }
         }
       } catch (err) {
@@ -247,7 +271,7 @@ export default function AdminArticlesPage() {
       setFormSlug(art.slug || formatArticleSlug(art));
       setIsSlugCustomized(false);
       setFormCategory(art.category?.name || "Education");
-      const initialCats = art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "Education"];
+      const initialCats = normalizeCategoriesArray(art.categories, art.category?.name);
       setFormCategories(initialCats);
       setFormSubCategory(art.subCategory || art.category?.subCategory || "General");
       setFormState(art.state || "Jharkhand");
@@ -845,7 +869,7 @@ export default function AdminArticlesPage() {
                     </td>
                     <td>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                        {(art.categories && art.categories.length > 0 ? art.categories : [art.category?.name || "General"]).map((c) => (
+                        {normalizeCategoriesArray(art.categories, art.category?.name).map((c) => (
                           <span key={c} className="category-tag-pill" style={{ background: getCategoryColor(c), color: "#ffffff", border: "none", fontSize: "0.72rem", padding: "2px 8px" }}>
                             {c}
                           </span>

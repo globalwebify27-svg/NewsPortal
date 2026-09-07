@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Bookmark, Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send, TrendingUp } from "lucide-react";
+import { Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send, TrendingUp } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
-import { INDIAN_DISTRICTS, getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
+import { getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
 
-import { defaultEnglishArticles, defaultHindiArticles, allDefaultArticles, stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
+import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
 import { cleanVideoUrl } from "@/lib/mediaUpload";
@@ -22,6 +22,7 @@ interface Article {
   body: string;
   featuredImage: string;
   category?: { name: string; slug: string; color: string; subCategory?: string };
+  categories?: string[];
   subCategory?: string;
   author?: { name: string };
   readTime: string;
@@ -50,7 +51,7 @@ export default function HomeClient({
   const [loading, setLoading] = useState(initialArticles.length === 0);
   const [activeVideoModal, setActiveVideoModal] = useState<YouTubeVideoItem | null>(null);
   const [trendingVideos, setTrendingVideos] = useState<YouTubeVideoItem[]>([]);
-  const [scrollOffset, setScrollOffset] = useState(0);
+
   const [userState, setUserState] = useState<IndianState>(
     INDIAN_STATES.find((s) => s.code === "JH") || INDIAN_STATES[0]
   );
@@ -398,7 +399,14 @@ export default function HomeClient({
       const catSlug = (a.category?.slug || a.category?.name || "").toLowerCase().trim();
       const subCat = (a.subCategory || a.category?.subCategory || "").toLowerCase().trim();
       const targetCat = activeFilters.category.toLowerCase().trim();
-      if (!catSlug.includes(targetCat) && !subCat.includes(targetCat) && !targetCat.includes(catSlug)) {
+      const multiCats = Array.isArray(a.categories)
+        ? a.categories.map((c) => c.toLowerCase().trim())
+        : [];
+
+      const matchesPrimary = catSlug.includes(targetCat) || targetCat.includes(catSlug) || subCat.includes(targetCat);
+      const matchesMulti = multiCats.some((c) => c.includes(targetCat) || targetCat.includes(c));
+
+      if (!matchesPrimary && !matchesMulti) {
         return false;
       }
     }
@@ -422,10 +430,11 @@ export default function HomeClient({
     // Filter by State (from Filter Modal)
     if (activeFilters.state && activeFilters.state !== "all") {
       if (!a.state) return false;
+      const stFilter = activeFilters.state;
       const stLower = a.state.toLowerCase().trim();
-      const targetState = activeFilters.state.toLowerCase().trim().replace(/-/g, " ");
+      const targetState = stFilter.toLowerCase().trim().replace(/-/g, " ");
       const matchedSt = INDIAN_STATES.find(
-        (s) => s.slug === activeFilters.state || s.code.toLowerCase() === activeFilters.state.toLowerCase()
+        (s) => s.slug === stFilter || s.code.toLowerCase() === stFilter.toLowerCase()
       );
       const matchName = matchedSt ? matchedSt.nameEn.toLowerCase() : targetState;
       const matchCode = matchedSt ? matchedSt.code.toLowerCase() : targetState;

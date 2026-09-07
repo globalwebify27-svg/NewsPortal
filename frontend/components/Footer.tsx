@@ -69,9 +69,16 @@ export default function Footer() {
     { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/advertise" }
   ]);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    try {
+      await fetch("/api/v1/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "footer" }),
+      });
+    } catch (_) {}
     setSubscribed(true);
     setEmail("");
   };
@@ -411,9 +418,9 @@ export default function Footer() {
         </div>
 
         {/* ── BOTTOM BAR ───────────────────── */}
-        <div className="footer-bottom-bar">
+        <div className="footer-bottom-bar" style={{ display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "28px", textAlign: "center" }}>
           {/* Copyright */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             <ShieldCheck size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
               © 2026 Global Awaaz. {isHindi ? "सर्वाधिकार सुरक्षित।" : "All Rights Reserved."}
@@ -421,7 +428,7 @@ export default function Footer() {
           </div>
 
           {/* Location */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             <MapPin size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
               Global Awaaz — {isHindi ? "रांची, झारखंड" : "Ranchi, Jharkhand"}
@@ -429,7 +436,7 @@ export default function Footer() {
           </div>
 
           {/* Tech Stack */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             <FileText size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
               {isHindi ? "नेक्स्ट.जेएस एवं एक्सप्रेस आर्किटेक्चर द्वारा संचालित" : "Powered by Next.js & Express Architecture"}

@@ -34,6 +34,11 @@ interface TooltipContextType {
 
 const TooltipContext = createContext<TooltipContextType | null>(null);
 
+// Global warm-up / skip delay timer:
+// When any tooltip is active, moving between tooltips opens immediately (skip delay)
+let isAnyTooltipActive = false;
+let globalWarmTimeout: NodeJS.Timeout | null = null;
+
 export interface TooltipProviderProps {
   children: ReactNode;
   delayDuration?: number;
@@ -55,7 +60,7 @@ export interface TooltipProps {
 
 export function Tooltip({
   children,
-  delayDuration = 50,
+  delayDuration = 0,
   open: controlledOpen,
   defaultOpen = false,
   onOpenChange,
@@ -68,18 +73,48 @@ export function Tooltip({
   const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
 
   const setIsOpen = (newOpen: boolean) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
-    if (newOpen && delayDuration > 0) {
-      timeoutRef.current = setTimeout(() => {
+    if (newOpen) {
+      if (globalWarmTimeout) {
+        clearTimeout(globalWarmTimeout);
+        globalWarmTimeout = null;
+      }
+
+      // If warm or delay is 0, show instantly
+      const effectiveDelay = isAnyTooltipActive ? 0 : delayDuration;
+
+      if (effectiveDelay > 0) {
+        timeoutRef.current = setTimeout(() => {
+          isAnyTooltipActive = true;
+          if (!isControlled) setUncontrolledOpen(true);
+          onOpenChange?.(true);
+        }, effectiveDelay);
+      } else {
+        isAnyTooltipActive = true;
         if (!isControlled) setUncontrolledOpen(true);
         onOpenChange?.(true);
-      }, delayDuration);
+      }
     } else {
-      if (!isControlled) setUncontrolledOpen(newOpen);
-      onOpenChange?.(newOpen);
+      if (!isControlled) setUncontrolledOpen(false);
+      onOpenChange?.(false);
+
+      // Keep warm window open for 350ms so adjacent/alternate hovers are immediate
+      if (globalWarmTimeout) clearTimeout(globalWarmTimeout);
+      globalWarmTimeout = setTimeout(() => {
+        isAnyTooltipActive = false;
+      }, 350);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   return (
     <TooltipContext.Provider
@@ -154,12 +189,25 @@ export const TooltipTrigger = forwardRef<HTMLElement, TooltipTriggerProps>(
     };
 
     if (isValidElement(content)) {
+      const childProps = content.props as any;
       return cloneElement(content as React.ReactElement, {
         ref: setRef,
-        onMouseEnter: handleMouseEnter,
-        onMouseLeave: handleMouseLeave,
-        onFocus: handleFocus,
-        onBlur: handleBlur,
+        onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+          childProps?.onMouseEnter?.(e);
+          handleMouseEnter(e);
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+          childProps?.onMouseLeave?.(e);
+          handleMouseLeave(e);
+        },
+        onFocus: (e: React.FocusEvent<HTMLElement>) => {
+          childProps?.onFocus?.(e);
+          handleFocus(e);
+        },
+        onBlur: (e: React.FocusEvent<HTMLElement>) => {
+          childProps?.onBlur?.(e);
+          handleBlur(e);
+        },
         "data-tooltip-trigger": "true",
         ...props,
       });
@@ -235,7 +283,6 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
       letterSpacing: "0.01em",
       whiteSpace: "nowrap",
       boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12)",
-      animation: "ga-tooltip-fade 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       ...style,
     };
 

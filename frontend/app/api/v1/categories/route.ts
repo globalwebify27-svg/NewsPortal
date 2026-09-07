@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdminAuth } from "@/lib/apiAuth";
+import { serverCache, TTL } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
+const CACHE_KEY_CATEGORIES = "categories:active";
+
 // GET /api/v1/categories -> Fetch active categories from MySQL DB
 export async function GET() {
+  const cached = serverCache.get(CACHE_KEY_CATEGORIES);
+  if (cached) {
+    return NextResponse.json({ success: true, data: cached });
+  }
+
   try {
     const categories = await prisma.category.findMany({
       where: { isActive: true },
@@ -21,6 +30,8 @@ export async function GET() {
       },
     });
 
+    serverCache.set(CACHE_KEY_CATEGORIES, categories, TTL.CATEGORIES);
+
     return NextResponse.json({
       success: true,
       data: categories,
@@ -36,6 +47,9 @@ export async function GET() {
 
 // POST /api/v1/categories -> Create or Update Category in MySQL DB
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { id, name, nameHi, slug, color, icon, description, order } = body;
@@ -71,6 +85,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    serverCache.delete(CACHE_KEY_CATEGORIES);
+
     return NextResponse.json({
       success: true,
       data: cat,
@@ -84,6 +100,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/v1/categories?id=... -> Delete category from MySQL DB
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -93,6 +112,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.category.delete({ where: { id } });
+    serverCache.delete(CACHE_KEY_CATEGORIES);
 
     return NextResponse.json({
       success: true,

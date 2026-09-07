@@ -32,15 +32,34 @@ import { extractYouTubeId } from "@/lib/youtube";
 import { useLanguage } from "@/context/LanguageContext";
 
 /**
- * Ensures strict SEO heading hierarchy for article body content:
- * - Demotes any injected <h1> to <h2> so there is strictly ONLY ONE <h1> on the page.
- * - Fixes heading levels to ensure standard SEO compliance (H1 -> H2 -> H3 -> H4 -> H5 -> H6).
+ * Sanitize HTML body content against XSS and ensure SEO heading hierarchy:
+ * - Demotes <h1> tags to <h2> so there is strictly ONLY ONE <h1> on the page.
+ * - Strips all <script>, <style>, <iframe>, <object>, <embed>, <form> tags.
+ * - Removes inline on* event handler attributes (e.g. onload, onerror, onclick).
+ * - Disallows javascript: or data: in href/src links.
  */
 function sanitizeSemanticArticleBody(html: string): string {
   if (!html) return "";
   let clean = html;
-  // Replace <h1> tags with <h2> to guarantee single H1 on page
+  
+  // Demote <h1> to <h2> for single-H1 SEO compliance
   clean = clean.replace(/<h1(\s|>)/gi, "<h2$1").replace(/<\/h1>/gi, "</h2>");
+  
+  // Strip dangerous executable tags entirely with their inner content
+  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+  clean = clean.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "");
+  clean = clean.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "");
+  clean = clean.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "");
+  clean = clean.replace(/<embed\b[^>]*>/gi, "");
+  clean = clean.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, "");
+
+  // Strip all inline JavaScript event handlers like onclick, onload, onerror, onmouseover, etc.
+  clean = clean.replace(/\s+on[a-z]+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, "");
+
+  // Strip dangerous protocol URLs
+  clean = clean.replace(/\s+(?:href|src)\s*=\s*(?:'javascript:[^']*'|"javascript:[^"]*"|javascript:[^\s>]+)/gi, "");
+  clean = clean.replace(/\s+(?:href|src)\s*=\s*(?:'data:text\/html[^']*'|"data:text\/html[^"]*")/gi, "");
+
   return clean;
 }
 

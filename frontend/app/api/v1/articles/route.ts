@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublicArticles, getAllArticlesForAdmin, createOrUpdateArticle } from "@/lib/services/articles";
+import { requireAdminAuth } from "@/lib/apiAuth";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const page = Number(searchParams.get("page")) || 1;
-  const limit = Number(searchParams.get("limit")) || 50;
+  const limitRaw = Number(searchParams.get("limit")) || 50;
   const category = searchParams.get("category") || undefined;
   const tag = searchParams.get("tag") || undefined;
   const search = searchParams.get("search") || undefined;
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state") || undefined;
   const district = searchParams.get("district") || undefined;
   const admin = searchParams.get("admin") === "true" || !!role || !!status;
+  const limit = admin ? Math.min(1000, limitRaw) : Math.min(100, limitRaw); // cap to prevent DoS
 
   // Admin Request (queue, drafts, pending reviews, approvals, rejections)
   if (admin) {
@@ -52,6 +54,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // All article writes require admin authentication
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
 

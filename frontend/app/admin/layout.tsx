@@ -154,7 +154,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch (_) {}
     sessionStorage.removeItem("ga_admin_logged_in");
     sessionStorage.removeItem("ga_admin_user");
     sessionStorage.removeItem("ga_actual_role");

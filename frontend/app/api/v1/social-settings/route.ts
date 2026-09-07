@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { requireAdminAuth } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,9 @@ export async function GET() {
 
 // POST /api/v1/social-settings -> Saves & updates social media links centrally
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const current = readSocialData();

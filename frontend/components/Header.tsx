@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NewsTicker from "./NewsTicker";
@@ -64,8 +64,7 @@ import {
 } from "lucide-react";
 
 import { useLanguage } from "@/context/LanguageContext";
-import { fetchCentralVideos } from "@/lib/youtube";
-import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
+import { INDIAN_STATES, IndianState } from "@/lib/states";
 import { autoDetectUserCity, getDistrictsForState } from "@/lib/districts";
 import { getSubCategories } from "@/lib/subCategories";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
@@ -84,7 +83,7 @@ export default function Header() {
   const { lang, setLang, toggleLang, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState("");
-  const [isSticky, setIsSticky] = useState(false);
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Interactive State Selector States
   const [selectedState, setSelectedState] = useState<IndianState>(INDIAN_STATES[0]);
@@ -184,7 +183,7 @@ export default function Header() {
   const [headerBgOverlayOpacity, setHeaderBgOverlayOpacity] = useState<number>(0.12);
 
   useEffect(() => {
-    // 1. Physical Geo-Location Tracker for Top Utility Bar (Weather & Geo Date)
+    // Physical Geo-Location Tracker for Top Utility Bar (Weather & Geo Date)
     const loadGeoLocation = async () => {
       try {
         const detected = await autoDetectUserCity();
@@ -210,7 +209,6 @@ export default function Header() {
     };
 
     loadGeoLocation();
-    fetchCentralVideos().catch(() => { });
   }, []);
 
   const handleSelectState = (st: IndianState) => {
@@ -315,19 +313,25 @@ export default function Header() {
       return;
     }
 
-    const q = searchQuery.toLowerCase().trim();
-    fetchWithCache<{ success?: boolean; articles?: any[] }>("/api/v1/articles", 30000)
-      .then((json) => {
-        if (json && json.success && Array.isArray(json.articles)) {
-          const matched = json.articles.filter((a: any) => {
-            const st = (a.status || "PUBLISHED").toUpperCase();
-            if (st !== "PUBLISHED") return false;
-            return a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q);
-          }).map((a: any) => ({ ...a, resultType: "article" }));
-          setSearchResults(matched.slice(0, 6));
-        }
-      })
-      .catch(() => { });
+    // Debounce: wait 300ms after user stops typing before fetching
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      const q = searchQuery.toLowerCase().trim();
+      fetchWithCache<{ success?: boolean; articles?: any[] }>("/api/v1/articles", 30000)
+        .then((json) => {
+          if (json && json.success && Array.isArray(json.articles)) {
+            const matched = json.articles.filter((a: any) => {
+              const st = (a.status || "PUBLISHED").toUpperCase();
+              if (st !== "PUBLISHED") return false;
+              return a.title?.toLowerCase().includes(q) || a.summary?.toLowerCase().includes(q);
+            }).map((a: any) => ({ ...a, resultType: "article" }));
+            setSearchResults(matched.slice(0, 6));
+          }
+        })
+        .catch(() => { });
+    }, 300);
+
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [searchQuery]);
 
 
@@ -358,9 +362,7 @@ export default function Header() {
     }
   }, [lang, userTimezone, isInternationalLocation]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "light");
-  }, []);
+
 
   return (
     <>
@@ -711,7 +713,7 @@ export default function Header() {
       </header>
 
       {/* Mega Menu Navigation — Rounded Capsule Pill Bar */}
-      <nav className={`mega-menu-nav ${isSticky ? "is-sticky" : ""}`}>
+      <nav className="mega-menu-nav">
         <div className="container menu-wrapper-pill">
           <div className="pill-nav-container">
             {/* State Location Selector Pill with Hover Sub-menu */}
@@ -1422,7 +1424,10 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav(null)}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link href="/about" className={`nav-link pill-nav-link ${isActive("/about") ? "active" : ""}`} aria-label={lang === "HI" ? "हमारे बारे में" : "About Us"}>
@@ -1436,7 +1441,10 @@ export default function Header() {
                   </TooltipContent>
                 </Tooltip>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav(null)}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link href="/careers" className={`nav-link pill-nav-link ${isActive("/careers") ? "active" : ""}`} aria-label={lang === "HI" ? "करियर" : "Careers"}>
@@ -1450,7 +1458,10 @@ export default function Header() {
                   </TooltipContent>
                 </Tooltip>
               </li>
-              <li>
+              <li
+                style={{ position: "relative" }}
+                onMouseEnter={() => setHoveredNav(null)}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`} aria-label={lang === "HI" ? "विज्ञापन दें" : "Advertise"}>
@@ -1503,7 +1514,7 @@ export default function Header() {
           <div className="mobile-drawer-content">
             <div className="mobile-drawer-header">
               <Link href="/" className="mobile-drawer-logo" style={{ textDecoration: "none" }}>GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></Link>
-              <button className="icon-btn close-drawer-btn" onClick={() => setMobileMenuOpen(false)}>
+              <button className="icon-btn close-drawer-btn" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)}>
                 <X size={20} />
               </button>
             </div>
@@ -1531,6 +1542,9 @@ export default function Header() {
       {/* Interactive State Selector Modal */}
       {isStateModalOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="state-modal-title"
           onClick={() => setIsStateModalOpen(false)}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
         >
@@ -1541,11 +1555,16 @@ export default function Header() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <MapPin size={18} style={{ color: "#e50914" }} />
-                <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+                <h3 id="state-modal-title" style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
                   {lang === "HI" ? "अपना राज्य चुनें (Select State)" : "Select Your State"}
                 </h3>
               </div>
-              <button className="icon-btn" onClick={() => setIsStateModalOpen(false)} style={{ border: "none", background: "#f1f5f9", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <button
+                className="icon-btn"
+                aria-label="Close state selector modal"
+                onClick={() => setIsStateModalOpen(false)}
+                style={{ border: "none", background: "#f1f5f9", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -1555,6 +1574,7 @@ export default function Header() {
               <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
               <input
                 type="text"
+                aria-label="Search Indian states"
                 placeholder={lang === "HI" ? "राज्य खोजें... (Search state e.g. Bihar, UP, Delhi)" : "Search state e.g. Bihar, UP, Delhi..."}
                 value={stateSearchQuery}
                 onChange={(e) => setStateSearchQuery(e.target.value)}
@@ -1573,6 +1593,7 @@ export default function Header() {
                 return (
                   <button
                     key={st.code}
+                    aria-pressed={isSelected}
                     onClick={() => handleSelectState(st)}
                     style={{
                       display: "flex",
@@ -1606,6 +1627,9 @@ export default function Header() {
       {/* ── INTERACTIVE NEWS FILTER MODAL ────────────────────────────────────── */}
       {isFilterModalOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="filter-modal-title"
           className="filter-modal-overlay"
           onClick={() => setIsFilterModalOpen(false)}
         >
@@ -1617,12 +1641,12 @@ export default function Header() {
             <div className="filter-modal-header">
               <div className="filter-modal-title">
                 <Sliders size={18} style={{ color: "#e50914" }} />
-                <h3>{lang === "HI" ? "समाचार फ़िल्टर" : "News Filters"}</h3>
+                <h3 id="filter-modal-title">{lang === "HI" ? "समाचार फ़िल्टर" : "News Filters"}</h3>
                 {activeFilterCount > 0 && (
                   <span className="filter-count-pill">{activeFilterCount} {lang === "HI" ? "सक्रिय" : "active"}</span>
                 )}
               </div>
-              <button className="icon-btn close-modal-btn" onClick={() => setIsFilterModalOpen(false)}>
+              <button className="icon-btn close-modal-btn" aria-label="Close news filters" onClick={() => setIsFilterModalOpen(false)}>
                 <X size={18} />
               </button>
             </div>

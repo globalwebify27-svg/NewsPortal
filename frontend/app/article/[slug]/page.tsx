@@ -22,7 +22,10 @@ export async function generateStaticParams() {
       take: 40,
       orderBy: { createdAt: "desc" },
     });
-    return articles.map((art) => ({ slug: art.slug }));
+    // macOS / Linux file system limits filename to 255 bytes; filter out excessively long slugs for static pre-rendering
+    return articles
+      .filter((art) => art.slug && art.slug.length <= 100)
+      .map((art) => ({ slug: art.slug }));
   } catch (err) {
     return [];
   }

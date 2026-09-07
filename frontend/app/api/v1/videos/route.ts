@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminAuth } from "@/lib/apiAuth";
 
 const VIDEOS_SETTING_KEY = "custom_videos_list";
 const LIVETV_SETTING_KEY = "livetv_stream_config";
@@ -70,6 +71,9 @@ export async function GET() {
 
 // POST /api/v1/videos — Save custom videos list or live TV configuration to central DB
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
 

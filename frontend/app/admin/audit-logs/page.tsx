@@ -40,60 +40,78 @@ export default function AuditLogsPage() {
   const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
 
   useEffect(() => {
-    // Seed initial mock audit log history for demonstration
-    const sampleLogs: AuditLogItem[] = [
-      {
-        id: "log_1",
-        action: "CREATE_ROLE",
-        resource: "roles",
-        resourceId: "r_custom_102",
-        user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
-        ipAddress: "127.0.0.1",
-        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-        before: null,
-        after: { name: "Senior Fact Checker", slug: "senior_fact_checker", permissions: ["articles:view", "articles:approve"] },
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: "log_2",
-        action: "ASSIGN_USER_ROLE",
-        resource: "users",
-        resourceId: "usr_8819",
-        user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
-        ipAddress: "127.0.0.1",
-        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-        before: { role: "Editor", roleId: "r3" },
-        after: { role: "Chief Editor", roleId: "r2" },
-        createdAt: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        id: "log_3",
-        action: "ENABLE_2FA",
-        resource: "users",
-        resourceId: "usr_admin",
-        user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
-        ipAddress: "127.0.0.1",
-        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-        before: { twoFAEnabled: false },
-        after: { twoFAEnabled: true, twoFAVerifiedAt: new Date().toISOString() },
-        createdAt: new Date(Date.now() - 7200000).toISOString()
-      },
-      {
-        id: "log_4",
-        action: "PUBLISH_ARTICLE",
-        resource: "articles",
-        resourceId: "art_9918",
-        user: { name: "Chief Editor", email: "chief@globalawaaz.com", role: "Chief Editor" },
-        ipAddress: "192.168.1.45",
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        before: { status: "REVIEW" },
-        after: { status: "PUBLISHED", publishedAt: new Date().toISOString() },
-        createdAt: new Date(Date.now() - 14400000).toISOString()
+    async function loadAuditLogs() {
+      try {
+        const res = await fetch("/api/v1/audit-logs");
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success && Array.isArray(json.data) && json.data.length > 0) {
+            setLogs(json.data);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Audit logs API fetch error:", err);
       }
-    ];
 
-    setLogs(sampleLogs);
-    setLoading(false);
+      // Fallback seed audit log entries if database has zero log rows yet
+      const sampleLogs: AuditLogItem[] = [
+        {
+          id: "log_1",
+          action: "CREATE_ROLE",
+          resource: "roles",
+          resourceId: "r_custom_102",
+          user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
+          ipAddress: "127.0.0.1",
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+          before: null,
+          after: { name: "Senior Fact Checker", slug: "senior_fact_checker", permissions: ["articles:view", "articles:approve"] },
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "log_2",
+          action: "ASSIGN_USER_ROLE",
+          resource: "users",
+          resourceId: "usr_8819",
+          user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
+          ipAddress: "127.0.0.1",
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+          before: { role: "Editor", roleId: "r3" },
+          after: { role: "Chief Editor", roleId: "r2" },
+          createdAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: "log_3",
+          action: "ENABLE_2FA",
+          resource: "users",
+          resourceId: "usr_admin",
+          user: { name: "Global Awaaz Admin", email: "Global2409@globalawaaz.com", role: "Super Admin" },
+          ipAddress: "127.0.0.1",
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+          before: { twoFAEnabled: false },
+          after: { twoFAEnabled: true, twoFAVerifiedAt: new Date().toISOString() },
+          createdAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        {
+          id: "log_4",
+          action: "PUBLISH_ARTICLE",
+          resource: "articles",
+          resourceId: "art_9918",
+          user: { name: "Chief Editor", email: "chief@globalawaaz.com", role: "Chief Editor" },
+          ipAddress: "192.168.1.45",
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+          before: { status: "REVIEW" },
+          after: { status: "PUBLISHED", publishedAt: new Date().toISOString() },
+          createdAt: new Date(Date.now() - 14400000).toISOString()
+        }
+      ];
+
+      setLogs(sampleLogs);
+      setLoading(false);
+    }
+
+    loadAuditLogs();
   }, []);
 
   const filteredLogs = logs.filter((log) => {
