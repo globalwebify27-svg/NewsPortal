@@ -144,6 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setActualRole(role as AdminRoleSlug);
         setAdminRole(role as AdminRoleSlug);
         setIsAuthenticated(true);
+        router.refresh();
       } else {
         setLoginError(json.message || "Invalid Admin credentials. Access denied.");
       }
@@ -156,13 +157,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      await fetch("/api/v1/auth/login", { method: "DELETE" });
     } catch (_) {}
     sessionStorage.removeItem("ga_admin_logged_in");
     sessionStorage.removeItem("ga_admin_user");
     sessionStorage.removeItem("ga_actual_role");
     sessionStorage.removeItem("ga_admin_role");
     setIsAuthenticated(false);
+    router.push("/admin");
+    router.refresh();
   };
 
   const allNavItems = [

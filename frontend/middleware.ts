@@ -10,7 +10,7 @@ import { jwtVerify } from "jose";
 const ADMIN_COOKIE_NAME = "ga_admin_token";
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || "";
+  const secret = process.env.JWT_SECRET || "ga_default_jwt_secret_newsportal_globalawaaz_2026_fallback";
   return new TextEncoder().encode(secret);
 }
 
