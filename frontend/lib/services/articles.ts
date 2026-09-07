@@ -159,6 +159,14 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
  * Get All Articles for Admin Control Center directly from MySQL DB
  */
 export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
+  const page = Math.max(1, Number(params.page) || 1);
+  const limit = Math.min(200, Math.max(1, Number(params.limit) || 50));
+  const skip = (page - 1) * limit;
+
+  const cacheKey = `articles:admin:${page}:${limit}:${params.status || "ALL"}:${params.authorId || ""}:${params.search || ""}`;
+  const cached = serverCache.get<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
+  if (cached) return cached;
+
   try {
     const where: any = {};
 
@@ -180,10 +188,6 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
       ];
     }
 
-    const page = Math.max(1, Number(params.page) || 1);
-    const limit = Math.min(200, Math.max(1, Number(params.limit) || 50));
-    const skip = (page - 1) * limit;
-
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
@@ -202,7 +206,9 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
       status: (art.status || "PUBLISHED") as WorkflowArticleStatus
     }));
 
-    return { articles: mapped, total, page, limit };
+    const result = { articles: mapped, total, page, limit };
+    serverCache.set(cacheKey, result, 20); // 20s fast TTL for admin
+    return result;
   } catch (e) {
     console.error("Error fetching admin articles from MySQL DB:", e);
     return { articles: [], total: 0, page: 1, limit: 50 };
