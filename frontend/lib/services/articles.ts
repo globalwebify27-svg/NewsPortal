@@ -168,6 +168,8 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
     return result;
   } catch (error) {
     console.error("Error fetching public articles from MySQL DB:", error);
+    const fallback = serverCache.getStale<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
+    if (fallback) return fallback;
     return { articles: [], total: 0, page, limit };
   }
 }
@@ -225,10 +227,12 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
     }));
 
     const result = { articles: mapped, total, page, limit };
-    serverCache.set(cacheKey, result, 20); // 20s fast TTL for admin
+    serverCache.set(cacheKey, result, 20_000); // 20s TTL for admin
     return result;
   } catch (e) {
     console.error("Error fetching admin articles from MySQL DB:", e);
+    const fallback = serverCache.getStale<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
+    if (fallback) return fallback;
     return { articles: [], total: 0, page: 1, limit: 50 };
   }
 }
@@ -321,6 +325,8 @@ export async function getArticleBySlug(slug: string) {
     return null;
   } catch (error) {
     console.error("Error fetching article by slug from MySQL DB:", error);
+    const fallback = serverCache.getStale<any>(cacheKey);
+    if (fallback) return fallback;
     return null;
   }
 }

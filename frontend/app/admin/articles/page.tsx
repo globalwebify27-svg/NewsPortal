@@ -1124,7 +1124,7 @@ export default function AdminArticlesPage() {
                 </div>
 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {["Top News", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Health", "Opinion", "Videos"].map((catName) => {
+                  {["Top News", "Politics", "Crime", "Markets", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Videos"].map((catName) => {
                     const isSelected = formCategories.includes(catName);
                     return (
                       <button
@@ -1133,10 +1133,22 @@ export default function AdminArticlesPage() {
                         onClick={() => {
                           if (isSelected) {
                             if (formCategories.length > 1) {
-                              setFormCategories(formCategories.filter((c) => c !== catName));
+                              const remaining = formCategories.filter((c) => c !== catName);
+                              setFormCategories(remaining);
+                              // If removing the active primary category, switch primary to the first available category
+                              if (formCategory === catName) {
+                                const nextPrimary = remaining[0];
+                                setFormCategory(nextPrimary);
+                                const subs = getSubCategories(nextPrimary);
+                                setFormSubCategory(subs && subs.length > 0 ? subs[0].en : "General");
+                              }
                             }
                           } else {
+                            // Selecting this category: add it and auto-sync Primary Category & Sub-Category
                             setFormCategories([...formCategories, catName]);
+                            setFormCategory(catName);
+                            const subs = getSubCategories(catName);
+                            setFormSubCategory(subs && subs.length > 0 ? subs[0].en : "General");
                           }
                         }}
                         style={{
@@ -1217,6 +1229,10 @@ export default function AdminArticlesPage() {
                     style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
                   >
                     {[
+                      { en: "Top News", hi: "टॉप न्यूज़" },
+                      { en: "Politics", hi: "राजनीति" },
+                      { en: "Crime", hi: "अपराध / जुर्म" },
+                      { en: "Markets", hi: "शेयर बाजार" },
                       { en: "Education", hi: "शिक्षा" },
                       { en: "World", hi: "विदेश" },
                       { en: "India", hi: "भारत" },
@@ -1225,10 +1241,7 @@ export default function AdminArticlesPage() {
                       { en: "Sports", hi: "खेल" },
                       { en: "Entertainment", hi: "मनोरंजन" },
                       { en: "Science", hi: "विज्ञान" },
-                      { en: "Health", hi: "स्वास्थ्य" },
-                      { en: "Opinion", hi: "विचार" },
-                      { en: "Videos", hi: "वीडियो" },
-                      { en: "Top News", hi: "टॉप न्यूज़" }
+                      { en: "Videos", hi: "वीडियो" }
                     ].map((c) => (
                       <option key={c.en} value={c.en}>{c.hi} ({c.en})</option>
                     ))}

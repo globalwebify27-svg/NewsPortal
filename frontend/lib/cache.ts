@@ -11,9 +11,13 @@ interface CacheEntry<T> {
 
 class MemoryCache {
   private store = new Map<string, CacheEntry<any>>();
+  private staleStore = new Map<string, any>(); // Permanent in-memory fallback backup
 
   set<T>(key: string, data: T, ttlMs: number): void {
     this.store.set(key, { data, expiresAt: Date.now() + ttlMs });
+    if (data && (!Array.isArray(data) || data.length > 0)) {
+      this.staleStore.set(key, data);
+    }
   }
 
   get<T>(key: string): T | null {
@@ -26,8 +30,16 @@ class MemoryCache {
     return entry.data as T;
   }
 
+  /**
+   * Returns stale data if current TTL has expired but DB connection is unavailable.
+   */
+  getStale<T>(key: string): T | null {
+    return (this.staleStore.get(key) as T) || null;
+  }
+
   delete(key: string): void {
     this.store.delete(key);
+    this.staleStore.delete(key);
   }
 
   /** Invalidate all keys that start with a prefix (e.g. "articles:") */
@@ -39,6 +51,7 @@ class MemoryCache {
 
   clear(): void {
     this.store.clear();
+    this.staleStore.clear();
   }
 }
 

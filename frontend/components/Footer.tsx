@@ -87,14 +87,16 @@ export default function Footer() {
 
   // Category links using the actual tabs in our application
   const categoryTabs = [
+    { name: isHindi ? "राजनीति" : "Politics", slug: "politics" },
+    { name: isHindi ? "अपराध / जुर्म" : "Crime", slug: "crime" },
+    { name: isHindi ? "शेयर बाजार" : "Markets", slug: "markets" },
+    { name: isHindi ? "तकनीक" : "Technology", slug: "technology" },
     { name: isHindi ? "विदेश" : "World", slug: "world" },
     { name: isHindi ? "भारत" : "India", slug: "india" },
     { name: isHindi ? "व्यापार" : "Business", slug: "business" },
-    { name: isHindi ? "तकनीक" : "Technology", slug: "technology" },
     { name: isHindi ? "खेल" : "Sports", slug: "sports" },
     { name: isHindi ? "मनोरंजन" : "Entertainment", slug: "entertainment" },
-    { name: isHindi ? "विज्ञान" : "Science", slug: "science" },
-    { name: isHindi ? "स्वास्थ्य" : "Health", slug: "health" }
+    { name: isHindi ? "विज्ञान" : "Science", slug: "science" }
   ];
 
   // Dynamic Company links from Admin settings
@@ -143,7 +145,7 @@ export default function Footer() {
     { name: isHindi ? "ताज़ा समाचार" : "Latest News", href: "/" },
     { name: isHindi ? "झारखंड समाचार" : "Jharkhand News", href: "/jharkhand" },
     { name: isHindi ? "शिक्षा व परीक्षा" : "Education & Exams", href: "/education" },
-    { name: isHindi ? "संपादकीय व विचार" : "Editorials & Opinion", href: "/opinion" },
+    { name: isHindi ? "राजनीति समाचार" : "Politics News", href: "/politics" },
     { name: isHindi ? "वीडियो बुलेटिन" : "Video Bulletins", href: "/videos" },
     { name: isHindi ? "डिजिटल ई-पेपर" : "Digital E-Paper", href: "/epaper" }
   ];

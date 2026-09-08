@@ -38,6 +38,10 @@ export async function GET() {
     });
   } catch (error) {
     console.warn("Failed fetching categories from DB:", error);
+    const fallback = serverCache.getStale<any[]>(CACHE_KEY_CATEGORIES);
+    if (fallback) {
+      return NextResponse.json({ success: true, data: fallback });
+    }
     return NextResponse.json({
       success: true,
       data: [],

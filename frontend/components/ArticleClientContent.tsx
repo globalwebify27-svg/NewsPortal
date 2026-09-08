@@ -447,18 +447,23 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             marginBottom: "32px",
             borderRadius: "16px",
             overflow: "hidden",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
-            height: article.imageHeight && article.imageHeight !== "auto" ? article.imageHeight : undefined
+            boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+            background: "var(--color-card-bg, #0f172a)",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
           }}>
             <img
               src={getArticleImage(article)}
               alt={article.title}
               style={{
                 width: "100%",
-                height: "100%",
-                maxHeight: article.imageHeight ? "none" : "480px",
-                objectFit: article.imageFit || "cover",
-                display: "block"
+                height: "auto",
+                maxHeight: "560px",
+                objectFit: "contain",
+                display: "block",
+                margin: "0 auto"
               }}
             />
             <div style={{ position: "absolute", bottom: "16px", right: "16px" }}>

@@ -64,6 +64,27 @@ export const MASTER_SUB_CATEGORIES: Record<string, SubCategoryItem[]> = {
     { en: "Expert Columns", hi: "विशेषज्ञ दृष्टिकोण" },
     { en: "Special Reports", hi: "विशेष विश्लेषणात्मक रिपोर्ट" }
   ],
+  politics: [
+    { en: "National Politics", hi: "राष्ट्रीय राजनीति" },
+    { en: "State Politics", hi: "राज्य राजनीति" },
+    { en: "Elections & Polls", hi: "चुनाव व सर्वे" },
+    { en: "Government Policies", hi: "सरकारी नीतियां व फैसले" },
+    { en: "Parliament & Assembly", hi: "संसद व विधानसभा" }
+  ],
+  crime: [
+    { en: "Police & Law", hi: "पुलिस व कानून" },
+    { en: "Crime Investigation", hi: "अपराध जांच" },
+    { en: "Court & Justice", hi: "अदालत व न्याय" },
+    { en: "Cyber Crime", hi: "साइबर अपराध" },
+    { en: "Regional Crime", hi: "क्षेत्रीय घटनाएं" }
+  ],
+  markets: [
+    { en: "Stock Markets", hi: "शेयर बाज़ार" },
+    { en: "Sensex & Nifty", hi: "सेंसेक्स व निफ्टी" },
+    { en: "IPO & Mutual Funds", hi: "आईपीओ व म्यूचुअल फंड" },
+    { en: "Commodities & Gold", hi: "कमोडिटी व सोना-चांदी" },
+    { en: "Crypto & Forex", hi: "क्रिप्टो व फॉरेक्स" }
+  ],
   videos: [
     { en: "Trending Video Clips", hi: "ट्रेंडिंग वीडियो" },
     { en: "Ground Reports", hi: "ग्राउंड रिपोर्ट" },
@@ -82,6 +103,9 @@ export function getSubCategories(categoryKey: string): SubCategoryItem[] {
 
   if (MASTER_SUB_CATEGORIES[key]) return MASTER_SUB_CATEGORIES[key];
 
+  if (key.includes("polit") || key.includes("राजनीति")) return MASTER_SUB_CATEGORIES.politics;
+  if (key.includes("crime") || key.includes("अपराध") || key.includes("जुर्म")) return MASTER_SUB_CATEGORIES.crime;
+  if (key.includes("market") || key.includes("शेयर") || key.includes("बाजार") || key.includes("बाज़ार")) return MASTER_SUB_CATEGORIES.markets;
   if (key.includes("educat") || key.includes("शिक्षा")) return MASTER_SUB_CATEGORIES.education;
   if (key.includes("world") || key.includes("विदेश")) return MASTER_SUB_CATEGORIES.world;
   if (key.includes("india") || key.includes("भारत")) return MASTER_SUB_CATEGORIES.india;

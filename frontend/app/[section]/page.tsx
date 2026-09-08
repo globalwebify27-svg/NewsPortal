@@ -12,15 +12,17 @@ export const dynamicParams = true;
 
 export function generateStaticParams() {
   return [
+    { section: "politics" },
+    { section: "crime" },
+    { section: "markets" },
+    { section: "technology" },
     { section: "india" },
     { section: "world" },
     { section: "business" },
-    { section: "technology" },
     { section: "sports" },
     { section: "entertainment" },
     { section: "science" },
-    { section: "health" },
-    { section: "opinion" },
+    { section: "education" },
     { section: "jharkhand" },
     { section: "bihar" },
     { section: "uttar-pradesh" },
