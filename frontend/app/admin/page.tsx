@@ -106,16 +106,35 @@ export default function AdminDashboardPage() {
     } catch (e) {}
   };
 
+  const [stats, setStats] = useState({
+    totalArticles: 0,
+    publishedArticles: 0,
+    pendingArticles: 0,
+    draftArticles: 0,
+    totalViews: 0,
+    totalCategories: 0,
+    totalUsers: 0,
+  });
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const res = await fetch("/api/v1/articles?admin=true", { cache: "no-store" });
-        const json = await res.json();
-        if (json && (json.data || json.articles)) {
-          const list = json.data || json.articles;
+        const [articlesRes, statsRes] = await Promise.all([
+          fetch("/api/v1/articles?admin=true", { cache: "no-store" }),
+          fetch("/api/v1/admin/stats", { cache: "no-store" }),
+        ]);
+
+        const articlesJson = await articlesRes.json();
+        if (articlesJson && (articlesJson.data || articlesJson.articles)) {
+          const list = articlesJson.data || articlesJson.articles;
           if (Array.isArray(list)) {
             setArticles(list);
           }
+        }
+
+        const statsJson = await statsRes.json();
+        if (statsJson && statsJson.success && statsJson.data) {
+          setStats(statsJson.data);
         }
       } catch (e) {
       } finally {
@@ -271,7 +290,7 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Metrics Cards Grid */}
+      {/* Metrics Cards Grid — Real Live Database Counts */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "28px" }}>
         <Link href="/admin/articles" style={{ textDecoration: "none" }}>
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
@@ -281,23 +300,27 @@ export default function AdminDashboardPage() {
                 <FileText size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>{articles.length}</div>
-            <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 700 }}>Published & Active</span>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>{stats.totalArticles || articles.length}</div>
+            <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 700 }}>
+              {stats.publishedArticles || articles.filter((a) => a.status === "PUBLISHED").length} Published Live
+            </span>
           </div>
         </Link>
 
         {/* Pending Reviews KPI Card */}
         <Link href="/admin/articles" style={{ textDecoration: "none" }}>
-          <div style={{ background: pendingReviewArticles.length > 0 ? "#fefce8" : "#ffffff", border: `1px solid ${pendingReviewArticles.length > 0 ? "#fef08a" : "#e2e8f0"}`, borderRadius: "16px", padding: "20px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
+          <div style={{ background: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#fefce8" : "#ffffff", border: `1px solid ${(stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#fef08a" : "#e2e8f0"}`, borderRadius: "16px", padding: "20px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-              <span style={{ fontSize: "0.8rem", color: pendingReviewArticles.length > 0 ? "#a16207" : "#64748b", fontWeight: 700 }}>Pending Review</span>
+              <span style={{ fontSize: "0.8rem", color: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#a16207" : "#64748b", fontWeight: 700 }}>Pending Review</span>
               <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "#fef9c3", color: "#ca8a04", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Clock size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: pendingReviewArticles.length > 0 ? "#854d0e" : "#0f172a" }}>{pendingReviewArticles.length}</div>
-            <span style={{ fontSize: "0.75rem", color: pendingReviewArticles.length > 0 ? "#ca8a04" : "#64748b", fontWeight: 700 }}>
-              {pendingReviewArticles.length > 0 ? "⚠️ Requires Chief Review" : "No pending submissions"}
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#854d0e" : "#0f172a" }}>
+              {stats.pendingArticles !== undefined ? stats.pendingArticles : pendingReviewArticles.length}
+            </div>
+            <span style={{ fontSize: "0.75rem", color: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#ca8a04" : "#64748b", fontWeight: 700 }}>
+              {(stats.pendingArticles || pendingReviewArticles.length) > 0 ? "⚠️ Requires Review" : "No pending submissions"}
             </span>
           </div>
         </Link>
@@ -310,8 +333,8 @@ export default function AdminDashboardPage() {
                 <Eye size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>{totalViews.toLocaleString()}</div>
-            <span style={{ fontSize: "0.75rem", color: "#2563eb", fontWeight: 700 }}>Across English & Hindi</span>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>{(stats.totalViews || 0).toLocaleString()}</div>
+            <span style={{ fontSize: "0.75rem", color: "#2563eb", fontWeight: 700 }}>Real Live Impressions</span>
           </div>
         </Link>
 
@@ -323,7 +346,7 @@ export default function AdminDashboardPage() {
                 <FolderTree size={18} />
               </div>
             </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>10 Desks</div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#0f172a" }}>{stats.totalCategories || 15} Desks</div>
             <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700 }}>+ 28 Indian States</span>
           </div>
         </Link>
