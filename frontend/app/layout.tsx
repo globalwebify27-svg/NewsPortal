@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_Devanagari } from "next/font/google";
+import { Inter, Noto_Sans_Devanagari, Mukta } from "next/font/google";
 import "./styles.css";
 import "./globals.css";
 import Script from "next/script";
@@ -11,14 +11,21 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const notoDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari", "latin"],
   display: "swap",
   variable: "--font-noto-devanagari",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const mukta = Mukta({
+  subsets: ["devanagari", "latin"],
+  display: "swap",
+  variable: "--font-mukta",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const isNoIndex = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
@@ -98,10 +105,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.jpg", type: "image/jpeg" },
+      { url: "/logo.png", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/icon.jpg",
+    apple: "/apple-touch-icon.png",
   },
   verification: {
     google: "XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA",
@@ -113,7 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const websiteSchema = generateWebSiteSchema();
 
   return (
-    <html lang="hi" data-theme="light" className={`${inter.variable} ${notoDevanagari.variable}`} suppressHydrationWarning>
+    <html lang="hi" data-theme="light" className={`${inter.variable} ${notoDevanagari.variable} ${mukta.variable}`} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
         <link rel="alternate" type="application/rss+xml" title="GLOBAL AWAAZ RSS Feed" href="https://globalawaaz.com/feed.xml" />

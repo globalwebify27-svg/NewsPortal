@@ -185,7 +185,7 @@ export default function Footer() {
           {/* BRAND COLUMN */}
           <div className="footer-brand-col">
             <Link href="/" style={{ textDecoration: "none", display: "inline-block", marginBottom: "12px" }}>
-              <h2 style={{ fontFamily: "serif", fontSize: "1.8rem", fontWeight: 800, margin: 0, letterSpacing: "0.02em" }}>
+              <h2 style={{ fontFamily: "var(--font-headline)", fontSize: "1.8rem", fontWeight: 800, margin: 0, letterSpacing: 0 }}>
                 <span style={{ color: "#ffffff" }}>GLOBAL </span>
                 <span style={{ color: "#e50914" }}>AWAAZ</span>
               </h2>
@@ -247,7 +247,17 @@ export default function Footer() {
           {/* COLUMN 1: COMPANY */}
           <div className="footer-link-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{
+                fontFamily: "var(--font-headline)",
+                fontSize: "0.96rem",
+                fontWeight: 700,
+                letterSpacing: 0,
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#ffffff"
+              }}>
                 <User size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "कंपनी" : "Company"}
               </h3>
@@ -263,6 +273,7 @@ export default function Footer() {
                     style={{
                       color: "#94a3b8",
                       textDecoration: "none",
+                      fontFamily: "var(--font-ui)",
                       fontSize: "0.85rem",
                       display: "flex",
                       alignItems: "center",
@@ -281,7 +292,17 @@ export default function Footer() {
           {/* COLUMN 2: QUICK LINKS */}
           <div className="footer-link-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{
+                fontFamily: "var(--font-headline)",
+                fontSize: "0.96rem",
+                fontWeight: 700,
+                letterSpacing: 0,
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#ffffff"
+              }}>
                 <Link2 size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "त्वरित लिंक" : "Quick Links"}
               </h3>
@@ -297,6 +318,7 @@ export default function Footer() {
                     style={{
                       color: "#94a3b8",
                       textDecoration: "none",
+                      fontFamily: "var(--font-ui)",
                       fontSize: "0.85rem",
                       display: "flex",
                       alignItems: "center",
@@ -315,7 +337,17 @@ export default function Footer() {
           {/* COLUMN 3: CATEGORIES (USES ACTUAL TABS) */}
           <div className="footer-cat-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{
+                fontFamily: "var(--font-headline)",
+                fontSize: "0.96rem",
+                fontWeight: 700,
+                letterSpacing: 0,
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#ffffff"
+              }}>
                 <LayoutGrid size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "श्रेणियां" : "Categories"}
               </h3>
@@ -331,6 +363,7 @@ export default function Footer() {
                     style={{
                       color: "#94a3b8",
                       textDecoration: "none",
+                      fontFamily: "var(--font-ui)",
                       fontSize: "0.85rem",
                       display: "flex",
                       alignItems: "center",
@@ -349,14 +382,30 @@ export default function Footer() {
           {/* COLUMN 4: NEWSLETTER */}
           <div className="footer-newsletter-col">
             <div className="footer-heading" style={{ borderBottom: "1.5px solid rgba(255, 255, 255, 0.1)", paddingBottom: "8px", marginBottom: "14px", position: "relative" }}>
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+              <h3 style={{
+                fontFamily: "var(--font-headline)",
+                fontSize: "0.96rem",
+                fontWeight: 700,
+                letterSpacing: 0,
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                color: "#ffffff"
+              }}>
                 <Mail size={15} style={{ color: "#e50914" }} />
                 {isHindi ? "न्यूज़लेटर" : "Newsletter"}
               </h3>
               <div style={{ position: "absolute", bottom: "-1.5px", left: 0, width: "45px", height: "1.5px", background: "#e50914" }} />
             </div>
 
-            <p style={{ color: "#94a3b8", fontSize: "0.82rem", lineHeight: 1.55, margin: "0 0 14px 0" }}>
+            <p style={{
+              color: "#94a3b8",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.84rem",
+              lineHeight: 1.6,
+              margin: "0 0 14px 0"
+            }}>
               {isHindi
                 ? "ताज़ा समाचार और अपडेट सीधे अपने ईमेल पर प्राप्त करें।"
                 : "Get breaking news & daily editorial updates delivered straight to your inbox."}
@@ -420,7 +469,18 @@ export default function Footer() {
         </div>
 
         {/* ── BOTTOM BAR ───────────────────── */}
-        <div className="footer-bottom-bar" style={{ display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "28px", textAlign: "center" }}>
+        <div className="footer-bottom-bar" style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "28px",
+          textAlign: "center",
+          fontFamily: "var(--font-ui)",
+          fontSize: "0.8rem",
+          lineHeight: 1.5,
+          letterSpacing: 0
+        }}>
           {/* Copyright */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             <ShieldCheck size={15} style={{ color: "#e50914", flexShrink: 0 }} />

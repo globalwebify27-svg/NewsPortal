@@ -1,17 +1,24 @@
-// =============================================================================
-// Next.js Edge Middleware — Server-side /admin/* Route Protection
-// Runs before any /admin page is rendered. Validates the httpOnly JWT cookie.
-// Unauthenticated requests are redirected to /admin (login form).
-// =============================================================================
-
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const ADMIN_COOKIE_NAME = "ga_admin_token";
 
+const ALLOWED_ADMIN_ROLES = new Set([
+  "super_admin",
+  "superadmin",
+  "chief_editor",
+  "editor",
+  "admin",
+  "reporter",
+  "author",
+  "moderator",
+]);
+
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || "ga_default_jwt_secret_newsportal_globalawaaz_2026_fallback";
-  return new TextEncoder().encode(secret);
+  const secret = process.env.JWT_SECRET;
+  return new TextEncoder().encode(
+    secret || "ga_default_jwt_secret_newsportal_globalawaaz_2026_fallback"
+  );
 }
 
 export async function middleware(request: NextRequest) {
@@ -22,35 +29,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Always let the root /admin page load so the client component or login form renders
+  if (pathname === "/admin") {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
 
-  // No token at all
-  if (!token) {
-    // Already on the /admin login page — let it through so the login form renders
-    if (pathname === "/admin") return NextResponse.next();
+  // If token is present, verify and validate role
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, getJwtSecret());
+      const rawRole = ((payload.role as string) || "").toLowerCase().replace("-", "_").trim();
 
-    // Any deeper admin page → redirect to /admin login
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin";
-    loginUrl.search = "";
-    return NextResponse.redirect(loginUrl);
+      if (rawRole && ALLOWED_ADMIN_ROLES.has(rawRole)) {
+        const response = NextResponse.next();
+        response.headers.set("x-user-role", rawRole);
+        return response;
+      }
+    } catch {
+      // If token verification fails, allow through so admin/layout.tsx can verify sessionStorage or prompt login
+    }
   }
 
-  // Verify the token
-  try {
-    await jwtVerify(token, getJwtSecret());
-    // Valid — inject role header for downstream server components (optional)
-    const response = NextResponse.next();
-    return response;
-  } catch {
-    // Expired or tampered token — clear cookie and redirect to login
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin";
-    loginUrl.search = "";
-    const response = NextResponse.redirect(loginUrl);
-    response.cookies.delete(ADMIN_COOKIE_NAME);
-    return response;
-  }
+  // Pass through to allow admin/layout.tsx to manage the client-side session guard and role access
+  return NextResponse.next();
 }
 
 export const config = {

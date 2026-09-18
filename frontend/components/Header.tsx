@@ -516,7 +516,7 @@ export default function Header() {
                 <TooltipTrigger asChild>
                   <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
                     <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
-                      <img src={customLogoUrl ? cleanMediaUrl(customLogoUrl) : "/icon.jpg"} alt="Global Awaaz Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      <img src={customLogoUrl ? cleanMediaUrl(customLogoUrl) : "/logo.png"} alt="Global Awaaz Logo" style={{ width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))" }} />
                     </div>
                   </Link>
                 </TooltipTrigger>
@@ -743,13 +743,15 @@ export default function Header() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "4px",
-                      fontWeight: 800,
+                      fontFamily: "var(--font-ui)",
+                      fontWeight: 700,
+                      letterSpacing: 0,
                       boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
                     }}
                     aria-label="Click to select Indian State"
                   >
                     <MapPin size={13} style={{ color: "#16a34a" }} />
-                    <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.8rem" }}>
+                    <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: 0, color: "#0f172a", fontSize: "0.82rem" }}>
                       {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
                     </span>
                     <ChevronDown size={14} style={{ color: "#64748b" }} />
@@ -1381,54 +1383,7 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li
-                style={{ position: "relative" }}
-                onMouseEnter={() => setHoveredNav("markets")}
-                onMouseLeave={() => setHoveredNav(null)}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/markets" className={`nav-link pill-nav-link ${isActive("/markets") ? "active" : ""}`} aria-label={lang === "HI" ? "शेयर बाजार" : "Markets"}>
-                      <BarChart2 size={15} />
-                      <span>{t("markets")}</span>
-                      {isActive("/markets") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "शेयर बाज़ार, सेंसेक्स व निफ्टी" : "Share Market, Sensex & Nifty"}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <div
-                  className="mega-dropdown"
-                  style={{
-                    display: hoveredNav === "markets" ? "block" : "none",
-                    opacity: hoveredNav === "markets" ? 1 : 0,
-                    visibility: hoveredNav === "markets" ? "visible" : "hidden",
-                    pointerEvents: hoveredNav === "markets" ? "auto" : "none",
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    zIndex: 99999,
-                    background: "#0d1117",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    borderRadius: "12px",
-                    padding: "10px",
-                    minWidth: "220px",
-                    boxShadow: "0 16px 45px rgba(0,0,0,0.8)"
-                  }}
-                >
-                  {getSubCategories("markets").map((sub) => (
-                    <Link
-                      key={sub.en}
-                      href={`/markets/${sub.en.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
-                      title={lang === "HI" ? sub.hi : sub.en}
-                    >
-                      <BarChart2 size={14} />
-                      {lang === "HI" ? sub.hi : sub.en}
-                    </Link>
-                  ))}
-                </div>
-              </li>
+
               <li
                 style={{ position: "relative" }}
                 onMouseEnter={() => setHoveredNav("videos")}
@@ -1566,7 +1521,6 @@ export default function Header() {
               <li><Link href="/science" onClick={() => setMobileMenuOpen(false)}>{t("science")}</Link></li>
               <li><Link href="/politics" onClick={() => setMobileMenuOpen(false)}>{t("politics")}</Link></li>
               <li><Link href="/crime" onClick={() => setMobileMenuOpen(false)}>{t("crime")}</Link></li>
-              <li><Link href="/markets" onClick={() => setMobileMenuOpen(false)}>{t("markets")}</Link></li>
               <li><Link href="/videos" onClick={() => setMobileMenuOpen(false)}>{t("videos")}</Link></li>
               <li><Link href="/careers" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "करियर / नौकरियां" : "Careers & Jobs"}</Link></li>
               <li><Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link></li>

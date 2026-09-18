@@ -380,15 +380,28 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             </span>
 
             <h1 style={{
-              fontFamily: "serif", fontSize: "clamp(1.6rem, 5vw, 2.5rem)",
-              fontWeight: 800, lineHeight: 1.2, margin: "0 0 14px 0",
-              color: "var(--color-primary)", letterSpacing: "-0.01em"
+              fontFamily: "var(--font-headline)",
+              fontSize: "clamp(1.5rem, 3.8vw, 2.25rem)",
+              fontWeight: 700,
+              lineHeight: 1.45,
+              margin: "0 0 14px 0",
+              color: "var(--color-primary)",
+              letterSpacing: "0",
+              wordBreak: "break-word"
             }}>
               {article.title}
             </h1>
 
             {article.summary && (
-              <p style={{ fontSize: "1.08rem", fontWeight: 400, color: "var(--color-secondary)", lineHeight: 1.65, margin: "0 0 16px 0" }}>
+              <p style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "1.08rem",
+                fontWeight: 400,
+                color: "var(--color-secondary)",
+                lineHeight: 1.65,
+                margin: "0 0 16px 0",
+                letterSpacing: "0"
+              }}>
                 {stripHtml(article.summary)}
               </p>
             )}
@@ -509,7 +522,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           )}
 
           {/* Article Body */}
-          <div style={{ fontSize: "1.08rem", lineHeight: 1.85, color: "var(--color-primary)", letterSpacing: "0.01em" }}>
+          <div style={{ fontFamily: "var(--font-body)", fontSize: "1.08rem", lineHeight: 1.85, color: "var(--color-primary)", letterSpacing: "0" }}>
             {article.body && article.body.includes("<") ? (
               <div
                 className="rich-article-body"
@@ -524,7 +537,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                   const currentAd = bodyCustomAds[i % bodyCustomAds.length];
                   return (
                     <React.Fragment key={i}>
-                      <p style={{ marginBottom: "1em", textAlign: "justify" }}>
+                      <p style={{ marginBottom: "1.2em", textAlign: "left", lineHeight: 1.85 }}>
                         {para}
                       </p>
                       {/* Insert Mid-Story In-Article Advertisement Banner after 2nd paragraph */}
@@ -585,8 +598,8 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               fontSize: "1.08rem",
               margin: "16px 0 20px 0",
               color: "var(--color-primary)",
-              fontFamily: "serif",
-              lineHeight: 1.55
+              fontFamily: "var(--font-body)",
+              lineHeight: 1.65
             }}>
               &quot;The convergence of information, technology, and global transparency represents the foundation of responsible journalism.&quot;
             </blockquote>

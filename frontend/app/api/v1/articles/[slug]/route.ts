@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getArticleBySlug, deleteArticleByIdOrSlug } from "@/lib/services/articles";
 
 export async function GET(
@@ -32,6 +33,13 @@ export async function DELETE(
   }
 
   const success = await deleteArticleByIdOrSlug(slug);
+
+  if (success) {
+    try {
+      revalidatePath("/");
+      revalidatePath("/latest");
+    } catch (e) {}
+  }
 
   return NextResponse.json({
     success,

@@ -14,10 +14,18 @@
   --color-red-light: #ffebe6;
 
   /* Typography - Multi-lingual Editorial Stack with Next.js Font Optimization */
-  --font-serif: "Playfair Display", var(--font-noto-devanagari), Georgia, serif;
-  --font-sans: var(--font-inter), var(--font-noto-devanagari), system-ui, -apple-system, sans-serif;
-  --font-devanagari-serif: var(--font-noto-devanagari), "Playfair Display", Georgia, serif;
-  --font-devanagari-sans: var(--font-noto-devanagari), var(--font-inter), system-ui, sans-serif;
+  --font-mukta-stack: var(--font-mukta), "Mukta", sans-serif;
+  --font-noto-stack: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
+  --font-inter-stack: var(--font-inter), "Inter", -apple-system, sans-serif;
+
+  --font-headline: var(--font-mukta-stack), var(--font-noto-stack), sans-serif;
+  --font-ui: var(--font-noto-stack), var(--font-inter-stack), system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-noto-stack), var(--font-inter-stack), system-ui, -apple-system, sans-serif;
+
+  --font-serif: var(--font-headline);
+  --font-sans: var(--font-ui);
+  --font-devanagari-serif: var(--font-headline);
+  --font-devanagari-sans: var(--font-ui);
 
   /* Spacing System (8px Grid) */
   --space-1: 0.25rem;
@@ -102,8 +110,10 @@ body {
 /* DEVANAGARI & HINDI TYPOGRAPHY RULES */
 html[lang="hi"],
 [lang="hi"],
-:lang(hi) {
-  font-family: var(--font-devanagari-sans);
+:lang(hi),
+body {
+  font-family: var(--font-ui);
+  line-height: 1.65;
 }
 
 html[lang="hi"] h1,
@@ -118,7 +128,7 @@ html[lang="hi"] .latest-headline,
 html[lang="hi"] .section-title,
 html[lang="hi"] .article-detail-headline,
 html[lang="hi"] .hero-headline,
-html[lang="hi"] .site-logo,
+html[lang="hi"] .story-heading,
 [lang="hi"] h1,
 [lang="hi"] h2,
 [lang="hi"] h3,
@@ -128,15 +138,17 @@ html[lang="hi"] .site-logo,
 [lang="hi"] .featured-headline,
 [lang="hi"] .sec-headline,
 [lang="hi"] .latest-headline,
-[lang="hi"] .section-title {
-  font-family: var(--font-devanagari-serif) !important;
+[lang="hi"] .section-title,
+[lang="hi"] .story-heading,
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headline) !important;
   letter-spacing: 0 !important;
   word-break: normal !important;
   word-wrap: normal !important;
   overflow-wrap: break-word !important;
   hyphens: manual !important;
   -webkit-hyphens: manual !important;
-  line-height: 1.35 !important;
+  line-height: 1.48 !important;
 }
 
 html[lang="hi"] p,
@@ -1928,10 +1940,10 @@ input {
 }
 
 .footer-logo {
-  font-family: var(--font-devanagari-serif), var(--font-serif);
+  font-family: var(--font-headline);
   font-size: 1.6rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: #ffffff;
 }
 

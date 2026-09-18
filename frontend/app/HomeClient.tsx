@@ -2,42 +2,148 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send, TrendingUp } from "lucide-react";
+import { Mail, Zap, Play, ChevronLeft, ChevronRight, X, ExternalLink, Clock, Calendar, ChevronRight as ArrowRight, Share2, Loader2, MapPin, Sliders, RotateCcw, ShieldCheck, Globe, Lock, Send, TrendingUp, Building2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchCentralVideos, extractYouTubeId, YouTubeVideoItem } from "@/lib/youtube";
 import SocialShareButtons from "@/components/SocialShareButtons";
-import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
-import { getDistrictsForState, autoDetectUserCity } from "@/lib/districts";
+import { INDIAN_STATES, IndianState } from "@/lib/states";
+import { getDistrictsForState } from "@/lib/districts";
 
 import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
 import { cleanVideoUrl } from "@/lib/mediaUpload";
 
-interface Article {
-  id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  body: string;
-  featuredImage: string;
-  category?: { name: string; slug: string; color: string; subCategory?: string };
-  categories?: string[];
-  subCategory?: string;
-  author?: { name: string };
-  readTime: string;
-  isPinned?: boolean;
-  isHero?: boolean;
-  isSuperfast?: boolean;
-  status?: string;
-  language?: "EN" | "HI";
-  state?: string;
-  imageHeight?: string;
-  imageFit?: "cover" | "contain" | "fill";
-  videoUrl?: string;
-  district?: string;
-  isTrending?: boolean;
-  createdAt?: string;
+import { Article } from "@/types/article";
+
+function getLocalizedCityName(districtRaw?: string, lang = "HI", activeCityObj?: any): string {
+  if (lang !== "HI") {
+    return districtRaw || activeCityObj?.nameEn || "Ranchi";
+  }
+  const clean = (districtRaw || "").toLowerCase().trim();
+  const HINDI_DISTRICT_MAP: Record<string, string> = {
+    ranchi: "रांची",
+    dhanbad: "धनबाद",
+    jamshedpur: "जमशेदपुर",
+    bokaro: "बोकारो",
+    hazaribagh: "हज़ारीबाग",
+    deoghar: "देवघर",
+    giridih: "गिरिडीह",
+    palamu: "पलामू",
+    patna: "पटना",
+    bihar: "बिहार",
+    jharkhand: "झारखंड",
+    chatra: "चतरा",
+    dumka: "दुमका",
+    garhwa: "गढ़वा",
+    godda: "गोड्डा",
+    gumla: "गुमला",
+    jamtara: "जामताड़ा",
+    khunti: "खूंटी",
+    koderma: "कोडरमा",
+    latehar: "लातेहार",
+    lohardaga: "लोहरदगा",
+    pakur: "पाकुड़",
+    ramgarh: "रामगढ़",
+    sahibganj: "साहिबगंज",
+    seraikela: "सरायकेला",
+    simdega: "सिमडेगा",
+    chaibasa: "चाईबासा",
+    delhi: "दिल्ली",
+    mumbai: "मुंबई",
+    national: "राष्ट्रीय",
+    all: "समग्र"
+  };
+  if (HINDI_DISTRICT_MAP[clean]) return HINDI_DISTRICT_MAP[clean];
+  if (activeCityObj?.nameHi) {
+    return activeCityObj.nameHi.split(" ")[0].replace(/[()]/g, "");
+  }
+  return districtRaw || "रांची";
+}
+
+function getLocalizedSubBeat(subCategoryRaw?: string, categoryRaw?: string, lang = "HI"): string {
+  if (lang !== "HI") {
+    return subCategoryRaw || categoryRaw || "Local News";
+  }
+  const clean = (subCategoryRaw || categoryRaw || "").toLowerCase().trim();
+  const HINDI_BEAT_MAP: Record<string, string> = {
+    "national news": "राष्ट्रीय समाचार",
+    "top headlines": "मुख्य समाचार",
+    "police & law": "पुलिस व कानून",
+    "crime": "अपराध",
+    "crime investigation": "अपराध जांच",
+    "court & justice": "अदालत व न्याय",
+    "cyber crime": "साइबर अपराध",
+    "regional crime": "क्षेत्रीय घटनाएं",
+    "state politics": "राज्य राजनीति",
+    "national politics": "राष्ट्रीय राजनीति",
+    "politics": "राजनीति",
+    "elections & polls": "चुनाव व सर्वे",
+    "government policies": "सरकारी नीतियां",
+    "governance & society": "शासन व समाज",
+    "education news": "शिक्षा समाचार",
+    "education": "शिक्षा",
+    "business": "व्यापार",
+    "stock markets": "शेयर बाज़ार",
+    "economy": "अर्थव्यवस्था",
+    "technology": "तकनीक",
+    "sports": "खेल",
+    "cricket": "क्रिकेट",
+    "entertainment": "मनोरंजन",
+    "cinema & movies": "सिनेमा व फिल्में",
+    "health": "स्वास्थ्य",
+    "science": "विज्ञान",
+    "breaking news": "ताज़ा ख़बर",
+    "general": "विशेष कवरेज",
+    "special report": "विशेष रिपोर्ट",
+    "administration": "प्रशासनिक कार्रवाई",
+    "accident": "दुर्घटना व आपदा",
+    "anti-corruption": "भ्रष्टाचार निरोधक"
+  };
+
+  for (const [enKey, hiVal] of Object.entries(HINDI_BEAT_MAP)) {
+    if (clean === enKey || clean.includes(enKey)) {
+      return hiVal;
+    }
+  }
+
+  if (/[\u0900-\u097F]/.test(subCategoryRaw || "")) {
+    return subCategoryRaw || "विशेष कवरेज";
+  }
+
+  return subCategoryRaw || categoryRaw || "विशेष कवरेज";
+}
+
+function formatIndianTime(dateInput?: string | Date | null): string {
+  if (!dateInput) return "10:30 am";
+  try {
+    const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return "10:30 am";
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    }).toLowerCase();
+  } catch (e) {
+    return "10:30 am";
+  }
+}
+
+function formatIndianDate(dateInput?: string | Date | null): string {
+  if (!dateInput) return "18 Sep 2026";
+  try {
+    const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+    if (isNaN(d.getTime())) return "18 Sep 2026";
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "Asia/Kolkata",
+    });
+  } catch (e) {
+    return "18 Sep 2026";
+  }
 }
 
 export default function HomeClient({
@@ -56,6 +162,11 @@ export default function HomeClient({
     INDIAN_STATES.find((s) => s.code === "JH") || INDIAN_STATES[0]
   );
   const [userCity, setUserCity] = useState("Ranchi");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [stickyAdData, setStickyAdData] = useState<{
     enabled: boolean;
     badge: string;
@@ -105,6 +216,77 @@ export default function HomeClient({
 
   const [adDismissed, setAdDismissed] = useState(false);
   const [leaderboardAdDismissed, setLeaderboardAdDismissed] = useState(false);
+
+  // ─── City News Section Settings State ──────────────────────────────────────
+  const [cityNewsSettings, setCityNewsSettings] = useState({
+    enabled: true,
+    titleHi: "आपके शहर की ख़बरें",
+    titleEn: "Your City News",
+    subtitleHi: "झारखंड के 24 जिलों और प्रमुख शहरों का जमीनी कवरेज",
+    subtitleEn: "Ground coverage of 24 districts and major cities",
+    allLinkTextHi: "सभी राज्य व ज़िले देखें →",
+    allLinkTextEn: "View All States & Districts →",
+    allLinkUrl: "/india",
+    cities: [
+      { id: "1", nameHi: "रांची (मुख्य केंद्र)", nameEn: "Ranchi (HQ)", filterKey: "ranchi", isDefault: true },
+      { id: "2", nameHi: "धनबाद", nameEn: "Dhanbad", filterKey: "dhanbad" },
+      { id: "3", nameHi: "जमशेदपुर", nameEn: "Jamshedpur", filterKey: "jamshedpur" },
+      { id: "4", nameHi: "बोकारो", nameEn: "Bokaro", filterKey: "bokaro" },
+      { id: "5", nameHi: "हज़ारीबाग", nameEn: "Hazaribagh", filterKey: "hazaribagh" },
+      { id: "6", nameHi: "देवघर", nameEn: "Deoghar", filterKey: "deoghar" },
+      { id: "7", nameHi: "गिरिडीह", nameEn: "Giridih", filterKey: "giridih" },
+      { id: "8", nameHi: "पलामू", nameEn: "Palamu", filterKey: "palamu" },
+      { id: "9", nameHi: "पटना / बिहार", nameEn: "Patna / Bihar", filterKey: "patna" }
+    ]
+  });
+  const [activeCityPillKey, setActiveCityPillKey] = useState("ranchi");
+
+  const loadCityNewsSettings = useCallback(async (forceBypass = false) => {
+    try {
+      if (forceBypass) clearCacheKey("/api/v1/city-news-settings");
+      const json = await fetchWithCache<{ success?: boolean; data?: any }>("/api/v1/city-news-settings", 30000);
+      if (json && json.success && json.data) {
+        const d = json.data;
+        let parsedCities = [
+          { id: "1", nameHi: "रांची (मुख्य केंद्र)", nameEn: "Ranchi (HQ)", filterKey: "ranchi", isDefault: true },
+          { id: "2", nameHi: "धनबाद", nameEn: "Dhanbad", filterKey: "dhanbad" },
+          { id: "3", nameHi: "जमशेदपुर", nameEn: "Jamshedpur", filterKey: "jamshedpur" },
+          { id: "4", nameHi: "बोकारो", nameEn: "Bokaro", filterKey: "bokaro" },
+          { id: "5", nameHi: "हज़ारीबाग", nameEn: "Hazaribagh", filterKey: "hazaribagh" },
+          { id: "6", nameHi: "देवघर", nameEn: "Deoghar", filterKey: "deoghar" },
+          { id: "7", nameHi: "गिरिडीह", nameEn: "Giridih", filterKey: "giridih" },
+          { id: "8", nameHi: "पलामू", nameEn: "Palamu", filterKey: "palamu" },
+          { id: "9", nameHi: "पटना / बिहार", nameEn: "Patna / Bihar", filterKey: "patna" }
+        ];
+        if (d.city_news_cities) {
+          try {
+            const c = JSON.parse(d.city_news_cities);
+            if (Array.isArray(c) && c.length > 0) parsedCities = c;
+          } catch (e) {}
+        }
+        setCityNewsSettings({
+          enabled: d.city_news_enabled !== "false",
+          titleHi: d.city_news_title_hi || "आपके शहर की ख़बरें",
+          titleEn: d.city_news_title_en || "Your City News",
+          subtitleHi: d.city_news_subtitle_hi || "झारखंड के 24 जिलों और प्रमुख शहरों का जमीनी कवरेज",
+          subtitleEn: d.city_news_subtitle_en || "Ground coverage of 24 districts and major cities",
+          allLinkTextHi: d.city_news_all_link_text_hi || "सभी राज्य व ज़िले देखें →",
+          allLinkTextEn: d.city_news_all_link_text_en || "View All States & Districts →",
+          allLinkUrl: d.city_news_all_link_url || "/india",
+          cities: parsedCities
+        });
+        const def = parsedCities.find((c: any) => c.isDefault) || parsedCities[0];
+        if (def) setActiveCityPillKey(def.filterKey);
+      }
+    } catch (err) {}
+  }, []);
+
+  useEffect(() => {
+    loadCityNewsSettings();
+    const handleUpdate = () => loadCityNewsSettings(true);
+    window.addEventListener("ga_city_news_updated", handleUpdate);
+    return () => window.removeEventListener("ga_city_news_updated", handleUpdate);
+  }, [loadCityNewsSettings]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselWrapperRef = useRef<HTMLDivElement>(null);
@@ -244,12 +426,15 @@ export default function HomeClient({
   }, []);
 
   useEffect(() => {
-    const loadUserState = async () => {
-      const detected = await autoDetectUserIndianState();
-      if (detected) {
-        setUserState(detected);
-        sessionStorage.setItem("ga_selected_state", detected.code);
-      }
+    const loadUserState = () => {
+      try {
+        const manual = sessionStorage.getItem("ga_manual_state_selected");
+        const savedCode = sessionStorage.getItem("ga_selected_state");
+        if (manual === "true" && savedCode) {
+          const match = INDIAN_STATES.find((s) => s.code === savedCode || s.slug === savedCode);
+          if (match) setUserState(match);
+        }
+      } catch (e) {}
     };
 
     loadUserState();
@@ -318,25 +503,21 @@ export default function HomeClient({
   }, [initialArticles]);
 
   useEffect(() => {
-    const syncLocation = async () => {
+    const syncManualLocation = () => {
       try {
-        const detected = await autoDetectUserCity();
-        if (detected) {
-          setUserCity(detected.city);
-          const stObj = INDIAN_STATES.find((s) => s.code === detected.stateCode);
-          if (stObj) {
-            setUserState(stObj);
-            sessionStorage.setItem("ga_selected_state", stObj.code);
-          }
+        const manualCity = sessionStorage.getItem("ga_manual_city_selected");
+        const savedCity = sessionStorage.getItem("ga_selected_city");
+        if (manualCity === "true" && savedCity) {
+          setUserCity(savedCity);
         }
       } catch (e) {}
     };
 
-    syncLocation();
-    window.addEventListener("ga_state_changed", syncLocation);
+    syncManualLocation();
+    window.addEventListener("ga_state_changed", syncManualLocation);
 
     return () => {
-      window.removeEventListener("ga_state_changed", syncLocation);
+      window.removeEventListener("ga_state_changed", syncManualLocation);
     };
   }, []);
 
@@ -446,61 +627,110 @@ export default function HomeClient({
     return true;
   });
 
+  // Helper to extract timestamp for chronological comparison (latest first)
+  const getArticleTimestamp = (a: Article) => {
+    const d = a.publishedAt || a.createdAt;
+    if (!d) return 0;
+    const t = new Date(d).getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
   // Apply Sorting
   if (activeFilters?.sort === "popular") {
     filteredList = [...filteredList].sort((a, b) => (b.isTrending ? 1 : 0) - (a.isTrending ? 1 : 0));
   } else if (activeFilters?.sort === "editors") {
     filteredList = [...filteredList].sort((a, b) => (b.isHero ? 1 : 0) - (a.isHero ? 1 : 0));
+  } else {
+    // Default: Strictly latest-wise (newest published/created first)
+    filteredList = [...filteredList].sort((a, b) => getArticleTimestamp(b) - getArticleTimestamp(a));
   }
 
-  const activeArticles = filteredList.length > 0 ? filteredList : baseArticles;
+  const activeArticles = (filteredList.length > 0 ? filteredList : baseArticles).sort(
+    (a, b) => getArticleTimestamp(b) - getArticleTimestamp(a)
+  );
 
-  // Geo-Location & Selected State Prioritization
+  // Pure editorial / published order feed — strictly latest-wise
+  const displayList = activeArticles;
+
+  // ── 1. Main Trending / Hero: Newest article added by admin is ALWAYS #1 ─────
+  const mainHero = displayList[0];
+
+  // ── 2. Build Trending Slider Articles (Slide 1 is always the newest admin article) ─
+  const otherTrending = displayList.filter((a) => a.isTrending && a.id !== mainHero?.id);
+  const otherChronological = displayList.filter((a) => a.id !== mainHero?.id && !a.isTrending);
+
+  const trendingSliderArticles = mainHero
+    ? [mainHero, ...otherTrending, ...otherChronological].slice(0, 10)
+    : displayList.slice(0, 10);
+
+  // ── 3. Top 5 News (टॉप 5 न्यूज़ - 5 सबसे ताज़ा समाचार) ─────────────────────────
+  // Strictly shows the NEXT 5 latest news directly following the featured trending news (excluding mainHero)
+  const superfastList = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 5);
+
+  const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
+  const topStories = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
+
+  // Regional / State section articles (only used for the manual state filter block)
   const userCityLower = userCity.toLowerCase().trim();
   const userStateLower = userState.nameEn.toLowerCase().trim();
   const userStateCodeLower = userState.code.toLowerCase().trim();
   const userStateSlugLower = userState.slug.toLowerCase().trim();
 
-  // Articles matching current Geo-Location or Selected State
-  const geoMatchedList = activeArticles.filter((a) => {
+  const stateMatchedArticles = activeArticles.filter((a) => {
     if (a.district && (a.district.toLowerCase().includes(userCityLower) || userCityLower.includes(a.district.toLowerCase()))) return true;
     if (!a.state) return false;
     const stLower = a.state.toLowerCase().trim();
     return stLower === userStateLower || stLower === userStateCodeLower || stLower === userStateSlugLower || userStateLower.includes(stLower);
   });
 
-  const nonGeoMatchedList = activeArticles.filter((a) => !geoMatchedList.includes(a));
-
-  // Prioritize Geo-Location / Selected State articles at the top of the feed
-  const displayList = geoMatchedList.length > 0 ? [...geoMatchedList, ...nonGeoMatchedList] : activeArticles;
-
-  // Hero Selection: Editorial Hero -> Geo/Selected State Hero -> First Available Article
-  const explicitHero = activeArticles.find((a) => a.isHero && a.status !== "DRAFT") || activeArticles.find((a) => a.isHero);
-  const cityHero = geoMatchedList.find((a) => a.district && (a.district.toLowerCase().includes(userCityLower) || userCityLower.includes(a.district.toLowerCase())));
-  const stateHero = geoMatchedList.find((a) => a.state);
-
-  const mainHero = explicitHero || cityHero || stateHero || displayList[0];
-  const trendingSliderArticles = displayList.length > 0 ? displayList.slice(0, 10) : [mainHero].filter(Boolean);
-
-  const secondaryHero = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 4);
-  const topStories = displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
-
-  const superfastArticles = displayList.filter((a) => a.isSuperfast);
-  const superfastList = superfastArticles.length > 0
-    ? superfastArticles.slice(0, 5)
-    : displayList.slice(0, 5);
-  
-  const locationNews = geoMatchedList.length > 0 ? geoMatchedList : displayList.filter((a) => a.id !== mainHero?.id);
-  const stateArticles = locationNews.slice(0, 6);
-
-  const trendingArticles = displayList.filter((a) => a.isTrending);
-  const trendingList = trendingArticles.length > 0
-    ? trendingArticles.slice(0, 6)
+  const stateArticles = stateMatchedArticles.length > 0
+    ? stateMatchedArticles.slice(0, 6)
     : displayList.filter((a) => a.id !== mainHero?.id).slice(0, 6);
+
+  const trendingArticles = displayList
+    .filter((a) => a.isTrending)
+    .sort((a, b) => getArticleTimestamp(b) - getArticleTimestamp(a));
+  const trendingList = (
+    trendingArticles.length > 0
+      ? trendingArticles
+      : displayList.filter((a) => a.id !== mainHero?.id)
+  )
+    .sort((a, b) => getArticleTimestamp(b) - getArticleTimestamp(a))
+    .slice(0, 6);
   const todaysTopStories = displayList;
 
-  const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  // City News filtered articles based on selected pill
+  const activeCityObj = cityNewsSettings.cities.find((c) => c.filterKey === activeCityPillKey) || cityNewsSettings.cities[0];
+  const activeCityFilterKey = (activeCityPillKey || "ranchi").toLowerCase();
+
+  const cityFilteredArticles = displayList.filter((a) => {
+    const dist = (a.district || "").toLowerCase();
+    const title = (a.title || "").toLowerCase();
+    const summary = (a.summary || "").toLowerCase();
+    const state = (a.state || "").toLowerCase();
+    const cityNameHi = activeCityObj?.nameHi?.toLowerCase() || "";
+    const cityNameEn = activeCityObj?.nameEn?.toLowerCase() || "";
+
+    return (
+      dist.includes(activeCityFilterKey) ||
+      title.includes(activeCityFilterKey) ||
+      summary.includes(activeCityFilterKey) ||
+      (cityNameHi && (title.includes(cityNameHi) || dist.includes(cityNameHi))) ||
+      (cityNameEn && (title.includes(cityNameEn) || dist.includes(cityNameEn))) ||
+      (activeCityFilterKey.includes("patna") && (state.includes("bihar") || dist.includes("patna") || title.includes("बिहार") || title.includes("पटना"))) ||
+      (activeCityFilterKey.includes("bihar") && (state.includes("bihar") || title.includes("बिहार")))
+    );
+  });
+
+  const cityNewsDisplayArticles = (() => {
+    if (cityFilteredArticles.length >= 3) return cityFilteredArticles.slice(0, 3);
+    const existingIds = new Set(cityFilteredArticles.map(a => a.id));
+    const fallbackList = displayList.filter(a => !existingIds.has(a.id));
+    return [...cityFilteredArticles, ...fallbackList].slice(0, 3);
+  })();
+
+  const timeStr = mounted ? formatIndianTime(new Date()) : "10:30 am";
+  const dateStr = mounted ? formatIndianDate(new Date()) : "18 Sep 2026";
 
   if (loading) {
     return (
@@ -825,26 +1055,26 @@ export default function HomeClient({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <TrendingUp size={18} style={{ color: "#e50914" }} />
-                  <h1 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
+                  <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, textTransform: "uppercase", color: "#e50914", fontFamily: "var(--font-headline)" }}>
                     {lang === "HI" ? "ट्रेंडिंग न्यूज" : "TRENDING NEWS"}
-                  </h1>
+                  </h2>
                 </div>
                 
                 {/* Manual Slider Left/Right Navigation Arrows */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 800, marginRight: "4px" }}>
+                  <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, marginRight: "4px" }}>
                     {trendingSlideIndex + 1} / {trendingSliderArticles.length || 1}
                   </span>
                   <button
                     onClick={() => setTrendingSlideIndex((prev) => (prev - 1 + (trendingSliderArticles.length || 1)) % (trendingSliderArticles.length || 1))}
-                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f1f5f9", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#0f172a", fontWeight: 900 }}
+                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f1f5f9", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#0f172a", fontWeight: 700 }}
                     title="Previous Trending News"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={() => setTrendingSlideIndex((prev) => (prev + 1) % (trendingSliderArticles.length || 1))}
-                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e50914", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ffffff", fontWeight: 900 }}
+                    style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e50914", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ffffff", fontWeight: 700 }}
                     title="Next Trending News"
                   >
                     <ChevronRight size={16} />
@@ -857,40 +1087,32 @@ export default function HomeClient({
                 const activeSlide = trendingSliderArticles[trendingSlideIndex] || mainHero;
                 if (!activeSlide) return null;
 
-                const isExactCity = activeSlide.district && (activeSlide.district.toLowerCase().includes(userCityLower) || userCityLower.includes(activeSlide.district.toLowerCase()));
-                const isSameState = activeSlide.state && activeSlide.state.toLowerCase().trim() === userStateLower;
-                
-                let badgeLabel = `🔥 TRENDING NEWS #${trendingSlideIndex + 1}`;
-                if (isExactCity) {
-                  badgeLabel = `📍 ${userCity.toUpperCase()} LOCAL LEAD`;
-                } else if (isSameState) {
-                  badgeLabel = `📍 LOCAL STORY (${activeSlide.district || activeSlide.state})`;
-                }
+                const badgeLabel = `🔥 TRENDING NEWS #${trendingSlideIndex + 1}`;
 
                 return (
                   <Link href={getArticleUrl(activeSlide)} title={activeSlide.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
                       <span style={{
-                        background: isExactCity ? "#e50914" : isSameState ? "#2563eb" : "#0f172a",
+                        background: "#e50914",
                         color: "#ffffff",
-                        fontSize: "0.68rem",
-                        fontWeight: 900,
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
                         padding: "2px 8px",
                         borderRadius: "4px",
                         textTransform: "uppercase",
-                        letterSpacing: "0.03em"
+                        letterSpacing: "0.02em"
                       }}>
                         {badgeLabel}
                       </span>
                       {activeSlide.isHero && (
-                        <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.65rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>
+                        <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.68rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
                           🌟 SPOTLIGHT
                         </span>
                       )}
                     </div>
-                    <h2 title={activeSlide.title} style={{ fontSize: "1.15rem", fontWeight: 800, lineHeight: 1.4, margin: "0 0 10px", color: "var(--color-text, #0f172a)" }}>
+                    <h3 title={activeSlide.title} style={{ fontFamily: "var(--font-headline)", fontSize: "1.2rem", fontWeight: 700, lineHeight: 1.45, margin: "0 0 10px", color: "var(--color-text, #0f172a)" }}>
                       {activeSlide.title}
-                    </h2>
+                    </h3>
                     <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
                       <img
                         src={getArticleImage(activeSlide, trendingSlideIndex)}
@@ -910,12 +1132,13 @@ export default function HomeClient({
                       )}
                     </div>
                     <p style={{
-                      fontSize: "0.82rem",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.86rem",
                       color: "var(--color-secondary, #64748b)",
                       margin: "8px 0 0",
-                      lineHeight: 1.4,
+                      lineHeight: 1.5,
                       display: "-webkit-box",
-                      WebkitLineClamp: 1,
+                      WebkitLineClamp: 2,
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                       textOverflow: "ellipsis"
@@ -923,7 +1146,7 @@ export default function HomeClient({
                       {stripHtml(activeSlide.summary)}
                     </p>
                     <div style={{ marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "0.82rem", color: "#e50914", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ fontSize: "0.82rem", color: "#e50914", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         {lang === "HI" ? "पूरी खबर पढ़ें ▶" : "Read Full Story ▶"}
                       </span>
                       <div style={{ display: "flex", gap: "4px" }}>
@@ -958,11 +1181,11 @@ export default function HomeClient({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <Zap size={18} style={{ color: "#e50914", fill: "#e50914" }} />
-                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, textTransform: "uppercase", color: "#e50914" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, textTransform: "uppercase", color: "#e50914", fontFamily: "var(--font-headline)" }}>
                     {lang === "HI" ? "टॉप 5 न्यूज" : "TOP 5 NEWS"}
                   </h3>
                 </div>
-                <span style={{ fontSize: "0.72rem", color: "var(--color-secondary)", fontWeight: 600 }}>
+                <span style={{ fontSize: "0.74rem", color: "var(--color-secondary)", fontWeight: 500 }}>
                   {lang === "HI" ? "5 सबसे ताज़ा समाचार" : "5 Latest News"}
                 </span>
               </div>
@@ -970,18 +1193,18 @@ export default function HomeClient({
               {superfastList.slice(0, 5).map((item, idx) => (
                 <article key={item.id} style={{ borderBottom: idx < Math.min(superfastList.length, 5) - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", padding: "12px 0" }}>
                   <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "12px", alignItems: "center" }}>
-                    <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: idx < 3 ? "#e50914" : "#0f172a", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.78rem", fontWeight: 900, flexShrink: 0 }}>
+                    <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: idx < 3 ? "#e50914" : "#0f172a", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.78rem", fontWeight: 700, flexShrink: 0 }}>
                       {idx + 1}
                     </div>
                     <div style={{ width: "75px", height: "54px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
                       <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading={idx === 0 ? "eager" : "lazy"} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 title={item.title} style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
+                      <h4 title={item.title} style={{ fontFamily: "var(--font-headline)", margin: 0, fontSize: "0.9rem", fontWeight: 600, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
                         {item.title}
                       </h4>
                       {idx === 0 && (
-                        <span style={{ fontSize: "0.72rem", color: "#e50914", fontWeight: 700, marginTop: "2px", display: "inline-block" }}>
+                        <span style={{ fontSize: "0.74rem", color: "#e50914", fontWeight: 600, marginTop: "2px", display: "inline-block" }}>
                           {lang === "HI" ? "और भी ▶" : "Read More ▶"}
                         </span>
                       )}
@@ -1212,7 +1435,7 @@ export default function HomeClient({
                 </div>
                 <h3 className="mobile-story-title">{item.title}</h3>
                 <div className="mobile-story-footer" style={{ marginTop: "auto" }}>
-                  <span className="mobile-story-time"><Clock size={11} /> {timeStr}</span>
+                  <span suppressHydrationWarning className="mobile-story-time"><Clock size={11} /> {timeStr}</span>
                   <span className="mobile-story-readtime">{item.readTime || (lang === "HI" ? "4 मिनट" : "4 min")}</span>
                 </div>
               </Link>
@@ -1232,11 +1455,11 @@ export default function HomeClient({
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
               <MapPin size={18} style={{ color: "#e50914", flexShrink: 0 }} />
-              <h2 className="mobile-section-title" style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, color: "var(--color-text, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {lang === "HI" ? "आपके शहर की ख़बरें" : "Local City News"}
+              <h2 className="mobile-section-title" style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, fontFamily: "var(--font-headline)", color: "var(--color-text, #0f172a)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {lang === "HI" ? "राज्य व प्रादेशिक समाचार" : "State & Regional News"}
               </h2>
             </div>
-            <span style={{ background: "rgba(229, 9, 20, 0.08)", color: "#e50914", fontSize: "0.74rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <span style={{ background: "rgba(229, 9, 20, 0.08)", color: "#e50914", fontSize: "0.74rem", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", whiteSpace: "nowrap", flexShrink: 0 }}>
               {userCity} ({lang === "HI" ? userState.nameHi : userState.nameEn})
             </span>
           </div>
@@ -1321,7 +1544,7 @@ export default function HomeClient({
                 <div style={{ position: "relative", height: "150px", overflow: "hidden", background: "#0a0f1d" }}>
                   <img src={getArticleImage(item, idx + 4)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "8px", left: "8px", background: "#e50914", color: "#fff", fontSize: "0.68rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
-                    📍 {item.district || userCity}
+                    📍 {item.district || item.state || (lang === "HI" ? "प्रादेशिक" : "Regional")}
                   </span>
                 </div>
                 <div style={{ padding: "12px", display: "flex", flexDirection: "column", flex: 1 }}>
@@ -1329,7 +1552,7 @@ export default function HomeClient({
                     {item.title}
                   </h3>
                   <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "var(--color-secondary, #64748b)" }}>
-                    <span><Clock size={11} style={{ display: "inline", marginRight: "3px" }} /> {timeStr}</span>
+                    <span suppressHydrationWarning><Clock size={11} style={{ display: "inline", marginRight: "3px" }} /> {timeStr}</span>
                     <span style={{ color: "#e50914", fontWeight: 700 }}>{lang === "HI" ? "पढ़ें ▶" : "Read ▶"}</span>
                   </div>
                 </div>
@@ -1340,41 +1563,326 @@ export default function HomeClient({
       </section>
 
       {/* ===========================
-          🔥 TRENDING / HOT TOPICS SECTION
+          🏙️ CITY NEWS SECTION (आपके शहर की ख़बरें)
           =========================== */}
-      <section style={{ background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", border: "1px solid #fed7aa", borderRadius: "16px", padding: "18px", marginTop: "20px", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #ea580c", paddingBottom: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "1.3rem" }}>🔥</span>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 900, textTransform: "uppercase", color: "#c2410c" }}>
-              {lang === "HI" ? "ट्रेंडिंग और वायरल समाचार (Trending & Hot Topics)" : "Trending & Hot Topics"}
-            </h2>
-          </div>
-          <span style={{ fontSize: "0.76rem", color: "#c2410c", fontWeight: 700 }}>
-            {lang === "HI" ? "देश भर में वायरल सुर्खियाँ" : "Top Viral Highlights"}
-          </span>
-        </div>
+      {cityNewsSettings.enabled && (
+        <section
+          style={{
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: "16px",
+            padding: "22px 24px",
+            marginTop: "20px",
+            marginBottom: "24px",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)"
+          }}
+        >
+          {/* Header Banner */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginBottom: "18px"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "10px",
+                  background: "#b91c1c",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  boxShadow: "0 2px 8px rgba(185, 28, 28, 0.3)"
+                }}
+              >
+                <Building2 size={22} color="#ffffff" />
+              </div>
+              <div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "clamp(1.25rem, 2.2vw, 1.55rem)",
+                    fontWeight: 700,
+                    lineHeight: 1.45,
+                    color: "#0f172a",
+                    fontFamily: "var(--font-headline)",
+                    letterSpacing: 0
+                  }}
+                >
+                  {lang === "HI" ? cityNewsSettings.titleHi : cityNewsSettings.titleEn}
+                </h2>
+                <p
+                  style={{
+                    margin: "3px 0 0 0",
+                    fontSize: "0.85rem",
+                    fontWeight: 500,
+                    lineHeight: 1.5,
+                    color: "#64748b",
+                    fontFamily: "var(--font-ui)",
+                    letterSpacing: 0
+                  }}
+                >
+                  {lang === "HI" ? cityNewsSettings.subtitleHi : cityNewsSettings.subtitleEn}
+                </p>
+              </div>
+            </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "14px" }}>
-          {trendingList.map((item, idx) => (
-            <article key={item.id} style={{ background: "#ffffff", border: "1px solid #ffedd5", borderRadius: "10px", padding: "12px", boxShadow: "0 2px 10px rgba(234,88,12,0.06)" }}>
-              <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
-                <div style={{ width: "65px", height: "55px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: "#0a0f1d" }}>
-                  <img src={getArticleImage(item, idx + 2)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ background: "#ea580c", color: "#ffffff", fontSize: "0.62rem", padding: "1px 6px", borderRadius: "4px", fontWeight: 800, marginBottom: "4px", display: "inline-block" }}>
-                    🔥 TRENDING #{idx + 1}
-                  </span>
-                  <h4 title={item.title} style={{ margin: 0, fontSize: "0.84rem", fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "#0f172a" }}>
-                    {item.title}
-                  </h4>
-                </div>
-              </Link>
-            </article>
-          ))}
-        </div>
-      </section>
+            <Link
+              href={cityNewsSettings.allLinkUrl || "/india"}
+              style={{
+                color: "#b91c1c",
+                fontWeight: 700,
+                fontSize: "0.86rem",
+                lineHeight: 1.4,
+                letterSpacing: 0,
+                textDecoration: "none",
+                fontFamily: "var(--font-ui)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                transition: "color 0.15s ease"
+              }}
+            >
+              {lang === "HI" ? cityNewsSettings.allLinkTextHi : cityNewsSettings.allLinkTextEn}
+            </Link>
+          </div>
+
+          {/* City Filter Pills */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              overflowX: "auto",
+              paddingBottom: "8px",
+              marginBottom: "18px",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none"
+            }}
+          >
+            {cityNewsSettings.cities.map((city) => {
+              const isActive = activeCityPillKey === city.filterKey;
+              return (
+                <button
+                  key={city.id}
+                  type="button"
+                  onClick={() => setActiveCityPillKey(city.filterKey)}
+                  style={{
+                    padding: "7px 16px",
+                    borderRadius: "24px",
+                    fontSize: "0.84rem",
+                    fontWeight: isActive ? 700 : 600,
+                    fontFamily: "var(--font-ui)",
+                    letterSpacing: 0,
+                    lineHeight: 1.4,
+                    border: isActive ? "none" : "1px solid #cbd5e1",
+                    background: isActive ? "#991b1b" : "#eff6ff",
+                    color: isActive ? "#ffffff" : "#1e293b",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    boxShadow: isActive ? "0 2px 8px rgba(153, 27, 27, 0.35)" : "none",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  📍 {lang === "HI" ? city.nameHi : city.nameEn}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 3-Cards Grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))",
+              gap: "18px"
+            }}
+          >
+            {cityNewsDisplayArticles.map((item, idx) => {
+              const displayCity = getLocalizedCityName(item.district, lang, activeCityObj);
+              const subBeat = getLocalizedSubBeat(item.subCategory, item.category?.name, lang);
+              const cardTime = formatIndianTime(item.publishedAt || item.createdAt);
+
+              return (
+                <article
+                  key={item.id}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    boxShadow: "0 2px 10px rgba(15, 23, 42, 0.04)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "0 2px 10px rgba(15, 23, 42, 0.04)";
+                  }}
+                >
+                  <Link
+                    href={getArticleUrl(item)}
+                    style={{
+                      textDecoration: "none",
+                      color: "inherit",
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%"
+                    }}
+                  >
+                    {/* Card Image with dark chip */}
+                    <div
+                      style={{
+                        position: "relative",
+                        height: "195px",
+                        overflow: "hidden",
+                        background: "#0f172a"
+                      }}
+                    >
+                      <img
+                        src={getArticleImage(item, idx + 5)}
+                        alt={item.title}
+                        title={item.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          left: "10px",
+                          background: "rgba(15, 23, 42, 0.85)",
+                          backdropFilter: "blur(4px)",
+                          color: "#ffffff",
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                          lineHeight: 1.3,
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          letterSpacing: 0,
+                          fontFamily: "var(--font-ui)",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.35)"
+                        }}
+                      >
+                        📍 {displayCity} • {subBeat}
+                      </span>
+                    </div>
+
+                    {/* Card Content */}
+                    <div
+                      style={{
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1
+                      }}
+                    >
+                      {/* Red Beat Label */}
+                      <span
+                        style={{
+                          color: "#b91c1c",
+                          fontSize: "0.76rem",
+                          fontWeight: 700,
+                          fontFamily: "var(--font-ui)",
+                          letterSpacing: 0,
+                          lineHeight: 1.35,
+                          marginBottom: "6px",
+                          display: "block"
+                        }}
+                      >
+                        {subBeat}
+                      </span>
+
+                      {/* Headline */}
+                      <h3
+                        style={{
+                          margin: "0 0 8px 0",
+                          fontFamily: "var(--font-headline)",
+                          fontSize: "1.08rem",
+                          fontWeight: 700,
+                          lineHeight: 1.48,
+                          letterSpacing: 0,
+                          color: "#0f172a",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          minHeight: "3.1em"
+                        }}
+                      >
+                        {item.title}
+                      </h3>
+
+                      {/* Excerpt */}
+                      <p
+                        style={{
+                          margin: "0 0 14px 0",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "0.88rem",
+                          lineHeight: 1.65,
+                          letterSpacing: 0,
+                          textAlign: "left",
+                          color: "#475569",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          minHeight: "3.2em"
+                        }}
+                      >
+                        {stripHtml(item.summary) || (item.body ? stripHtml(item.body).slice(0, 140) : item.title)}
+                      </p>
+
+                      {/* Bottom Footer */}
+                      <div
+                        style={{
+                          marginTop: "auto",
+                          paddingTop: "10px",
+                          borderTop: "1px solid #f1f5f9",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          fontSize: "0.78rem",
+                          color: "#64748b",
+                          fontFamily: "var(--font-ui)"
+                        }}
+                      >
+                        <span suppressHydrationWarning style={{ fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>
+                          {cardTime} • {item.readTime || (lang === "HI" ? "4 मिनट" : "4 min")}
+                        </span>
+                        <span
+                          style={{
+                            color: "#b91c1c",
+                            fontWeight: 700,
+                            letterSpacing: 0,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "2px"
+                          }}
+                        >
+                          {lang === "HI" ? "विस्तृत पढ़ें ▶" : "Read Full ▶"}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ===========================
           DESKTOP: Today's Top Stories Horizontal Carousel
@@ -1382,10 +1890,10 @@ export default function HomeClient({
       <section className="todays-top-stories-section desktop-top-stories" style={{ marginTop: "0px", marginBottom: "0px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
           <div>
-            <h2 className="section-title" style={{ fontSize: "1.6rem", fontWeight: 800, margin: 0, textTransform: "uppercase", letterSpacing: "0.02em" }}>
+            <h2 className="section-title" style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.01em", fontFamily: "var(--font-headline)" }}>
               {t("todaysTopStories")}
             </h2>
-            <span style={{ fontSize: "0.85rem", color: "var(--color-secondary)", marginTop: "4px", display: "block" }}>
+            <span style={{ fontSize: "0.85rem", color: "var(--color-secondary)", marginTop: "4px", display: "block", fontFamily: "var(--font-ui)" }}>
               {lang === "HI" ? "दुनिया भर से संपादकीय मुख्य समाचारों की निरंतर धारा" : "Continuous real-time stream of editorial highlights from around the globe"}
             </span>
           </div>
@@ -1420,12 +1928,12 @@ export default function HomeClient({
                   <div className="story-info-box">
                     <h3 className="story-heading" title={item.title}>{item.title}</h3>
                     <div className="card-meta-row" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.74rem", color: "var(--color-secondary)", marginTop: "2px" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
+                      <span suppressHydrationWarning style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Clock size={12} />
                         {timeStr}
                       </span>
                       <span style={{ color: "var(--color-border)" }}>|</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
+                      <span suppressHydrationWarning style={{ display: "flex", alignItems: "center", gap: "3px", fontWeight: 500 }}>
                         <Calendar size={12} />
                         {dateStr}
                       </span>
@@ -1451,13 +1959,13 @@ export default function HomeClient({
           <Link href="/videos" style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: "4px", height: "22px", background: "#e50914", borderRadius: "2px", display: "inline-block" }} />
-              <h2 style={{ fontSize: "1.45rem", fontWeight: 800, margin: 0, color: "var(--color-text)", display: "flex", alignItems: "center", gap: "6px", fontFamily: lang === "HI" ? "var(--font-hindi-heading, sans-serif)" : "inherit" }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: "var(--color-text)", display: "flex", alignItems: "center", gap: "6px", fontFamily: "var(--font-headline)" }}>
                 | {t("trendingVideos")}
                 <ArrowRight size={22} style={{ color: "var(--color-text)", strokeWidth: 2.8 }} />
               </h2>
             </div>
           </Link>
-          <Link href="/videos" style={{ color: "#e50914", textDecoration: "none", fontWeight: 800, fontSize: "0.88rem" }}>
+          <Link href="/videos" style={{ color: "#e50914", textDecoration: "none", fontWeight: 700, fontSize: "0.88rem" }}>
             {t("seeAllVideos")}
           </Link>
         </div>

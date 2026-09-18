@@ -80,8 +80,9 @@ export default function NewsTicker({
         style={{
           backgroundColor: "#b91c1c",
           color: "#ffffff",
+          fontFamily: "var(--font-headline)",
           fontSize: "0.82rem",
-          fontWeight: 800,
+          fontWeight: 700,
           padding: "0 16px",
           height: "100%",
           display: "flex",
@@ -90,7 +91,7 @@ export default function NewsTicker({
           zIndex: 10,
           whiteSpace: "nowrap",
           textDecoration: "none",
-          letterSpacing: "0.02em",
+          letterSpacing: 0,
           boxShadow: "4px 0 12px rgba(0,0,0,0.25)",
         }}
       >
@@ -135,8 +136,11 @@ export default function NewsTicker({
                 flexWrap: "nowrap",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
-                fontSize: "0.88rem",
+                fontFamily: "var(--font-headline)",
+                fontSize: "0.92rem",
                 fontWeight: 600,
+                lineHeight: 1.45,
+                letterSpacing: 0,
                 color: "#ffffff",
                 paddingLeft: "16px",
                 paddingRight: "16px",

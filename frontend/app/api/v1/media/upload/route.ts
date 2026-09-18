@@ -45,10 +45,14 @@ export async function POST(request: NextRequest) {
     let publicUrl = "";
 
     // OPTION A: Hostinger Remote PHP Upload Bridge
-    const hostingerUploadUrl = process.env.HOSTINGER_UPLOAD_URL || "https://yellowgreen-rook-384455.hostingersite.com/upload.php";
-    const hostingerSecret = process.env.HOSTINGER_MEDIA_SECRET || "GlobalAwaazMediaSecret2026";
+    const hostingerUploadUrl = process.env.HOSTINGER_UPLOAD_URL;
+    // Security: never fall back to a hardcoded secret. Require explicit env var.
+    const hostingerSecret = process.env.HOSTINGER_MEDIA_SECRET;
+    if (!hostingerSecret && process.env.NODE_ENV === "production") {
+      console.error("[Upload] HOSTINGER_MEDIA_SECRET is not set. Upload to remote storage is disabled.");
+    }
 
-    if (hostingerUploadUrl) {
+    if (hostingerUploadUrl && hostingerSecret) {
       try {
         const remoteFormData = new FormData();
         const blob = new Blob([buffer], { type: mimeType });

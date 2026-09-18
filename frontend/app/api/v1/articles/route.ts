@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getPublicArticles, getAllArticlesForAdmin, createOrUpdateArticle } from "@/lib/services/articles";
 import { requireAdminAuth } from "@/lib/apiAuth";
 
@@ -83,6 +84,11 @@ export async function POST(request: NextRequest) {
     if (!created) {
       return NextResponse.json({ success: false, message: "Failed to persist article" }, { status: 500 });
     }
+
+    try {
+      revalidatePath("/");
+      revalidatePath("/latest");
+    } catch (rvErr) {}
 
     return NextResponse.json({
       success: true,

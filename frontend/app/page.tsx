@@ -78,9 +78,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 import { getPublicArticles } from "@/lib/services/articles";
+import { Article } from "@/types/article";
 
 export default async function Page() {
-  let initialArticles: any[] = [];
+  let initialArticles: Article[] = [];
   try {
     const result = await getPublicArticles({ limit: 60 });
     if (result && Array.isArray(result.articles)) {

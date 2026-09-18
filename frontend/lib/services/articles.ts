@@ -150,7 +150,7 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
         where,
         skip,
         take: limit,
-        orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }],
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         select: ARTICLE_LIST_SELECT,
       }),
       prisma.article.count({ where }),

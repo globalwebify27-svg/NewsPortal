@@ -74,12 +74,12 @@ export default function AboutPage() {
 
           <h1
             style={{
-              fontFamily: "serif",
+              fontFamily: "var(--font-headline)",
               fontSize: "clamp(1.8rem, 5vw, 3.2rem)",
-              fontWeight: 900,
+              fontWeight: 800,
               margin: "0 0 12px 0",
-              lineHeight: 1.15,
-              letterSpacing: "-0.01em"
+              lineHeight: 1.35,
+              letterSpacing: 0
             }}
           >
             {data.heroTitle}

@@ -271,7 +271,7 @@ export default function VideosPage() {
                     </span>
                   </div>
 
-                  <h1 style={{ margin: "0 0 12px 0", fontSize: "1.35rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.35, fontFamily: "sans-serif" }}>
+                  <h1 style={{ margin: "0 0 12px 0", fontSize: "1.35rem", fontWeight: 700, color: "#0f172a", lineHeight: 1.45, fontFamily: "var(--font-headline)", letterSpacing: 0 }}>
                     {activeVideo.title}
                   </h1>
 

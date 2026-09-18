@@ -77,19 +77,21 @@ function TickerItem({ item, lang }: { item: MarketItem; lang: string }) {
 
       {/* Name */}
       <span style={{
-        fontWeight: 700,
-        fontSize: "0.72rem",
+        fontFamily: "var(--font-ui)",
+        fontWeight: 600,
+        fontSize: "0.74rem",
         color: "var(--market-ticker-text, rgba(255,255,255,0.85))",
-        letterSpacing: "0.02em",
+        letterSpacing: lang === "HI" ? 0 : "0.02em",
       }}>
         {lang === "HI" ? item.nameHi : item.name}
-        <span style={{ fontSize: "0.62rem", opacity: 0.65, marginLeft: "2px" }}>{formatUnit(item.symbol, lang)}</span>
+        <span style={{ fontSize: "0.65rem", opacity: 0.7, marginLeft: "3px" }}>{formatUnit(item.symbol, lang)}</span>
       </span>
 
       {/* Price */}
       <span style={{
-        fontWeight: 800,
-        fontSize: "0.74rem",
+        fontFamily: "var(--font-ui)",
+        fontWeight: 700,
+        fontSize: "0.75rem",
         color: "var(--market-ticker-text, rgba(255,255,255,0.95))",
         fontVariantNumeric: "tabular-nums",
         letterSpacing: "0.01em",
@@ -103,8 +105,9 @@ function TickerItem({ item, lang }: { item: MarketItem; lang: string }) {
         alignItems: "center",
         gap: "2px",
         color,
-        fontWeight: 700,
-        fontSize: "0.68rem",
+        fontFamily: "var(--font-ui)",
+        fontWeight: 600,
+        fontSize: "0.7rem",
         fontVariantNumeric: "tabular-nums",
       }}>
         {isUp && <ArrowUp />}
@@ -236,7 +239,15 @@ export default function MarketTicker() {
       }}>
         <LiveDot />
         <span style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.12)", display: "inline-block", flexShrink: 0 }} />
-        <span style={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", whiteSpace: "nowrap" }}>
+        <span style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: "0.64rem",
+          fontWeight: 700,
+          letterSpacing: lang === "HI" ? 0 : "0.08em",
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.45)",
+          whiteSpace: "nowrap"
+        }}>
           {lang === "HI" ? "बाज़ार" : "Markets"}
         </span>
         <span style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.12)", display: "inline-block", flexShrink: 0 }} />

@@ -18,7 +18,9 @@ import {
   Plus,
   Trash2,
   FileText,
-  Loader2
+  Loader2,
+  Building2,
+  MapPin
 } from "lucide-react";
 
 import { getStoredAboutData, saveAboutData, AboutPageData, defaultAboutData } from "@/lib/aboutData";
@@ -102,6 +104,120 @@ export default function AdminSettingsPage() {
   const [sidebarVideoAdEnabled, setSidebarVideoAdEnabled] = useState(true);
   const [sidebarVideoAdSaving, setSidebarVideoAdSaving] = useState(false);
   const [sidebarVideoUploadingId, setSidebarVideoUploadingId] = useState<string | null>(null);
+
+  // ─── City News Section Settings State ──────────────────────────────────────
+  const [cityNewsEnabled, setCityNewsEnabled] = useState(true);
+  const [cityNewsTitleHi, setCityNewsTitleHi] = useState("आपके शहर की ख़बरें");
+  const [cityNewsTitleEn, setCityNewsTitleEn] = useState("Your City News");
+  const [cityNewsSubtitleHi, setCityNewsSubtitleHi] = useState("झारखंड के 24 जिलों और प्रमुख शहरों का जमीनी कवरेज");
+  const [cityNewsSubtitleEn, setCityNewsSubtitleEn] = useState("Ground coverage of 24 districts and major cities");
+  const [cityNewsAllLinkTextHi, setCityNewsAllLinkTextHi] = useState("सभी राज्य व ज़िले देखें →");
+  const [cityNewsAllLinkTextEn, setCityNewsAllLinkTextEn] = useState("View All States & Districts →");
+  const [cityNewsAllLinkUrl, setCityNewsAllLinkUrl] = useState("/india");
+  const [cityNewsCities, setCityNewsCities] = useState<Array<{ id: string; nameHi: string; nameEn: string; filterKey: string; isDefault?: boolean }>>([
+    { id: "1", nameHi: "रांची (मुख्य केंद्र)", nameEn: "Ranchi (HQ)", filterKey: "ranchi", isDefault: true },
+    { id: "2", nameHi: "धनबाद", nameEn: "Dhanbad", filterKey: "dhanbad" },
+    { id: "3", nameHi: "जमशेदपुर", nameEn: "Jamshedpur", filterKey: "jamshedpur" },
+    { id: "4", nameHi: "बोकारो", nameEn: "Bokaro", filterKey: "bokaro" },
+    { id: "5", nameHi: "हज़ारीबाग", nameEn: "Hazaribagh", filterKey: "hazaribagh" },
+    { id: "6", nameHi: "देवघर", nameEn: "Deoghar", filterKey: "deoghar" },
+    { id: "7", nameHi: "गिरिडीह", nameEn: "Giridih", filterKey: "giridih" },
+    { id: "8", nameHi: "पलामू", nameEn: "Palamu", filterKey: "palamu" },
+    { id: "9", nameHi: "पटना / बिहार", nameEn: "Patna / Bihar", filterKey: "patna" }
+  ]);
+  const [newCityNameHi, setNewCityNameHi] = useState("");
+  const [newCityNameEn, setNewCityNameEn] = useState("");
+  const [newCityFilterKey, setNewCityFilterKey] = useState("");
+  const [cityNewsSaving, setCityNewsSaving] = useState(false);
+
+  const loadCityNewsSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/city-news-settings");
+      const json = await res.json();
+      if (json.success && json.data) {
+        const d = json.data;
+        if (d.city_news_enabled !== undefined) setCityNewsEnabled(d.city_news_enabled !== "false");
+        if (d.city_news_title_hi) setCityNewsTitleHi(d.city_news_title_hi);
+        if (d.city_news_title_en) setCityNewsTitleEn(d.city_news_title_en);
+        if (d.city_news_subtitle_hi) setCityNewsSubtitleHi(d.city_news_subtitle_hi);
+        if (d.city_news_subtitle_en) setCityNewsSubtitleEn(d.city_news_subtitle_en);
+        if (d.city_news_all_link_text_hi) setCityNewsAllLinkTextHi(d.city_news_all_link_text_hi);
+        if (d.city_news_all_link_text_en) setCityNewsAllLinkTextEn(d.city_news_all_link_text_en);
+        if (d.city_news_all_link_url) setCityNewsAllLinkUrl(d.city_news_all_link_url);
+        if (d.city_news_cities) {
+          try {
+            const parsed = JSON.parse(d.city_news_cities);
+            if (Array.isArray(parsed) && parsed.length > 0) setCityNewsCities(parsed);
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    loadCityNewsSettings();
+  }, [loadCityNewsSettings]);
+
+  const handleSaveCityNewsSettings = async () => {
+    setCityNewsSaving(true);
+    try {
+      const settings = [
+        { key: "city_news_enabled", value: String(cityNewsEnabled) },
+        { key: "city_news_title_hi", value: cityNewsTitleHi },
+        { key: "city_news_title_en", value: cityNewsTitleEn },
+        { key: "city_news_subtitle_hi", value: cityNewsSubtitleHi },
+        { key: "city_news_subtitle_en", value: cityNewsSubtitleEn },
+        { key: "city_news_all_link_text_hi", value: cityNewsAllLinkTextHi },
+        { key: "city_news_all_link_text_en", value: cityNewsAllLinkTextEn },
+        { key: "city_news_all_link_url", value: cityNewsAllLinkUrl },
+        { key: "city_news_cities", value: JSON.stringify(cityNewsCities) },
+      ];
+      const res = await fetch("/api/v1/city-news-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast("✓ City News Section settings saved successfully!");
+        window.dispatchEvent(new Event("ga_city_news_updated"));
+      } else {
+        showToast("❌ Failed to save city news settings: " + (json.message || ""), "error");
+      }
+    } catch (err: any) {
+      showToast("❌ Error saving city news settings", "error");
+    } finally {
+      setCityNewsSaving(false);
+    }
+  };
+
+  const handleAddCityPill = () => {
+    if (!newCityNameHi.trim()) {
+      showToast("Please enter a Hindi name for the city pill", "error");
+      return;
+    }
+    const newPill = {
+      id: `city_${Date.now()}`,
+      nameHi: newCityNameHi.trim(),
+      nameEn: newCityNameEn.trim() || newCityNameHi.trim(),
+      filterKey: (newCityFilterKey.trim() || newCityNameEn.trim() || newCityNameHi.trim()).toLowerCase(),
+      isDefault: false
+    };
+    setCityNewsCities(prev => [...prev, newPill]);
+    setNewCityNameHi("");
+    setNewCityNameEn("");
+    setNewCityFilterKey("");
+    showToast("✓ City pill added! Click Save Settings to publish.");
+  };
+
+  const handleRemoveCityPill = (id: string) => {
+    if (cityNewsCities.length <= 1) {
+      showToast("At least 1 city pill must remain!", "error");
+      return;
+    }
+    setCityNewsCities(prev => prev.filter(c => c.id !== id));
+    showToast("City pill removed. Click Save Settings to publish.");
+  };
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToastMessage(msg);
@@ -1824,6 +1940,257 @@ export default function AdminSettingsPage() {
             >
               {stickyAdSaving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={16} />}
               Save All Advertisement Settings
+            </button>
+          </div>
+        </div>
+
+        {/* ─── CITY NEWS SECTION SETTINGS (आपके शहर की ख़बरें) ─────────────── */}
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "22px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Building2 size={20} color="#ffffff" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                  आपके शहर की ख़बरें (City News Section Settings)
+                </h4>
+                <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+                  Customize the City News section on homepage, including titles, subtitles, and city filter pills.
+                </p>
+              </div>
+            </div>
+
+            <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", background: "#ffffff", padding: "6px 14px", borderRadius: "20px", border: "1px solid #cbd5e1" }}>
+              <input
+                type="checkbox"
+                checked={cityNewsEnabled}
+                onChange={(e) => setCityNewsEnabled(e.target.checked)}
+                style={{ accentColor: "#e50914", width: "16px", height: "16px", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: cityNewsEnabled ? "#16a34a" : "#64748b" }}>
+                {cityNewsEnabled ? "Section Active / Visible" : "Section Hidden"}
+              </span>
+            </label>
+          </div>
+
+          {/* Titles & Subtitles Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🇮🇳 मुख्य शीर्षक (Hindi Title)
+              </label>
+              <input
+                type="text"
+                value={cityNewsTitleHi}
+                onChange={(e) => setCityNewsTitleHi(e.target.value)}
+                placeholder="आपके शहर की ख़बरें"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🌐 Title (English)
+              </label>
+              <input
+                type="text"
+                value={cityNewsTitleEn}
+                onChange={(e) => setCityNewsTitleEn(e.target.value)}
+                placeholder="Your City News"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🇮🇳 उपशीर्षक (Hindi Subtitle)
+              </label>
+              <input
+                type="text"
+                value={cityNewsSubtitleHi}
+                onChange={(e) => setCityNewsSubtitleHi(e.target.value)}
+                placeholder="झारखंड के 24 जिलों और प्रमुख शहरों का जमीनी कवरेज"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🌐 Subtitle (English)
+              </label>
+              <input
+                type="text"
+                value={cityNewsSubtitleEn}
+                onChange={(e) => setCityNewsSubtitleEn(e.target.value)}
+                placeholder="Ground coverage of 24 districts and major cities"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+          </div>
+
+          {/* View All Link Settings */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px", marginBottom: "20px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🔗 सभी देखें लिंक टेक्स्ट (Hindi)
+              </label>
+              <input
+                type="text"
+                value={cityNewsAllLinkTextHi}
+                onChange={(e) => setCityNewsAllLinkTextHi(e.target.value)}
+                placeholder="सभी राज्य व ज़िले देखें →"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🔗 Link Text (English)
+              </label>
+              <input
+                type="text"
+                value={cityNewsAllLinkTextEn}
+                onChange={(e) => setCityNewsAllLinkTextEn(e.target.value)}
+                placeholder="View All States & Districts →"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                🎯 Target URL
+              </label>
+              <input
+                type="text"
+                value={cityNewsAllLinkUrl}
+                onChange={(e) => setCityNewsAllLinkUrl(e.target.value)}
+                placeholder="/india"
+                style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff", color: "#0a0a0a" }}
+              />
+            </div>
+          </div>
+
+          {/* City Filter Pills Manager */}
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
+            <h5 style={{ margin: "0 0 12px 0", fontSize: "0.88rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+              <MapPin size={15} style={{ color: "#b91c1c" }} />
+              शहरी फ़िल्टर पिल्स प्रबंधित करें (City Filter Pills List)
+            </h5>
+            <p style={{ margin: "0 0 14px 0", fontSize: "0.76rem", color: "#64748b" }}>
+              These buttons appear horizontally above the news cards. Clicking each button filters the cards by that city / district.
+            </p>
+
+            {/* List of existing city pills */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+              {cityNewsCities.map((pill) => (
+                <div
+                  key={pill.id}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: pill.isDefault ? "#b91c1c" : "#f1f5f9",
+                    color: pill.isDefault ? "#ffffff" : "#0f172a",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "20px",
+                    padding: "6px 12px",
+                    fontSize: "0.82rem",
+                    fontWeight: 700
+                  }}
+                >
+                  <span>📍 {pill.nameHi}</span>
+                  <span style={{ fontSize: "0.7rem", opacity: 0.75 }}>({pill.filterKey})</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCityPill(pill.id)}
+                    title="Remove Pill"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: pill.isDefault ? "#ffffff" : "#ef4444",
+                      cursor: "pointer",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center"
+                    }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add New City Pill */}
+            <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "8px" }}>
+                + नया शहर / ज़िला जोड़ें (Add New City Pill):
+              </span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: "10px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder="हिन्दी नाम (उदा. दुमका)"
+                  value={newCityNameHi}
+                  onChange={(e) => setNewCityNameHi(e.target.value)}
+                  style={{ padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                />
+                <input
+                  type="text"
+                  placeholder="English Name (e.g. Dumka)"
+                  value={newCityNameEn}
+                  onChange={(e) => setNewCityNameEn(e.target.value)}
+                  style={{ padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Filter Keyword (e.g. dumka)"
+                  value={newCityFilterKey}
+                  onChange={(e) => setNewCityFilterKey(e.target.value)}
+                  style={{ padding: "8px 10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#ffffff" }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCityPill}
+                  style={{
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    border: "none",
+                    padding: "8px 16px",
+                    borderRadius: "6px",
+                    fontWeight: 700,
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}
+                >
+                  <Plus size={14} /> Add Pill
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={handleSaveCityNewsSettings}
+              disabled={cityNewsSaving}
+              style={{
+                background: "#b91c1c",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 24px",
+                borderRadius: "8px",
+                fontWeight: 800,
+                fontSize: "0.86rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(185, 28, 28, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px"
+              }}
+            >
+              {cityNewsSaving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={16} />}
+              Save City News Settings (सेटिंग्स सुरक्षित करें)
             </button>
           </div>
         </div>

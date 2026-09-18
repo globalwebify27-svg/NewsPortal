@@ -189,3 +189,76 @@ export async function deleteAdSetting(key?: string | null): Promise<boolean> {
   serverCache.delete(CACHE_KEY_ADS);
   return true;
 }
+
+// ─── City News Section Settings ─────────────────────────────────────────────
+export const CITY_NEWS_SETTING_KEYS = [
+  "city_news_enabled",
+  "city_news_title_hi",
+  "city_news_title_en",
+  "city_news_subtitle_hi",
+  "city_news_subtitle_en",
+  "city_news_all_link_text_hi",
+  "city_news_all_link_text_en",
+  "city_news_all_link_url",
+  "city_news_cities",
+];
+
+const CACHE_KEY_CITY_NEWS = "settings:city_news";
+
+export const DEFAULT_CITY_NEWS_CITIES = [
+  { id: "1", nameHi: "रांची (मुख्य केंद्र)", nameEn: "Ranchi (HQ)", filterKey: "ranchi", isDefault: true },
+  { id: "2", nameHi: "धनबाद", nameEn: "Dhanbad", filterKey: "dhanbad" },
+  { id: "3", nameHi: "जमशेदपुर", nameEn: "Jamshedpur", filterKey: "jamshedpur" },
+  { id: "4", nameHi: "बोकारो", nameEn: "Bokaro", filterKey: "bokaro" },
+  { id: "5", nameHi: "हज़ारीबाग", nameEn: "Hazaribagh", filterKey: "hazaribagh" },
+  { id: "6", nameHi: "देवघर", nameEn: "Deoghar", filterKey: "deoghar" },
+  { id: "7", nameHi: "गिरिडीह", nameEn: "Giridih", filterKey: "giridih" },
+  { id: "8", nameHi: "पलामू", nameEn: "Palamu", filterKey: "palamu" },
+  { id: "9", nameHi: "पटना / बिहार", nameEn: "Patna / Bihar", filterKey: "patna" }
+];
+
+export async function getCityNewsSettings(): Promise<Record<string, string>> {
+  const cached = serverCache.get<Record<string, string>>(CACHE_KEY_CITY_NEWS);
+  if (cached) return cached;
+
+  const settings = await prisma.siteSetting.findMany({
+    where: { key: { in: CITY_NEWS_SETTING_KEYS } },
+  });
+
+  const map: Record<string, string> = {
+    city_news_enabled: "true",
+    city_news_title_hi: "आपके शहर की ख़बरें",
+    city_news_title_en: "Your City News",
+    city_news_subtitle_hi: "झारखंड के 24 जिलों और प्रमुख शहरों का जमीनी कवरेज",
+    city_news_subtitle_en: "Ground coverage of 24 districts and major cities",
+    city_news_all_link_text_hi: "सभी राज्य व ज़िले देखें →",
+    city_news_all_link_text_en: "View All States & Districts →",
+    city_news_all_link_url: "/india",
+    city_news_cities: JSON.stringify(DEFAULT_CITY_NEWS_CITIES),
+  };
+
+  for (const s of settings) {
+    map[s.key] = s.value;
+  }
+
+  serverCache.set(CACHE_KEY_CITY_NEWS, map, TTL.SETTINGS);
+  return map;
+}
+
+export async function saveCityNewsSettings(pairs: { key: string; value: string }[]): Promise<{ count: number }> {
+  let count = 0;
+  for (const { key, value } of pairs) {
+    if (!CITY_NEWS_SETTING_KEYS.includes(key)) continue;
+
+    await prisma.siteSetting.upsert({
+      where: { key },
+      update: { value: String(value) },
+      create: { key, value: String(value), label: key, group: "city_news" },
+    });
+    count++;
+  }
+
+  serverCache.delete(CACHE_KEY_CITY_NEWS);
+  return { count };
+}
+

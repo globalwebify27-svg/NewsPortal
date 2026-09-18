@@ -9,7 +9,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
 import { stripHtml, getArticleImage, formatArticleSlug, getArticleUrl } from "@/lib/defaultArticles";
 import { API_ENDPOINTS } from "@/lib/config";
-import { INDIAN_STATES, IndianState, autoDetectUserIndianState } from "@/lib/states";
+import { INDIAN_STATES, IndianState } from "@/lib/states";
 import { getDistrictsForState } from "@/lib/districts";
 import { getSubCategories, isSubCategoryMatch } from "@/lib/subCategories";
 
@@ -264,7 +264,15 @@ export default function SectionClientContent({
   return (
     <div className="section-feed-page" style={{ maxWidth: "1280px", margin: "0 auto", padding: "20px 16px" }}>
       <header className="section-header" style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "1.8rem", fontWeight: 800, textTransform: "capitalize", margin: 0 }}>
+        <h1 style={{
+          fontFamily: "var(--font-headline)",
+          fontSize: "clamp(1.5rem, 3vw, 2rem)",
+          fontWeight: 700,
+          lineHeight: 1.45,
+          letterSpacing: 0,
+          textTransform: "capitalize",
+          margin: 0
+        }}>
           {sectionDisplayName}
         </h1>
       </header>
@@ -291,7 +299,17 @@ export default function SectionClientContent({
         >
           {/* STATE DROPDOWN */}
           <div style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              letterSpacing: 0,
+              color: "#0f172a",
+              marginBottom: "4px"
+            }}>
               <span>🇮🇳</span>
               <span>{lang === "HI" ? "राज्य चुनें (Select State)" : "Select State"}</span>
             </label>
@@ -315,8 +333,9 @@ export default function SectionClientContent({
                 padding: "8px 10px",
                 borderRadius: "8px",
                 border: "1px solid #cbd5e1",
+                fontFamily: "var(--font-ui)",
                 fontSize: "0.82rem",
-                fontWeight: 700,
+                fontWeight: 600,
                 background: "#ffffff",
                 color: "#0f172a",
                 cursor: "pointer",
@@ -338,7 +357,17 @@ export default function SectionClientContent({
 
           {/* CITY / DISTRICT DROPDOWN */}
           <div style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.78rem", fontWeight: 800, color: (selectedState && selectedState !== "ALL") ? "#e50914" : "#64748b", marginBottom: "4px" }}>
+            <label style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              letterSpacing: 0,
+              color: (selectedState && selectedState !== "ALL") ? "#e50914" : "#64748b",
+              marginBottom: "4px"
+            }}>
               <span>📍</span>
               <span>
                 {(selectedStateObj && selectedState !== "ALL")
@@ -357,8 +386,9 @@ export default function SectionClientContent({
                 padding: "8px 10px",
                 borderRadius: "8px",
                 border: "1px solid #cbd5e1",
+                fontFamily: "var(--font-ui)",
                 fontSize: "0.82rem",
-                fontWeight: 700,
+                fontWeight: 600,
                 background: (!selectedState || selectedState === "ALL") ? "#f1f5f9" : "#ffffff",
                 color: (!selectedState || selectedState === "ALL") ? "#94a3b8" : "#0f172a",
                 cursor: (!selectedState || selectedState === "ALL") ? "not-allowed" : "pointer",
@@ -392,10 +422,16 @@ export default function SectionClientContent({
           <button
             onClick={() => setActiveSubCat("ALL")}
             style={{
-              padding: "6px 14px", borderRadius: "20px", fontSize: "0.82rem", fontWeight: 600,
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.84rem",
+              fontWeight: 600,
+              letterSpacing: 0,
               border: activeSubCat === "ALL" ? "none" : "1px solid var(--color-border)",
               backgroundColor: activeSubCat === "ALL" ? "var(--color-primary)" : "var(--color-bg)",
-              color: activeSubCat === "ALL" ? "#fff" : "var(--color-text)", cursor: "pointer"
+              color: activeSubCat === "ALL" ? "#fff" : "var(--color-text)",
+              cursor: "pointer"
             }}
           >
             {lang === "HI" ? "सभी खबरें" : "All News"}
@@ -408,10 +444,16 @@ export default function SectionClientContent({
                 key={idx}
                 onClick={() => setActiveSubCat(sub.en)}
                 style={{
-                  padding: "6px 14px", borderRadius: "20px", fontSize: "0.82rem", fontWeight: 600,
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: "0.84rem",
+                  fontWeight: 600,
+                  letterSpacing: 0,
                   border: isSelected ? "none" : "1px solid var(--color-border)",
                   backgroundColor: isSelected ? "var(--color-primary)" : "var(--color-bg)",
-                  color: isSelected ? "#fff" : "var(--color-text)", cursor: "pointer"
+                  color: isSelected ? "#fff" : "var(--color-text)",
+                  cursor: "pointer"
                 }}
               >
                 {label}
@@ -428,12 +470,12 @@ export default function SectionClientContent({
       ) : displayArticles.length === 0 ? (
         <div style={{ padding: "50px 20px", textAlign: "center", color: "var(--color-secondary)", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", margin: "20px 0" }}>
           <div style={{ fontSize: "2rem", marginBottom: "8px" }}>📍</div>
-          <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a", marginBottom: "6px" }}>
+          <div style={{ fontFamily: "var(--font-headline)", fontSize: "1.05rem", fontWeight: 700, lineHeight: 1.45, color: "#0f172a", marginBottom: "6px" }}>
             {activeDistrict !== "ALL"
               ? (lang === "HI" ? `"${activeDistrict}" ज़िले में कोई समाचार उपलब्ध नहीं है।` : `No news available in "${activeDistrict}" district.`)
               : (lang === "HI" ? "इस श्रेणी में कोई समाचार उपलब्ध नहीं है।" : "No news available in this category.")}
           </div>
-          <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "#64748b" }}>
             {lang === "HI" ? "कृपया दूसरा ज़िला या 'सभी ज़िले' चुनें।" : "Please select another district or 'All Districts'."}
           </div>
         </div>
@@ -450,7 +492,14 @@ export default function SectionClientContent({
                   />
                 )}
                 <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>
-                  <h2 style={{ fontSize: "1.1rem", fontWeight: 700, lineHeight: 1.4, margin: 0 }}>
+                  <h2 style={{
+                    fontFamily: "var(--font-headline)",
+                    fontSize: "1.08rem",
+                    fontWeight: 600,
+                    lineHeight: 1.48,
+                    letterSpacing: 0,
+                    margin: 0
+                  }}>
                     {item.title}
                   </h2>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
@@ -462,7 +511,18 @@ export default function SectionClientContent({
                       <Calendar size={13} /> {formatCardDate(item.createdAt)}
                     </span>
                   </div>
-                  <p style={{ fontSize: "0.88rem", color: "var(--color-secondary)", margin: 0, flex: 1, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  <p style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.88rem",
+                    color: "var(--color-secondary)",
+                    margin: 0,
+                    flex: 1,
+                    lineHeight: 1.65,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden"
+                  }}>
                     {stripHtml(item.summary) || (item.body ? stripHtml(item.body).slice(0, 200) : item.title)}
                   </p>
                 </div>
