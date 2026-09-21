@@ -78,19 +78,40 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 import { getPublicArticles } from "@/lib/services/articles";
+import { getAdSettings, getLogoSettings } from "@/lib/services/settings";
 import { Article } from "@/types/article";
 
 export default async function Page() {
   let initialArticles: Article[] = [];
+  let initialAdSettings: Record<string, string> = {};
+  let initialLogoSettings: Record<string, string> = {};
+
   try {
-    const result = await getPublicArticles({ limit: 60 });
-    if (result && Array.isArray(result.articles)) {
-      initialArticles = JSON.parse(JSON.stringify(result.articles));
+    const [articlesRes, adSettingsRes, logoSettingsRes] = await Promise.allSettled([
+      getPublicArticles({ limit: 60 }),
+      getAdSettings(),
+      getLogoSettings(),
+    ]);
+
+    if (articlesRes.status === "fulfilled" && articlesRes.value?.articles) {
+      initialArticles = JSON.parse(JSON.stringify(articlesRes.value.articles));
+    }
+    if (adSettingsRes.status === "fulfilled" && adSettingsRes.value) {
+      initialAdSettings = JSON.parse(JSON.stringify(adSettingsRes.value));
+    }
+    if (logoSettingsRes.status === "fulfilled" && logoSettingsRes.value) {
+      initialLogoSettings = JSON.parse(JSON.stringify(logoSettingsRes.value));
     }
   } catch (e) {
     console.warn("SSR initial articles fetch error:", e);
   }
 
-  return <HomeClient initialArticles={initialArticles} />;
+  return (
+    <HomeClient
+      initialArticles={initialArticles}
+      initialAdSettings={initialAdSettings}
+      initialLogoSettings={initialLogoSettings}
+    />
+  );
 }
 

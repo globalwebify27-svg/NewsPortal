@@ -147,9 +147,13 @@ function formatIndianDate(dateInput?: string | Date | null): string {
 }
 
 export default function HomeClient({
-  initialArticles = []
+  initialArticles = [],
+  initialAdSettings = {},
+  initialLogoSettings = {}
 }: {
   initialArticles?: Article[];
+  initialAdSettings?: Record<string, string>;
+  initialLogoSettings?: Record<string, string>;
 }) {
   const { lang, t } = useLanguage();
   const isHi = lang === "HI";
@@ -167,6 +171,7 @@ export default function HomeClient({
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const [stickyAdData, setStickyAdData] = useState<{
     enabled: boolean;
     badge: string;
@@ -176,13 +181,13 @@ export default function HomeClient({
     bg: string;
     height: string;
   }>({
-    enabled: true,
-    badge: "SPONSORED",
-    text: "Grow your brand with Global Awaaz Digital News Platform — Get 50% Off First Ad Booking!",
-    link: "/advertise",
-    image: "",
-    bg: "#000000",
-    height: "auto"
+    enabled: initialAdSettings?.ad_sticky_enabled !== "false",
+    badge: initialAdSettings?.ad_sticky_badge || "SPONSORED",
+    text: initialAdSettings?.ad_sticky_text || "📢 Reach Millions of Readers with Global Awaaz Sponsorships!",
+    link: initialAdSettings?.ad_sticky_link || "/advertise",
+    image: initialAdSettings?.ad_sticky_image || "",
+    bg: (initialAdSettings?.ad_sticky_bg && !initialAdSettings.ad_sticky_bg.includes("#1e293b")) ? initialAdSettings.ad_sticky_bg : "#000000",
+    height: initialAdSettings?.ad_sticky_height || "auto"
   });
 
   const [liveTvConfig, setLiveTvConfig] = useState({
@@ -204,14 +209,14 @@ export default function HomeClient({
     badge: string;
     height: string;
   }>({
-    enabled: true,
-    image: "",
-    title: "GLOBAL AWAAZ DIGITAL MEDIA COVERAGE",
-    subtitle: "Get real-time news updates across Bihar, Jharkhand & National headlines 24/7",
-    link: "/advertise",
-    btnText: "Advertise With Us",
-    badge: "ADVERTISEMENT",
-    height: "110"
+    enabled: initialAdSettings?.ad_leaderboard_enabled !== "false",
+    image: initialAdSettings?.ad_leaderboard_image || "",
+    title: initialAdSettings?.ad_leaderboard_title || "GLOBAL AWAAZ DIGITAL MEDIA COVERAGE",
+    subtitle: initialAdSettings?.ad_leaderboard_subtitle || "Get real-time news updates across Bihar, Jharkhand & National headlines 24/7",
+    link: initialAdSettings?.ad_leaderboard_link || "/advertise",
+    btnText: initialAdSettings?.ad_leaderboard_btn_text || "Advertise With Us",
+    badge: initialAdSettings?.ad_leaderboard_badge || "ADVERTISEMENT",
+    height: initialAdSettings?.ad_leaderboard_height || "110"
   });
 
   const [adDismissed, setAdDismissed] = useState(false);
@@ -324,19 +329,45 @@ export default function HomeClient({
     } catch (e) {}
   }, []);
 
-  const [videoAdsList, setVideoAdsList] = useState<Array<{ id: string; url: string; title: string; targetLink: string }>>([
+  let initialParsedVideoAds: Array<{ id: string; url: string; title: string; targetLink: string }> = [
     {
       id: "1",
-      url: "",
-      title: "ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन",
-      targetLink: "/advertise"
+      url: initialLogoSettings?.sidebar_video_ad_url || "",
+      title: initialLogoSettings?.sidebar_video_ad_title || "ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन",
+      targetLink: initialLogoSettings?.sidebar_video_ad_target_link || "/advertise"
     }
-  ]);
+  ];
+  if (initialLogoSettings?.sidebar_video_ads_list) {
+    try {
+      const parsed = JSON.parse(initialLogoSettings.sidebar_video_ads_list);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        initialParsedVideoAds = parsed;
+      }
+    } catch (_) {}
+  }
+
+  const [videoAdsList, setVideoAdsList] = useState(initialParsedVideoAds);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [trendingSlideIndex, setTrendingSlideIndex] = useState(0);
-  const [videoAdEnabled, setVideoAdEnabled] = useState(true);
-  const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
-  const [spotlightCol2Ad, setSpotlightCol2Ad] = useState<{ url: string; targetLink: string; title: string } | null>(null);
+  const [videoAdEnabled, setVideoAdEnabled] = useState(initialLogoSettings?.sidebar_video_ad_enabled !== "false");
+  const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(
+    initialLogoSettings?.spotlight_col1_ad_url
+      ? {
+          url: initialLogoSettings.spotlight_col1_ad_url,
+          targetLink: initialLogoSettings.spotlight_col1_ad_link || "/advertise",
+          title: initialLogoSettings.spotlight_col1_ad_title || "ग्लोबल आवाज़ विज्ञापन"
+        }
+      : null
+  );
+  const [spotlightCol2Ad, setSpotlightCol2Ad] = useState<{ url: string; targetLink: string; title: string } | null>(
+    initialLogoSettings?.spotlight_col2_ad_url
+      ? {
+          url: initialLogoSettings.spotlight_col2_ad_url,
+          targetLink: initialLogoSettings.spotlight_col2_ad_link || "/advertise",
+          title: initialLogoSettings.spotlight_col2_ad_title || "ग्लोबल आवाज़ डिजिटल पार्टनर"
+        }
+      : null
+  );
 
   const loadVideoAdSettings = useCallback(async (forceBypass = false) => {
     try {
@@ -380,19 +411,13 @@ export default function HomeClient({
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadStickyAdSettings();
-      loadVideoAdSettings();
-    }, 1500);
-
     const handleUpdate = () => {
       loadStickyAdSettings(true);
-      loadVideoAdSettings();
+      loadVideoAdSettings(true);
     };
     window.addEventListener("ga_sticky_ad_updated", handleUpdate);
     window.addEventListener("ga_video_ad_updated", handleUpdate);
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("ga_sticky_ad_updated", handleUpdate);
       window.removeEventListener("ga_video_ad_updated", handleUpdate);
     };
