@@ -505,9 +505,10 @@ export default function HomeClient({
   }, [activeVideoModal]);
 
   useEffect(() => {
-    // If SSR/ISR already provided initialArticles, do NOT re-fetch immediately on mount.
-    // This prevents re-rendering the entire DOM, eliminates layout shifts, and keeps LCP sub-2s.
+    // If SSR already provided articles, keep them.
     if (initialArticles && initialArticles.length > 0) {
+      setArticles(initialArticles);
+      setLoading(false);
       return;
     }
 
@@ -518,10 +519,14 @@ export default function HomeClient({
         const res = await fetch(API_ENDPOINTS.articles);
         if (res.ok) {
           const json = await res.json();
-          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+          if (Array.isArray(json) && json.length > 0) {
+            apiList = json;
+          } else if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
             apiList = json.data;
           } else if (json?.articles && Array.isArray(json.articles) && json.articles.length > 0) {
             apiList = json.articles;
+          } else if (json?.data?.articles && Array.isArray(json.data.articles) && json.data.articles.length > 0) {
+            apiList = json.data.articles;
           }
         }
       } catch (err) {
