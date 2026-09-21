@@ -91,7 +91,18 @@ app.use(cookieParser());
 app.use(sanitizeInput);
 
 // ─── Compression ──────────────────────────────────────────────────────────────
-app.use(compression());
+app.use(
+  compression({
+    level: 6,
+    threshold: 512,
+    filter: (req, res) => {
+      if (req.headers["x-no-compression"]) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 // ─── Request Logging ──────────────────────────────────────────────────────────
 if (process.env.NODE_ENV === "development") {
@@ -119,8 +130,14 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// ─── Static Uploads Directory ──────────────────────────────────────────────
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// ─── Static Uploads Directory with Long-term Caching ──────────────────────────
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads"), {
+    maxAge: "30d",
+    immutable: true,
+  })
+);
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 const apiVersion = process.env.API_VERSION || "v1";

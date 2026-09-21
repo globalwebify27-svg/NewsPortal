@@ -468,8 +468,12 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             justifyContent: "center"
           }}>
             <img
-              src={getArticleImage(article)}
+              src={getArticleImage(article, 0, 1200)}
               alt={article.title}
+              loading="eager"
+              // @ts-ignore
+              fetchpriority="high"
+              decoding="async"
               style={{
                 width: "100%",
                 height: "auto",
@@ -786,7 +790,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                 <article key={item.id || idx} style={{ borderBottom: idx < sideNews.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", paddingBottom: "10px" }}>
                   <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                     <div style={{ width: "70px", height: "55px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#0f172a" }}>
-                      <img src={getArticleImage(item, idx)} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getArticleImage(item, idx, 300)} alt={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{
@@ -839,6 +843,8 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                     <img
                       src={adItem.image}
                       alt={adItem.title || "Grid Ad Banner"}
+                      loading="lazy"
+                      decoding="async"
                       style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
                     />
                   </a>
@@ -1000,6 +1006,8 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                   <img
                     src={adItem.image}
                     alt={adItem.title || "Right Ad Banner"}
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
                   />
                 </a>

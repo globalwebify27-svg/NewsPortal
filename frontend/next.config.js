@@ -46,10 +46,17 @@ const nextConfig = {
         ],
       },
       {
-        // Uploaded media proxied from Hostinger — cache 24h on edge
+        // Static assets in public folder (icons, fonts, logos, manifest)
+        source: "/:path*.(ico|png|jpg|jpeg|svg|webp|avif|woff2|woff|ttf)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Uploaded media proxied from Hostinger — cache 30d on edge
         source: "/uploads/:path*",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=86400, stale-while-revalidate=604800" },
+          { key: "Cache-Control", value: "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=604800" },
         ],
       },
       {

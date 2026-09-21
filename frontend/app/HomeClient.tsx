@@ -1115,11 +1115,12 @@ export default function HomeClient({
                     </h3>
                     <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
                       <img
-                        src={getArticleImage(activeSlide, trendingSlideIndex)}
+                        src={getArticleImage(activeSlide, trendingSlideIndex, 1000)}
                         alt={activeSlide.title}
                         title={activeSlide.title}
                         loading="eager"
-                        fetchPriority="high"
+                        // @ts-ignore
+                        fetchpriority="high"
                         decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
@@ -1197,7 +1198,7 @@ export default function HomeClient({
                       {idx + 1}
                     </div>
                     <div style={{ width: "75px", height: "54px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#1e293b" }}>
-                      <img src={getArticleImage(item, idx + 1)} alt={item.title} title={item.title} loading={idx === 0 ? "eager" : "lazy"} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getArticleImage(item, idx + 1, 300)} alt={item.title} title={item.title} loading={idx === 0 ? "eager" : "lazy"} decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h4 title={item.title} style={{ fontFamily: "var(--font-headline)", margin: 0, fontSize: "0.9rem", fontWeight: 600, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", color: "var(--color-text, #0f172a)", wordBreak: "break-word" }}>
@@ -1274,6 +1275,8 @@ export default function HomeClient({
                           key={`img_${currentAdIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl}
                           alt={activeAd?.title || "Ad Banner"}
+                          loading="lazy"
+                          decoding="async"
                           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                         />
                       )
@@ -1399,7 +1402,7 @@ export default function HomeClient({
               {spotlightCol1Ad.url.endsWith(".mp4") || spotlightCol1Ad.url.includes("video") ? (
                 <video src={spotlightCol1Ad.url} autoPlay muted loop playsInline style={{ width: "100%", maxHeight: "280px", objectFit: "cover", borderRadius: "10px" }} />
               ) : (
-                <img src={spotlightCol1Ad.url} alt={spotlightCol1Ad.title} style={{ width: "100%", maxHeight: "280px", objectFit: "cover", borderRadius: "10px" }} />
+                <img src={spotlightCol1Ad.url} alt={spotlightCol1Ad.title} loading="lazy" decoding="async" style={{ width: "100%", maxHeight: "280px", objectFit: "cover", borderRadius: "10px" }} />
               )}
             </a>
           </div>
@@ -1424,8 +1427,8 @@ export default function HomeClient({
             <article key={item.id} className="mobile-story-card">
               <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div className="mobile-story-img-wrap">
-                  {getArticleImage(item, idx + 2) ? (
-                    <img src={getArticleImage(item, idx + 2)} alt={item.title} className="mobile-story-img" loading="lazy" decoding="async" />
+                  {getArticleImage(item, idx + 2, 400) ? (
+                    <img src={getArticleImage(item, idx + 2, 400)} alt={item.title} className="mobile-story-img" loading="lazy" decoding="async" />
                   ) : (
                     <div className="mobile-story-img-placeholder" />
                   )}
@@ -1542,7 +1545,7 @@ export default function HomeClient({
             <article key={item.id} style={{ background: "var(--color-bg, #f8fafc)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
               <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 <div style={{ position: "relative", height: "150px", overflow: "hidden", background: "#0a0f1d" }}>
-                  <img src={getArticleImage(item, idx + 4)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={getArticleImage(item, idx + 4, 600)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <span style={{ position: "absolute", top: "8px", left: "8px", background: "#e50914", color: "#fff", fontSize: "0.68rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
                     📍 {item.district || item.state || (lang === "HI" ? "प्रादेशिक" : "Regional")}
                   </span>
@@ -1753,9 +1756,11 @@ export default function HomeClient({
                       }}
                     >
                       <img
-                        src={getArticleImage(item, idx + 5)}
+                        src={getArticleImage(item, idx + 5, 600)}
                         alt={item.title}
                         title={item.title}
+                        loading="lazy"
+                        decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
                       <span
@@ -1916,7 +1921,7 @@ export default function HomeClient({
                 <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                   <div className="story-image-box">
                     {getArticleImage(item, index + 3) ? (
-                      <img src={getArticleImage(item, index + 3)} alt={item.title} title={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getArticleImage(item, index + 3, 600)} alt={item.title} title={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" }} />
                     )}

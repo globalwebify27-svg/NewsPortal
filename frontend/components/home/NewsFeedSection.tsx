@@ -96,8 +96,10 @@ export default function NewsFeedSection({
             >
               <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#0f172a" }}>
                 <img
-                  src={getArticleImage(article, idx)}
+                  src={getArticleImage(article, idx, 600)}
                   alt={article.title}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 {article.category?.name && (

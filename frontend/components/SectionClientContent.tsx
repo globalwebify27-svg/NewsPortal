@@ -486,8 +486,10 @@ export default function SectionClientContent({
               <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 {getArticleImage(item) && (
                   <img
-                    src={getArticleImage(item)}
+                    src={getArticleImage(item, 0, 600)}
                     alt={item.title}
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: "100%", height: "200px", objectFit: "cover" }}
                   />
                 )}

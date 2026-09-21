@@ -55,8 +55,12 @@ export default function HeroSpotlight({
             }}
           >
             <img
-              src={getArticleImage(heroArticle, 0)}
+              src={getArticleImage(heroArticle, 0, 1200)}
               alt={heroArticle.title}
+              loading="eager"
+              // @ts-ignore
+              fetchpriority="high"
+              decoding="async"
               style={{
                 position: "absolute",
                 inset: 0,
@@ -178,8 +182,10 @@ export default function HeroSpotlight({
                   }}
                 >
                   <img
-                    src={getArticleImage(item, idx + 1)}
+                    src={getArticleImage(item, idx + 1, 300)}
                     alt={item.title}
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
                   {item.videoUrl && (

@@ -107,7 +107,6 @@ export async function getFactChecks(req: Request, res: Response, next: NextFunct
         title: true,
         slug: true,
         factCheckVerdict: true,
-        factCheckNote: true,
         category: { select: { name: true } },
         author: { select: { name: true } },
         publishedAt: true,
@@ -124,7 +123,7 @@ export async function getFactChecks(req: Request, res: Response, next: NextFunct
 export async function setFactCheck(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const articleId = req.params.articleId as string;
-    const { verdict, note } = req.body;
+    const { verdict } = req.body;
 
     if (!verdict) throw new ValidationError("Fact check verdict is required.");
 
@@ -133,7 +132,6 @@ export async function setFactCheck(req: Request, res: Response, next: NextFuncti
       data: {
         isFactChecked: true,
         factCheckVerdict: verdict as FactCheckVerdict,
-        factCheckNote: note,
       },
     });
 

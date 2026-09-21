@@ -273,7 +273,11 @@ export function stripHtml(html?: string): string {
  * Resolves relative /uploads/ paths to full Hostinger storage URL in production and local paths in dev mode.
  * Also rewrites any Hostinger internal URLs to the main domain so they are never exposed publicly.
  */
-export function getArticleImage(article?: ArticleItemLike | null, index: number = 0): string {
+export function getArticleImage(
+  article?: ArticleItemLike | null,
+  index: number = 0,
+  targetWidth: number = 720
+): string {
   let img = "";
   if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 3) {
     img = article.featuredImage.trim();
@@ -297,14 +301,18 @@ export function getArticleImage(article?: ArticleItemLike | null, index: number 
     return `https://globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
   }
 
-  // Auto-compress Unsplash images to WebP format with 800px width constraint for ultra-fast mobile loading
-  if (img.includes("images.unsplash.com") && !img.includes("w=")) {
-    img = `${img}${img.includes("?") ? "&" : "?"}w=800&q=75&auto=format`;
+  // Auto-compress Unsplash images to WebP format with size constraint for ultra-fast mobile loading
+  if (img.includes("images.unsplash.com")) {
+    const hasParams = img.includes("?");
+    const cleanBase = img.split("?")[0];
+    const w = targetWidth || 720;
+    img = `${cleanBase}?w=${w}&q=75&auto=format&fit=crop`;
   }
 
   // Auto-compress Cloudinary images to WebP with auto quality
   if (img.includes("res.cloudinary.com") && !img.includes("f_auto")) {
-    img = img.replace("/upload/", "/upload/f_auto,q_auto,w_800/");
+    const w = targetWidth || 720;
+    img = img.replace("/upload/", `/upload/f_auto,q_auto:eco,w_${w},c_limit/`);
   }
 
   // Clean and normalize all uploaded media paths to /uploads/filename.ext

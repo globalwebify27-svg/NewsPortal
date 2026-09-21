@@ -123,8 +123,10 @@ export default function TrendingSection({
           >
             <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#0f172a" }}>
               <img
-                src={getArticleImage(article, index)}
+                src={getArticleImage(article, index, 600)}
                 alt={article.title}
+                loading="lazy"
+                decoding="async"
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
               />
               <span

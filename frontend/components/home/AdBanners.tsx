@@ -79,7 +79,7 @@ export default function AdBanners({
               </span>
             )}
             {stickyAdData.image && (
-              <img src={stickyAdData.image} alt="Advertisement Banner" style={{ maxHeight: stickyAdData.text ? "44px" : "70px", maxWidth: "100%", objectFit: "contain", borderRadius: "6px", flexShrink: 0 }} />
+              <img src={stickyAdData.image} alt="Advertisement Banner" loading="lazy" decoding="async" style={{ maxHeight: stickyAdData.text ? "44px" : "70px", maxWidth: "100%", objectFit: "contain", borderRadius: "6px", flexShrink: 0 }} />
             )}
             {stickyAdData.text && (
               <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, lineHeight: 1.3, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -140,6 +140,8 @@ export default function AdBanners({
               <img
                 src={leaderboardAdData.image}
                 alt={leaderboardAdData.title || "Leaderboard Advertisement"}
+                loading="lazy"
+                decoding="async"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
                 style={{ width: "100%", height: "auto", maxHeight: `${leaderboardAdData.height || "110"}px`, objectFit: "cover", display: "block" }}
               />

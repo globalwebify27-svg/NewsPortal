@@ -27,7 +27,7 @@ export async function getDashboardStats(_req: Request, res: Response, next: Next
       prisma.article.count(),
       prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } }),
       prisma.article.count({ where: { status: ArticleStatus.DRAFT } }),
-      prisma.article.count({ where: { status: ArticleStatus.REVIEW } }),
+      prisma.article.count({ where: { status: ArticleStatus.PENDING_REVIEW } }),
       prisma.article.aggregate({ _sum: { views: true } }),
       prisma.user.count(),
       prisma.comment.count(),

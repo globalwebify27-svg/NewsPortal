@@ -11,21 +11,24 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "600", "700"],
+  preload: true,
 });
 
 const notoDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari", "latin"],
   display: "swap",
   variable: "--font-noto-devanagari",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "600", "700"],
+  preload: true,
 });
 
 const mukta = Mukta({
   subsets: ["devanagari", "latin"],
   display: "swap",
   variable: "--font-mukta",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "600", "700"],
+  preload: false,
 });
 
 const isNoIndex = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
@@ -123,6 +126,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="hi" data-theme="light" className={`${inter.variable} ${notoDevanagari.variable} ${mukta.variable}`} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        <link rel="dns-prefetch" href="https://yellowgreen-rook-384455.hostingersite.com" />
         <link rel="alternate" type="application/rss+xml" title="GLOBAL AWAAZ RSS Feed" href="https://globalawaaz.com/feed.xml" />
         <script
           id="jsonld-website"
@@ -136,8 +143,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-R6RP9RSLML" strategy="afterInteractive" />
-        <Script id="google-analytics-gtag" strategy="afterInteractive">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-R6RP9RSLML" strategy="lazyOnload" />
+        <Script id="google-analytics-gtag" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

@@ -36,3 +36,9 @@ Thumbs.db
 
 # Vercel / Deploy
 .vercel/
+
+# Docker secrets (never commit)
+.env.docker
+
+# Nginx generated configs
+nginx/logs/
