@@ -197,9 +197,15 @@ export default function MarketTicker() {
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => fetchData(true), 30_000);
-    return () => clearInterval(interval);
+    // Defer network fetch until after initial paint & hydration
+    const initialTimer = setTimeout(() => {
+      fetchData();
+    }, 2000);
+    const intervalTimer = setInterval(() => fetchData(true), 60000);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
   }, []);
 
   // Duplicate items for seamless CSS marquee loop

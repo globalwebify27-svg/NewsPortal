@@ -282,10 +282,15 @@ export default function HomeClient({
   }, []);
 
   useEffect(() => {
-    loadCityNewsSettings();
+    const timer = setTimeout(() => {
+      loadCityNewsSettings();
+    }, 1200);
     const handleUpdate = () => loadCityNewsSettings(true);
     window.addEventListener("ga_city_news_updated", handleUpdate);
-    return () => window.removeEventListener("ga_city_news_updated", handleUpdate);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("ga_city_news_updated", handleUpdate);
+    };
   }, [loadCityNewsSettings]);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -375,8 +380,11 @@ export default function HomeClient({
   }, []);
 
   useEffect(() => {
-    loadStickyAdSettings();
-    loadVideoAdSettings();
+    const timer = setTimeout(() => {
+      loadStickyAdSettings();
+      loadVideoAdSettings();
+    }, 1500);
+
     const handleUpdate = () => {
       loadStickyAdSettings(true);
       loadVideoAdSettings();
@@ -384,6 +392,7 @@ export default function HomeClient({
     window.addEventListener("ga_sticky_ad_updated", handleUpdate);
     window.addEventListener("ga_video_ad_updated", handleUpdate);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener("ga_sticky_ad_updated", handleUpdate);
       window.removeEventListener("ga_video_ad_updated", handleUpdate);
     };
@@ -422,7 +431,8 @@ export default function HomeClient({
       });
     };
 
-    updateVideos();
+    const timer = setTimeout(updateVideos, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

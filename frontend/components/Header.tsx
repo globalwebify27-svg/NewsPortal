@@ -189,31 +189,36 @@ export default function Header() {
 
   useEffect(() => {
     // Physical Geo-Location Tracker for Top Utility Bar (Weather & Geo Date)
-    const loadGeoLocation = async () => {
-      try {
-        const detected = await autoDetectUserCity();
-        if (detected) {
-          const isIntl = Boolean(detected.isInternational);
-          setIsInternationalLocation(isIntl);
+    // Defer execution by 2.5s so it never blocks mobile main thread / LCP
+    const timer = setTimeout(() => {
+      const loadGeoLocation = async () => {
+        try {
+          const detected = await autoDetectUserCity();
+          if (detected) {
+            const isIntl = Boolean(detected.isInternational);
+            setIsInternationalLocation(isIntl);
 
-          setDetectedLocationText({
-            hi: isIntl
-              ? detected.displayLocationEn || `${detected.city}, ${detected.countryName || "International"}`
-              : (detected.displayLocationHi || `${detected.cityHi}, ${detected.stateNameHi}`),
-            en: detected.displayLocationEn || `${detected.city}, ${detected.countryName || detected.stateNameEn}`
-          });
+            setDetectedLocationText({
+              hi: isIntl
+                ? detected.displayLocationEn || `${detected.city}, ${detected.countryName || "International"}`
+                : (detected.displayLocationHi || `${detected.cityHi}, ${detected.stateNameHi}`),
+              en: detected.displayLocationEn || `${detected.city}, ${detected.countryName || detected.stateNameEn}`
+            });
 
-          if (detected.temperature) setUserTemperature(detected.temperature);
-          if (detected.timezone) setUserTimezone(detected.timezone);
+            if (detected.temperature) setUserTemperature(detected.temperature);
+            if (detected.timezone) setUserTimezone(detected.timezone);
 
-          if (isIntl && setLang) {
-            setLang("EN");
+            if (isIntl && setLang) {
+              setLang("EN");
+            }
           }
-        }
-      } catch (e) { }
-    };
+        } catch (e) { }
+      };
 
-    loadGeoLocation();
+      loadGeoLocation();
+    }, 2500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSelectState = (st: IndianState) => {
