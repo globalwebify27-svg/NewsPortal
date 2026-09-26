@@ -8,6 +8,7 @@ import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { generateNewsArticleSchema, generateBreadcrumbSchema } from "@/lib/schema";
 import { MASTER_SUB_CATEGORIES } from "@/lib/subCategories";
 import { INDIAN_STATES } from "@/lib/states";
+import { getSeoConfigForPath } from "@/lib/seo";
 
 // =============================================================================
 // Full-Page Incremental Static Regeneration (ISR)
@@ -129,13 +130,13 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
 }
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
+  // If admin specified a dedicated custom SEO Title in Admin Panel, use it directly!
+  if (article.seoTitle && article.seoTitle.trim()) {
+    return article.seoTitle.trim();
+  }
   const mainTitle = article.title ? article.title.trim() : "";
-  // Brand suffix takes 15 chars: " | GLOBAL AWAAZ"
   if (mainTitle.length <= 48) {
     return `${mainTitle} | GLOBAL AWAAZ`;
-  }
-  if (mainTitle.length > 64) {
-    return `${mainTitle.substring(0, 61).trim()}...`;
   }
   return mainTitle;
 }
@@ -158,15 +159,19 @@ export async function generateMetadata({
   // If this is a sub-category URL like /education/board-exams
   const matchedSubName = isSubCategoryRoute(section, slug);
   if (matchedSubName) {
+    const config = await getSeoConfigForPath(`/${section}/${slug}`);
     const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
+    const pageTitle = config.metaTitle || `${matchedSubName} - ${sectionTitle} News | GLOBAL AWAAZ`;
+    const pageDesc = config.metaDescription || `Read latest ${matchedSubName} news and updates in ${sectionTitle} on GLOBAL AWAAZ.`;
+
     return {
-      title: `${matchedSubName} - ${sectionTitle} News | GLOBAL AWAAZ`,
-      description: `Read latest ${matchedSubName} news and updates in ${sectionTitle} on GLOBAL AWAAZ.`,
-      alternates: { canonical: canonicalUrl },
+      title: pageTitle,
+      description: pageDesc,
+      alternates: { canonical: config.canonicalUrl || canonicalUrl },
       robots: { index: true, follow: true },
       openGraph: {
-        title: `${matchedSubName} | GLOBAL AWAAZ`,
-        description: `Latest ${matchedSubName} coverage and analysis.`,
+        title: config.ogTitle || pageTitle,
+        description: config.ogDescription || pageDesc,
         url: canonicalUrl,
         siteName: "GLOBAL AWAAZ",
         locale: "hi_IN",
@@ -234,10 +239,10 @@ function extractDynamicArticleKeywords(article: any, sectionName: string): strin
 }
 
   const seoTitle = buildDualLanguageSeoTitle(article, slug);
-  const rawDesc = stripHtml(article.summary || article.body || article.title || "");
+  const rawDesc = (article.seoDescription && article.seoDescription.trim()) || stripHtml(article.summary || article.body || article.title || "");
   let description = rawDesc;
-  if (description.length > 158) {
-    description = `${description.substring(0, 155).trim()}...`;
+  if (description.length > 165) {
+    description = `${description.substring(0, 162).trim()}...`;
   }
   const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
   const articleKeywords = extractDynamicArticleKeywords(article, section);

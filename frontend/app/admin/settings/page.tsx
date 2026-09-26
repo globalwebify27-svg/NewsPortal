@@ -93,12 +93,13 @@ export default function AdminSettingsPage() {
   const [isUploadingHeaderGif, setIsUploadingHeaderGif] = useState(false);
 
   // Sidebar Video Advertisement State (Multi-Ad Carousel Playlist)
-  const [sidebarVideoAdsList, setSidebarVideoAdsList] = useState<Array<{ id: string; url: string; title: string; targetLink: string }>>([
+  const [sidebarVideoAdsList, setSidebarVideoAdsList] = useState<Array<{ id: string; url: string; title: string; targetLink: string; enabled?: boolean }>>([
     {
       id: "ad_1",
       url: "",
       title: "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन 1",
-      targetLink: "/advertise"
+      targetLink: "/advertise",
+      enabled: true
     }
   ]);
   const [sidebarVideoAdEnabled, setSidebarVideoAdEnabled] = useState(true);
@@ -265,7 +266,8 @@ export default function AdminSettingsPage() {
             if (Array.isArray(parsed) && parsed.length > 0) {
               const cleaned = parsed.map((item: any) => ({
                 ...item,
-                url: cleanVideoUrl(item.url || "")
+                url: cleanVideoUrl(item.url || ""),
+                enabled: item.enabled !== false
               }));
               setSidebarVideoAdsList(cleaned);
             }
@@ -275,7 +277,8 @@ export default function AdminSettingsPage() {
             id: "ad_1",
             url: cleanVideoUrl(data.sidebar_video_ad_url),
             title: data.sidebar_video_ad_title || "ग्लोबल आवाज़ डिजिटल मीडिया विज्ञापन",
-            targetLink: data.sidebar_video_ad_target_link || "/advertise"
+            targetLink: data.sidebar_video_ad_target_link || "/advertise",
+            enabled: true
           }]);
         }
       }
@@ -485,11 +488,25 @@ export default function AdminSettingsPage() {
       id: `ad_${Date.now()}`,
       url: "",
       title: `ग्लोबल आवाज़ विशेष डिजिटल मीडिया विज्ञापन ${sidebarVideoAdsList.length + 1}`,
-      targetLink: "/advertise"
+      targetLink: "/advertise",
+      enabled: true
     };
     const updated = [...sidebarVideoAdsList, newItem];
     setSidebarVideoAdsList(updated);
     showToast("✓ New Video Ad slot added! Enter URL or upload MP4.");
+  };
+
+  const handleToggleAdItemEnabled = (id: string) => {
+    setSidebarVideoAdsList((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const nextVal = item.enabled === false ? true : false;
+          showToast(`✓ Ad Slot #${prev.findIndex((a) => a.id === id) + 1} turned ${nextVal ? "ON (Active)" : "OFF (Disabled)"}! Remember to click Save.`);
+          return { ...item, enabled: nextVal };
+        }
+        return item;
+      })
+    );
   };
 
   const handleRemoveVideoAdItem = (id: string) => {
@@ -502,7 +519,7 @@ export default function AdminSettingsPage() {
     handleSaveSidebarVideoAdList(updated);
   };
 
-  const handleUpdateVideoAdItem = (id: string, field: "url" | "title" | "targetLink", value: string) => {
+  const handleUpdateVideoAdItem = (id: string, field: "url" | "title" | "targetLink" | "enabled", value: any) => {
     setSidebarVideoAdsList((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
     );
@@ -1421,117 +1438,226 @@ export default function AdminSettingsPage() {
 
             {/* List of Video & Image Ad Form Slots */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {sidebarVideoAdsList.map((adItem, index) => (
-                <div key={adItem.id} style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.03)", display: "grid", gridTemplateColumns: "1fr 280px", gap: "20px" }}>
-                  {/* Left: Input Fields */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ background: "#e50914", color: "#fff", padding: "3px 10px", borderRadius: "6px", fontSize: "0.76rem", fontWeight: 800 }}>
-                        📢 AD SLOT #{index + 1}
-                      </span>
-                      {sidebarVideoAdsList.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveVideoAdItem(adItem.id)}
-                          style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <Trash2 size={13} /> Delete Ad Slot
-                        </button>
-                      )}
-                    </div>
+              {sidebarVideoAdsList.map((adItem, index) => {
+                const isSlotEnabled = adItem.enabled !== false;
+                return (
+                  <div
+                    key={adItem.id}
+                    style={{
+                      background: isSlotEnabled ? "#ffffff" : "#f8fafc",
+                      border: isSlotEnabled ? "1px solid #cbd5e1" : "1.5px dashed #94a3b8",
+                      borderRadius: "14px",
+                      padding: "18px",
+                      boxShadow: isSlotEnabled ? "0 2px 8px rgba(0,0,0,0.03)" : "none",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 280px",
+                      gap: "20px",
+                      transition: "all 0.2s ease",
+                      position: "relative"
+                    }}
+                  >
+                    {/* Left: Input Fields */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <span
+                            style={{
+                              background: isSlotEnabled ? "#e50914" : "#64748b",
+                              color: "#fff",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              fontSize: "0.76rem",
+                              fontWeight: 800,
+                              letterSpacing: "0.5px"
+                            }}
+                          >
+                            🚩 AD SLOT #{index + 1}
+                          </span>
 
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-                        🎬 Ad Media URL (Image Banner, MP4 Video, or YouTube Link)
-                      </label>
-                      <div style={{ display: "flex", gap: "8px" }}>
+                          {/* Interactive ON / OFF Toggle Button Switch */}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAdItemEnabled(adItem.id)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "4px 12px 4px 6px",
+                              borderRadius: "20px",
+                              border: isSlotEnabled ? "1.5px solid #16a34a" : "1.5px solid #94a3b8",
+                              background: isSlotEnabled ? "#f0fdf4" : "#f1f5f9",
+                              cursor: "pointer",
+                              transition: "all 0.2s ease"
+                            }}
+                            title={`Click to turn Ad Slot #${index + 1} ${isSlotEnabled ? "OFF (Disable)" : "ON (Enable)"}`}
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: "36px",
+                                height: "20px",
+                                borderRadius: "20px",
+                                background: isSlotEnabled ? "#16a34a" : "#cbd5e1",
+                                position: "relative",
+                                transition: "background 0.2s ease"
+                              }}
+                            >
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: "2px",
+                                  left: isSlotEnabled ? "18px" : "2px",
+                                  width: "16px",
+                                  height: "16px",
+                                  borderRadius: "50%",
+                                  background: "#ffffff",
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                                  transition: "left 0.2s ease"
+                                }}
+                              />
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                fontWeight: 800,
+                                color: isSlotEnabled ? "#15803d" : "#475569"
+                              }}
+                            >
+                              {isSlotEnabled ? "🟢 ON (चालू)" : "⚪ OFF (बंद)"}
+                            </span>
+                          </button>
+                        </div>
+
+                        {sidebarVideoAdsList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveVideoAdItem(adItem.id)}
+                            style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                          >
+                            <Trash2 size={13} /> Delete Ad Slot
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                          🎬 Ad Media URL (Image Banner, MP4 Video, or YouTube Link)
+                        </label>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <input
+                            type="text"
+                            placeholder="Image URL, MP4 Video URL, or YouTube Link"
+                            value={adItem.url}
+                            onChange={(e) => handleUpdateVideoAdItem(adItem.id, "url", e.target.value)}
+                            style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                          />
+                          <label style={{ background: sidebarVideoUploadingId === adItem.id ? "#64748b" : "#0f172a", color: "#ffffff", padding: "8px 12px", borderRadius: "8px", fontWeight: 800, fontSize: "0.78rem", cursor: sidebarVideoUploadingId === adItem.id ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                            {sidebarVideoUploadingId === adItem.id ? "Uploading..." : "Upload File"}
+                            <input
+                              type="file"
+                              accept="image/*,video/mp4,video/webm,video/quicktime"
+                              onChange={(e) => handleVideoAdFileUploadForItem(adItem.id, e)}
+                              disabled={sidebarVideoUploadingId === adItem.id}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                          🏷️ Ad Headline / Business Title
+                        </label>
                         <input
                           type="text"
-                          placeholder="Image URL, MP4 Video URL, or YouTube Link"
-                          value={adItem.url}
-                          onChange={(e) => handleUpdateVideoAdItem(adItem.id, "url", e.target.value)}
-                          style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                          placeholder="e.g. विशेष बिज़नेस प्रमोशन"
+                          value={adItem.title}
+                          onChange={(e) => handleUpdateVideoAdItem(adItem.id, "title", e.target.value)}
+                          style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
                         />
-                        <label style={{ background: sidebarVideoUploadingId === adItem.id ? "#64748b" : "#0f172a", color: "#ffffff", padding: "8px 12px", borderRadius: "8px", fontWeight: 800, fontSize: "0.78rem", cursor: sidebarVideoUploadingId === adItem.id ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-                          {sidebarVideoUploadingId === adItem.id ? "Uploading..." : "Upload File"}
-                          <input
-                            type="file"
-                            accept="image/*,video/mp4,video/webm,video/quicktime"
-                            onChange={(e) => handleVideoAdFileUploadForItem(adItem.id, e)}
-                            disabled={sidebarVideoUploadingId === adItem.id}
-                            style={{ display: "none" }}
-                          />
+                      </div>
+
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
+                          🔗 Destination Click Link (यूजर यहाँ जाएगा)
                         </label>
+                        <input
+                          type="text"
+                          placeholder="https://yourwebsite.com or /advertise"
+                          value={adItem.targetLink}
+                          onChange={(e) => handleUpdateVideoAdItem(adItem.id, "targetLink", e.target.value)}
+                          style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
+                        />
                       </div>
                     </div>
 
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-                        🏷️ Ad Headline / Business Title
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. विशेष बिज़नेस प्रमोशन"
-                        value={adItem.title}
-                        onChange={(e) => handleUpdateVideoAdItem(adItem.id, "title", e.target.value)}
-                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#0f172a", marginBottom: "4px" }}>
-                        🔗 Destination Click Link (यूजर यहाँ जाएगा)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="https://yourwebsite.com or /advertise"
-                        value={adItem.targetLink}
-                        onChange={(e) => handleUpdateVideoAdItem(adItem.id, "targetLink", e.target.value)}
-                        style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", background: "#f8fafc" }}
-                      />
+                    {/* Right: Live Preview Box */}
+                    <div
+                      style={{
+                        background: "#0a0f1d",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        border: isSlotEnabled ? "1px solid #1e293b" : "1px dashed #64748b",
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                        opacity: isSlotEnabled ? 1 : 0.65,
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: isSlotEnabled ? "#e50914" : "#475569",
+                          color: "#fff",
+                          padding: "4px 8px",
+                          fontSize: "0.68rem",
+                          fontWeight: 800,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}
+                      >
+                        <span>PREVIEW AD #{index + 1}</span>
+                        <span style={{ fontSize: "0.65rem", padding: "1px 6px", borderRadius: "4px", background: isSlotEnabled ? "#16a34a" : "#334155" }}>
+                          {isSlotEnabled ? "🟢 LIVE" : "⚪ OFF"}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {(() => {
+                          const cleanUrl = cleanVideoUrl(adItem.url);
+                          if (!cleanUrl) {
+                            return (
+                              <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
+                                No ad media added yet
+                              </div>
+                            );
+                          }
+                          if (cleanUrl.includes("embed/") || cleanUrl.includes("youtube.com") || cleanUrl.includes("youtu.be")) {
+                            return (
+                              <iframe
+                                src={cleanUrl.includes("embed/") ? cleanUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanUrl)}`}
+                                title={`Preview ${index + 1}`}
+                                style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+                              />
+                            );
+                          }
+                          if (cleanUrl.toLowerCase().endsWith(".mp4") || cleanUrl.toLowerCase().endsWith(".webm") || cleanUrl.toLowerCase().endsWith(".mov")) {
+                            return (
+                              <video src={cleanUrl} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                            );
+                          }
+                          return (
+                            <img src={cleanUrl} alt={`Preview ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          );
+                        })()}
+                      </div>
+                      <div style={{ padding: "6px 8px", background: "#111827", fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {adItem.title || "Untitled Ad"}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Right: Live Preview Box */}
-                  <div style={{ background: "#0a0f1d", borderRadius: "10px", overflow: "hidden", border: "1px solid #1e293b", display: "flex", flexDirection: "column", height: "100%" }}>
-                    <div style={{ background: "#e50914", color: "#fff", padding: "4px 8px", fontSize: "0.68rem", fontWeight: 800 }}>
-                      PREVIEW AD #{index + 1}
-                    </div>
-                    <div style={{ flex: 1, position: "relative", minHeight: "120px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {(() => {
-                        const cleanUrl = cleanVideoUrl(adItem.url);
-                        if (!cleanUrl) {
-                          return (
-                            <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.72rem", textAlign: "center", padding: "10px" }}>
-                              No ad media added yet
-                            </div>
-                          );
-                        }
-                        if (cleanUrl.includes("embed/") || cleanUrl.includes("youtube.com") || cleanUrl.includes("youtu.be")) {
-                          return (
-                            <iframe
-                              src={cleanUrl.includes("embed/") ? cleanUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanUrl)}`}
-                              title={`Preview ${index + 1}`}
-                              style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-                            />
-                          );
-                        }
-                        if (cleanUrl.toLowerCase().endsWith(".mp4") || cleanUrl.toLowerCase().endsWith(".webm") || cleanUrl.toLowerCase().endsWith(".mov")) {
-                          return (
-                            <video src={cleanUrl} controls style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                          );
-                        }
-                        return (
-                          <img src={cleanUrl} alt={`Preview ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                        );
-                      })()}
-                    </div>
-                    <div style={{ padding: "6px 8px", background: "#111827", fontSize: "0.72rem", color: "#e2e8f0", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {adItem.title || "Untitled Ad"}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Save All Button */}

@@ -9,6 +9,7 @@ import {
   Mail,
   Send,
   ShieldCheck,
+  CheckCircle,
   MapPin,
   FileText,
   ChevronRight,
@@ -16,7 +17,8 @@ import {
   Twitter,
   Instagram,
   Youtube,
-  Linkedin
+  Linkedin,
+  Phone
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
@@ -64,8 +66,8 @@ export default function Footer() {
     { nameHi: "हमारे बारे में", nameEn: "About Us", href: "/about" },
     { nameHi: "हमारी टीम", nameEn: "Our Team", href: "/team" },
     { nameHi: "करियर / नौकरियां", nameEn: "Careers & Jobs", href: "/careers" },
-    { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/#terms" },
-    { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/#contact" },
+    { nameHi: "सेवा की शर्तें", nameEn: "Terms of Service", href: "/about#terms" },
+    { nameHi: "संपर्क करें", nameEn: "Contact Us", href: "/about#contact" },
     { nameHi: "विज्ञापन दें", nameEn: "Advertise", href: "/advertise" }
   ]);
 
@@ -134,6 +136,22 @@ export default function Footer() {
     ) {
       targetHref = "/advertise";
     }
+    if (
+      item.nameHi?.includes("शर्तें") ||
+      item.nameEn?.toLowerCase().includes("terms") ||
+      targetHref === "/#terms" ||
+      targetHref === "#terms"
+    ) {
+      targetHref = "/about#terms";
+    }
+    if (
+      item.nameHi?.includes("संपर्क") ||
+      item.nameEn?.toLowerCase().includes("contact") ||
+      targetHref === "/#contact" ||
+      targetHref === "#contact"
+    ) {
+      targetHref = "/about#contact";
+    }
     return {
       name: isHindi ? item.nameHi : item.nameEn,
       href: targetHref
@@ -184,8 +202,8 @@ export default function Footer() {
 
           {/* BRAND COLUMN */}
           <div className="footer-brand-col">
-            <Link href="/" style={{ textDecoration: "none", display: "inline-block", marginBottom: "12px" }}>
-              <h2 style={{ fontFamily: "var(--font-headline)", fontSize: "1.8rem", fontWeight: 800, margin: 0, letterSpacing: 0 }}>
+            <Link href="/" aria-label="Global Awaaz Homepage" style={{ textDecoration: "none", display: "inline-block", marginBottom: "12px", cursor: "pointer" }}>
+              <h2 style={{ fontFamily: "var(--font-headline)", fontSize: "1.8rem", fontWeight: 800, margin: 0, letterSpacing: 0, cursor: "pointer" }}>
                 <span style={{ color: "#ffffff" }}>GLOBAL </span>
                 <span style={{ color: "#e50914" }}>AWAAZ</span>
               </h2>
@@ -412,8 +430,9 @@ export default function Footer() {
             </p>
 
             {subscribed ? (
-              <div style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80", padding: "10px", borderRadius: "6px", fontSize: "0.82rem", fontWeight: 600 }}>
-                ✓ {isHindi ? "सदस्यता लेने के लिए धन्यवाद!" : "Thanks for subscribing!"}
+              <div style={{ background: "rgba(34,197,94,0.16)", border: "1px solid rgba(34,197,94,0.4)", color: "#4ade80", padding: "12px 14px", borderRadius: "8px", fontSize: "0.84rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}>
+                <CheckCircle size={18} style={{ color: "#4ade80", flexShrink: 0 }} />
+                <span>{isHindi ? "सदस्यता लेने के लिए धन्यवाद! दैनिक बुलेटिन सक्रिय है।" : "Thanks for subscribing! Daily updates activated."}</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -460,7 +479,13 @@ export default function Footer() {
                     onChange={(e) => setAgree(e.target.checked)}
                     style={{ accentColor: "#e50914", cursor: "pointer" }}
                   />
-                  <span>{isHindi ? "गोपनीयता नीति से सहमत हूँ" : "Agree to Privacy Policy"}</span>
+                  <span>
+                    {isHindi ? "मैं " : "I agree to "}
+                    <Link href="/about#terms" style={{ color: "#cbd5e1", textDecoration: "underline" }}>
+                      {isHindi ? "गोपनीयता नीति व शर्तों" : "Privacy Policy & Terms"}
+                    </Link>
+                    {isHindi ? " से सहमत हूँ" : ""}
+                  </span>
                 </label>
               </form>
             )}
@@ -497,11 +522,39 @@ export default function Footer() {
             </span>
           </div>
 
+          {/* Helpline Phone */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            <Phone size={15} style={{ color: "#16a34a", flexShrink: 0 }} />
+            <a
+              href="tel:+919876543210"
+              style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: 600, transition: "color 0.15s ease" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#4ade80"; e.currentTarget.style.textDecoration = "underline"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.textDecoration = "none"; }}
+              aria-label="Call Global Awaaz Helpline"
+            >
+              +91 98765 43210
+            </a>
+          </div>
+
+          {/* Contact Email */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            <Mail size={15} style={{ color: "#e50914", flexShrink: 0 }} />
+            <a
+              href="mailto:contact@globalawaaz.com"
+              style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: 600, transition: "color 0.15s ease" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; e.currentTarget.style.textDecoration = "underline"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.textDecoration = "none"; }}
+              aria-label="Email Global Awaaz"
+            >
+              contact@globalawaaz.com
+            </a>
+          </div>
+
           {/* Tech Stack */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             <FileText size={15} style={{ color: "#e50914", flexShrink: 0 }} />
             <span>
-              {isHindi ? "नेक्स्ट.जेएस एवं एक्सप्रेस आर्किटेक्चर द्वारा संचालित" : "Powered by Next.js & Express Architecture"}
+              {isHindi ? "नेक्स्ट.जेएस आर्किटेक्चर द्वारा संचालित" : "Powered by Next.js Architecture"}
             </span>
           </div>
         </div>

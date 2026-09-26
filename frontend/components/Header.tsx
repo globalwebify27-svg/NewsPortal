@@ -108,6 +108,25 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
+  // Interactive Notification States
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifGranted, setNotifGranted] = useState(false);
+
+  const handleRequestNotification = async () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          setNotifGranted(true);
+          new Notification("Global Awaaz", {
+            body: lang === "HI" ? "ताज़ा और निष्पक्ष समाचार अलर्ट अब सक्रिय हैं!" : "Breaking news alerts are now active!",
+            icon: "/icon.png"
+          });
+        }
+      } catch (e) {}
+    }
+  };
+
   // Interactive News Filter States
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filterSort, setFilterSort] = useState<string>("latest");
@@ -519,9 +538,48 @@ export default function Header() {
               {/* Logo Emblem — always rendered with fallback */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href="/" className="header-left-logo-wrap" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", marginLeft: `${customLogoMarginLeft}px`, transition: "margin-left 0.2s ease" }}>
-                    <div className="site-logo-emblem-left" style={{ width: `${customLogoSize}px`, height: `${customLogoSize}px`, flexShrink: 0, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", transition: "width 0.2s ease, height 0.2s ease" }}>
-                      <img src={customLogoUrl ? cleanMediaUrl(customLogoUrl) : "/logo.png"} alt="Global Awaaz Logo" style={{ width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))" }} />
+                  <Link
+                    href="/"
+                    aria-label="Global Awaaz Homepage"
+                    className="header-left-logo-wrap"
+                    style={{
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      marginLeft: `${customLogoMarginLeft}px`,
+                      transition: "margin-left 0.2s ease",
+                      cursor: "pointer",
+                      position: "relative",
+                      zIndex: 20,
+                      pointerEvents: "auto"
+                    }}
+                  >
+                    <div
+                      className="site-logo-emblem-left"
+                      style={{
+                        width: `${customLogoSize}px`,
+                        height: `${customLogoSize}px`,
+                        flexShrink: 0,
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "width 0.2s ease, height 0.2s ease",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <img
+                        src={customLogoUrl ? cleanMediaUrl(customLogoUrl) : "/logo.png"}
+                        alt="Global Awaaz Logo"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                          filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))",
+                          cursor: "pointer",
+                          pointerEvents: "none"
+                        }}
+                      />
                     </div>
                   </Link>
                 </TooltipTrigger>
@@ -532,12 +590,27 @@ export default function Header() {
             </div>
 
             {/* Center: Site Logo Title and Tagline */}
-            <div className="header-logo-container">
+            <div className="header-logo-container" style={{ position: "relative", zIndex: 20 }}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href="/" className="site-logo-wrap" style={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "14px" }}>
+                  <Link
+                    href="/"
+                    aria-label="Global Awaaz Homepage"
+                    className="site-logo-wrap"
+                    style={{
+                      textDecoration: "none",
+                      color: "inherit",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "14px",
+                      cursor: "pointer",
+                      position: "relative",
+                      zIndex: 20,
+                      pointerEvents: "auto"
+                    }}
+                  >
                     {/* Title and Dual-Color Accent Tagline */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
                       <span className="site-logo">
                         <span className="site-logo-black">GLOBAL </span>
                         <span className="site-logo-red">AWAAZ</span>
@@ -578,20 +651,105 @@ export default function Header() {
                 </TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="icon-btn notification-btn"
-                    aria-label={lang === "HI" ? "अधिसूचनाएं" : "Notifications"}
+              <div style={{ position: "relative" }}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="icon-btn notification-btn"
+                      onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                      aria-label={lang === "HI" ? "अधिसूचनाएं" : "Notifications"}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <Bell size={18} />
+                      <span className="notification-badge"></span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p style={{ margin: 0 }}>{lang === "HI" ? "ताज़ा ब्रेकिंग अलर्ट्स" : "Breaking News Alerts"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {isNotificationOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 10px)",
+                      right: 0,
+                      width: "300px",
+                      background: "#ffffff",
+                      borderRadius: "14px",
+                      boxShadow: "0 12px 36px rgba(0,0,0,0.18)",
+                      border: "1px solid #e2e8f0",
+                      padding: "16px",
+                      zIndex: 200,
+                      color: "#0f172a",
+                      textAlign: "left"
+                    }}
                   >
-                    <Bell size={18} />
-                    <span className="notification-badge"></span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "ताज़ा ब्रेकिंग अलर्ट्स" : "Breaking News Alerts"}</p>
-                </TooltipContent>
-              </Tooltip>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Bell size={16} style={{ color: "#e50914" }} />
+                        <span style={{ fontWeight: 800, fontSize: "0.9rem" }}>{lang === "HI" ? "न्यूज़ अलर्ट्स" : "News Alerts"}</span>
+                      </div>
+                      <button
+                        onClick={() => setIsNotificationOpen(false)}
+                        aria-label="Close notifications"
+                        style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div style={{ background: "#fef2f2", border: "1px solid #fee2e2", borderRadius: "8px", padding: "10px", marginBottom: "12px" }}>
+                      <p style={{ margin: "0 0 8px 0", fontSize: "0.78rem", color: "#991b1b", fontWeight: 600, lineHeight: 1.4 }}>
+                        {lang === "HI" ? "ताज़ा ब्रेकिंग और महत्वपूर्ण खबरों के अलर्ट्स सीधे अपने डिवाइस पर पाएं।" : "Get instant breaking news alerts delivered straight to your device."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleRequestNotification}
+                        style={{
+                          background: notifGranted ? "#16a34a" : "#e50914",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "6px 12px",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <Bell size={13} />
+                        <span>{notifGranted ? (lang === "HI" ? "✓ अलर्ट सक्रिय हैं" : "✓ Alerts Enabled") : (lang === "HI" ? "🔔 अलर्ट्स चालू करें" : "🔔 Enable Web Alerts")}</span>
+                      </button>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <Link
+                        href="/breaking"
+                        onClick={() => setIsNotificationOpen(false)}
+                        style={{ textDecoration: "none", color: "#0f172a", padding: "8px", borderRadius: "6px", background: "#f8fafc", fontSize: "0.8rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                      >
+                        <span>🔥 {lang === "HI" ? "सभी ब्रेकिंग न्यूज़ देखें" : "View All Breaking News"}</span>
+                        <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+                      </Link>
+                      <Link
+                        href="/india"
+                        onClick={() => setIsNotificationOpen(false)}
+                        style={{ textDecoration: "none", color: "#0f172a", padding: "8px", borderRadius: "6px", background: "#f8fafc", fontSize: "0.8rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                      >
+                        <span>📍 {lang === "HI" ? "राज्य व शहर की ताज़ा खबरें" : "State & City News"}</span>
+                        <ChevronRight size={14} style={{ color: "#94a3b8" }} />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1437,46 +1595,10 @@ export default function Header() {
                   ))}
                 </div>
               </li>
-              <li
-                style={{ position: "relative" }}
-                onMouseEnter={() => setHoveredNav(null)}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/careers" className={`nav-link pill-nav-link ${isActive("/careers") ? "active" : ""}`} aria-label={lang === "HI" ? "करियर" : "Careers"}>
-                      <Briefcase size={15} />
-                      <span>{lang === "HI" ? "करियर" : "Careers"}</span>
-                      {isActive("/careers") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "ग्लोबल आवाज़ टीम से जुड़ें" : "Career Opportunities"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </li>
-              <li
-                style={{ position: "relative" }}
-                onMouseEnter={() => setHoveredNav(null)}
-              >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/advertise" className={`nav-link pill-nav-link ${isActive("/advertise") ? "active" : ""}`} aria-label={lang === "HI" ? "विज्ञापन दें" : "Advertise"}>
-                      <Megaphone size={15} />
-                      <span>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</span>
-                      {isActive("/advertise") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "ब्रांड प्रमोशन व विज्ञापन समाधान" : "Advertise With Us"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </li>
             </ul>
           </div>
         </div>
       </nav>
-
-
 
       {/* Clean Dynamic JS-Driven Infinite Non-Overlapping News Ticker */}
       <NewsTicker
@@ -1509,14 +1631,14 @@ export default function Header() {
         <div className="mobile-drawer-overlay active">
           <div className="mobile-drawer-content">
             <div className="mobile-drawer-header">
-              <Link href="/" className="mobile-drawer-logo" style={{ textDecoration: "none" }}>GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></Link>
+              <Link href="/" className="mobile-drawer-logo" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: "none", cursor: "pointer" }}>GLOBAL <span style={{ color: "#e50914" }}>AWAAZ</span></Link>
               <button className="icon-btn close-drawer-btn" aria-label="Close navigation menu" onClick={() => setMobileMenuOpen(false)}>
                 <X size={20} />
               </button>
             </div>
             <ul className="mobile-drawer-nav">
               <li><Link href="/" onClick={() => setMobileMenuOpen(false)}>{t("home")}</Link></li>
-              <li><Link href="/latest" onClick={() => setMobileMenuOpen(false)}>{t("latest")}</Link></li>
+              <li><Link href="/education" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "शिक्षा" : "Education"}</Link></li>
               <li><Link href="/world" onClick={() => setMobileMenuOpen(false)}>{t("world")}</Link></li>
               <li><Link href="/india" onClick={() => setMobileMenuOpen(false)}>{t("india")}</Link></li>
               <li><Link href="/business" onClick={() => setMobileMenuOpen(false)}>{t("business")}</Link></li>
@@ -1527,6 +1649,8 @@ export default function Header() {
               <li><Link href="/politics" onClick={() => setMobileMenuOpen(false)}>{t("politics")}</Link></li>
               <li><Link href="/crime" onClick={() => setMobileMenuOpen(false)}>{t("crime")}</Link></li>
               <li><Link href="/videos" onClick={() => setMobileMenuOpen(false)}>{t("videos")}</Link></li>
+              <li><Link href="/epaper" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "ई-पेपर" : "e-Paper"}</Link></li>
+              <li><Link href="/about" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "हमारे बारे में" : "About Us"}</Link></li>
               <li><Link href="/careers" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "करियर / नौकरियां" : "Careers & Jobs"}</Link></li>
               <li><Link href="/advertise" onClick={() => setMobileMenuOpen(false)}>{lang === "HI" ? "विज्ञापन दें" : "Advertise"}</Link></li>
             </ul>

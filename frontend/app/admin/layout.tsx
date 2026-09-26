@@ -432,7 +432,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Admin Sidebar Navigation */}
       <aside className="admin-sidebar-nav">
         <div style={{ paddingBottom: "20px", marginBottom: "18px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <Link href="/admin" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
             <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #e50914 0%, #991b1b 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#ffffff", fontSize: "1.1rem", boxShadow: "0 4px 14px rgba(229,9,20,0.4)" }}>
               GA
             </div>
@@ -444,7 +444,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 Editorial Console
               </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Current Active Role Badge */}

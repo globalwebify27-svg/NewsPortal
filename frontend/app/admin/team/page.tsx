@@ -461,10 +461,21 @@ export default function AdminTeamPage() {
                 </div>
 
                 <div className="mt-5 border-t border-slate-100 pt-4 space-y-2">
+                  {member.phone && (
+                    <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <a href={`tel:${member.phone.replace(/[^0-9+]/g, "")}`} className="truncate text-emerald-600 hover:underline">
+                        {member.phone}
+                      </a>
+                    </div>
+                  )}
+
                   {member.email && (
                     <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                       <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{member.email}</span>
+                      <a href={`mailto:${member.email}`} className="truncate hover:text-red-600 hover:underline">
+                        {member.email}
+                      </a>
                     </div>
                   )}
 

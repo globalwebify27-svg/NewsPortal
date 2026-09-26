@@ -202,7 +202,7 @@ export default function EPaperPage() {
 
       {/* ── MAIN CONTENT WORKSPACE ────────────────────────────────────────── */}
       <div style={{ maxWidth: "1340px", margin: "24px auto 0 auto", padding: "0 16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: isFullscreen ? "1fr" : "280px 1fr", gap: "24px", alignItems: "flex-start" }}>
+        <div className="epaper-workspace-grid" style={{ display: "grid", gridTemplateColumns: isFullscreen ? "1fr" : "280px 1fr", gap: "24px", alignItems: "flex-start" }}>
           
           {/* ── LEFT SIDEBAR (EDITIONS & ARCHIVE) ───────────────────────────── */}
           {!isFullscreen && (
@@ -307,6 +307,7 @@ export default function EPaperPage() {
             
             {/* Viewer Control Toolbar */}
             <div
+              className="epaper-control-bar"
               style={{
                 background: "#0f172a",
                 color: "#ffffff",
@@ -363,6 +364,7 @@ export default function EPaperPage() {
 
             {/* NEWSPAPER PAGE CANVAS WORKSPACE */}
             <div
+              className="epaper-page-canvas"
               style={{
                 background: "#ffffff",
                 border: "1px solid #cbd5e1",

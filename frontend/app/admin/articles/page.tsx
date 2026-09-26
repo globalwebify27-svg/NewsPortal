@@ -35,6 +35,7 @@ interface ArticleAdItem {
   image?: string;
   badge?: string;
   placement?: "both" | "right" | "left" | "body";
+  enabled?: boolean;
 }
 
 function normalizeCategoriesArray(raw: any, fallbackCatName?: string): string[] {
@@ -1533,7 +1534,8 @@ export default function AdminArticlesPage() {
                           subtitle: "",
                           link: "",
                           image: "",
-                          badge: "SPONSORED"
+                          badge: "SPONSORED",
+                          enabled: true
                         }
                       ]);
                     }}
@@ -1558,12 +1560,64 @@ export default function AdminArticlesPage() {
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {formCustomAds.map((adItem, index) => (
-                      <div key={adItem.id || index} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", padding: "14px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.1)", paddingBottom: "6px" }}>
-                          <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#f87171" }}>
-                            Ad Slot #{index + 1}
-                          </span>
+                    {formCustomAds.map((adItem, index) => {
+                      const isAdEnabled = adItem.enabled !== false;
+                      return (
+                      <div key={adItem.id || index} style={{ background: isAdEnabled ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)", border: isAdEnabled ? "1px solid rgba(255,255,255,0.12)" : "1px dashed rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px", opacity: isAdEnabled ? 1 : 0.7, transition: "all 0.2s ease" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.1)", paddingBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "0.8rem", fontWeight: 800, color: isAdEnabled ? "#f87171" : "#94a3b8" }}>
+                              🚩 Ad Slot #{index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...formCustomAds];
+                                updated[index].enabled = !isAdEnabled;
+                                setFormCustomAds(updated);
+                              }}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "3px 10px 3px 5px",
+                                borderRadius: "16px",
+                                border: isAdEnabled ? "1px solid #16a34a" : "1px solid #64748b",
+                                background: isAdEnabled ? "rgba(22,163,74,0.15)" : "rgba(100,116,139,0.15)",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease"
+                              }}
+                              title={`Toggle Ad Slot #${index + 1} ON/OFF`}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  width: "28px",
+                                  height: "16px",
+                                  borderRadius: "16px",
+                                  background: isAdEnabled ? "#16a34a" : "#475569",
+                                  position: "relative",
+                                  transition: "background 0.2s ease"
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    top: "2px",
+                                    left: isAdEnabled ? "14px" : "2px",
+                                    width: "12px",
+                                    height: "12px",
+                                    borderRadius: "50%",
+                                    background: "#ffffff",
+                                    transition: "left 0.2s ease"
+                                  }}
+                                />
+                              </span>
+                              <span style={{ fontSize: "0.72rem", fontWeight: 800, color: isAdEnabled ? "#4ade80" : "#94a3b8" }}>
+                                {isAdEnabled ? "ON (चालू)" : "OFF (बंद)"}
+                              </span>
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setFormCustomAds(formCustomAds.filter((_, i) => i !== index))}
@@ -1713,7 +1767,8 @@ export default function AdminArticlesPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 )}
               </div>

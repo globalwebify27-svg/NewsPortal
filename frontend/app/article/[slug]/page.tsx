@@ -89,13 +89,13 @@ function formatAbsoluteImageUrl(imgUrl?: string): string {
 }
 
 function buildDualLanguageSeoTitle(article: ArticleDetail, slug: string): string {
+  // If admin specified a dedicated custom SEO Title in Admin Panel, use it directly!
+  if (article.seoTitle && article.seoTitle.trim()) {
+    return article.seoTitle.trim();
+  }
   const mainTitle = article.title ? article.title.trim() : "";
-  // Brand suffix takes 15 chars: " | GLOBAL AWAAZ"
   if (mainTitle.length <= 48) {
     return `${mainTitle} | GLOBAL AWAAZ`;
-  }
-  if (mainTitle.length > 64) {
-    return `${mainTitle.substring(0, 61).trim()}...`;
   }
   return mainTitle;
 }
@@ -170,10 +170,10 @@ function extractDynamicArticleKeywords(article: any): string[] {
 }
 
   const seoTitle = buildDualLanguageSeoTitle(article, slug);
-  const rawDesc = stripHtml(article.summary || article.body || article.title || "");
+  const rawDesc = (article.seoDescription && article.seoDescription.trim()) || stripHtml(article.summary || article.body || article.title || "");
   let description = rawDesc;
-  if (description.length > 158) {
-    description = `${description.substring(0, 155).trim()}...`;
+  if (description.length > 165) {
+    description = `${description.substring(0, 162).trim()}...`;
   }
   const imageUrl = formatAbsoluteImageUrl(article.featuredImage);
   const articleKeywords = extractDynamicArticleKeywords(article);

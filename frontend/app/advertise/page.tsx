@@ -579,6 +579,23 @@ export default function AdvertisePage() {
                 </div>
 
                 <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Direct Phone Hotline:
+                    </span>
+                    <a
+                      href={`tel:${portalSettings.whatsapp.replace(/[^0-9+]/g, "")}`}
+                      className="text-white font-bold text-sm hover:text-emerald-400 transition inline-block mt-0.5"
+                    >
+                      {portalSettings.whatsapp}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
                     <Mail className="w-5 h-5" />
                   </div>

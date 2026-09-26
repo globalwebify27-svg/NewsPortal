@@ -529,7 +529,11 @@ export default function RolesManagementPage() {
                 {createdUsersList.map((user) => (
                   <tr key={user.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "12px 14px", fontWeight: 700, color: "#0f172a" }}>{user.name}</td>
-                    <td style={{ padding: "12px 14px", fontWeight: 700, color: "#2563eb" }}>{user.email}</td>
+                    <td style={{ padding: "12px 14px", fontWeight: 700 }}>
+                      <a href={`mailto:${user.email}`} style={{ color: "#2563eb", textDecoration: "none" }} onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")} onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}>
+                        {user.email}
+                      </a>
+                    </td>
                     <td style={{ padding: "12px 14px", fontWeight: 700, color: "#64748b", fontFamily: "monospace" }}>••••••••</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#dbeafe" : "#dcfce7", color: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#1e40af" : "#166534" }}>

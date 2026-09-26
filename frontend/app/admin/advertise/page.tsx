@@ -439,16 +439,22 @@ export default function AdminAdvertisePage() {
                       )}
 
                       <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 pt-1">
-                        <span className="flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <a
+                          href={`tel:${prop.mobileNumber.replace(/[^0-9+]/g, "")}`}
+                          className="flex items-center gap-1.5 text-emerald-600 hover:underline"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-emerald-600" />
                           {prop.mobileNumber}
-                        </span>
+                        </a>
 
                         {prop.email && (
-                          <span className="flex items-center gap-1.5">
+                          <a
+                            href={`mailto:${prop.email}`}
+                            className="flex items-center gap-1.5 text-slate-600 hover:text-red-600 hover:underline"
+                          >
                             <Mail className="w-3.5 h-3.5 text-slate-400" />
                             {prop.email}
-                          </span>
+                          </a>
                         )}
 
                         {prop.cityState && (

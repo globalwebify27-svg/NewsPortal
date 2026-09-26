@@ -223,32 +223,60 @@
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
 @media (max-width: 992px) {
   .admin-page-root {
-    padding: 10px !important;
+    padding: 0 !important;
   }
 
   .admin-container {
     flex-direction: column !important;
-    border-radius: 12px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
   }
 
   .admin-sidebar-nav {
     width: 100% !important;
     min-width: unset !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
     border-bottom: 3px solid var(--admin-red) !important;
-    padding: 16px !important;
+    padding: 16px 14px !important;
   }
 
-  .admin-main-content {
-    padding: 20px !important;
+  .admin-main-content,
+  .admin-main-viewport {
+    height: auto !important;
+    max-height: none !important;
+    padding: 20px 14px !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
   }
 
   .admin-vitals-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .admin-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
   .admin-vitals-grid {
     grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .admin-table-header {
+    padding: 14px 16px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .admin-card-box {
+    padding: 16px 14px !important;
   }
 }

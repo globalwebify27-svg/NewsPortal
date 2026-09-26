@@ -211,7 +211,7 @@ export default function AboutPage() {
         </section>
 
         {/* ── EDITORIAL COMMITMENT ────────────────────────────────────────── */}
-        <section className="about-editorial-section">
+        <section id="terms" className="about-editorial-section">
           <div className="about-editorial-grid">
             <div>
               <span style={{ color: "#e50914", fontWeight: 800, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -277,7 +277,7 @@ export default function AboutPage() {
         </section>
 
         {/* ── CONTACT & HEADQUARTERS ──────────────────────────────────────── */}
-        <section className="about-contact-section">
+        <section id="contact" className="about-contact-section">
           <div style={{ textAlign: "center", marginBottom: "24px" }}>
             <h2 style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0 0 6px 0" }}>
               {isHindi ? "हमसे संपर्क करें (Contact Us)" : "Get In Touch"}
@@ -396,9 +396,10 @@ export default function AboutPage() {
                   {data.phone1 && (
                     <a
                       href={`tel:${data.phone1.replace(/[^0-9+]/g, "")}`}
-                      style={{ color: "#16a34a", textDecoration: "none", fontWeight: 700 }}
+                      style={{ color: "#16a34a", textDecoration: "none", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}
                       onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                       onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                      aria-label={`Call primary phone ${data.phone1}`}
                     >
                       📞 {data.phone1}
                     </a>
@@ -406,11 +407,12 @@ export default function AboutPage() {
                   {data.phone2 && (
                     <a
                       href={`tel:${data.phone2.replace(/[^0-9+]/g, "")}`}
-                      style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}
+                      style={{ color: "#16a34a", textDecoration: "none", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}
                       onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                       onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                      aria-label={`Call secondary phone ${data.phone2}`}
                     >
-                      {data.phone2}
+                      📞 {data.phone2}
                     </a>
                   )}
                 </div>

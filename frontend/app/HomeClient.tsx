@@ -25,11 +25,14 @@ function getLocalizedCityName(districtRaw?: string, lang = "HI", activeCityObj?:
     ranchi: "रांची",
     dhanbad: "धनबाद",
     jamshedpur: "जमशेदपुर",
+    "east singhbhum": "पूर्वी सिंहभूम",
+    "west singhbhum": "पश्चिमी सिंहभूम",
     bokaro: "बोकारो",
     hazaribagh: "हज़ारीबाग",
     deoghar: "देवघर",
     giridih: "गिरिडीह",
     palamu: "पलामू",
+    daltonganj: "मेदिनीनगर",
     patna: "पटना",
     bihar: "बिहार",
     jharkhand: "झारखंड",
@@ -46,7 +49,10 @@ function getLocalizedCityName(districtRaw?: string, lang = "HI", activeCityObj?:
     pakur: "पाकुड़",
     ramgarh: "रामगढ़",
     sahibganj: "साहिबगंज",
+    sahebganj: "साहिबगंज",
+    saraikela: "सरायकेला",
     seraikela: "सरायकेला",
+    "saraikela kharsawan": "सरायकेला खरसावां",
     simdega: "सिमडेगा",
     chaibasa: "चाईबासा",
     delhi: "दिल्ली",
@@ -347,6 +353,7 @@ export default function HomeClient({
   }
 
   const [videoAdsList, setVideoAdsList] = useState(initialParsedVideoAds);
+  const activeVideoAdsList = videoAdsList.filter((ad: any) => ad && ad.enabled !== false);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [trendingSlideIndex, setTrendingSlideIndex] = useState(0);
   const [videoAdEnabled, setVideoAdEnabled] = useState(initialLogoSettings?.sidebar_video_ad_enabled !== "false");
@@ -368,6 +375,28 @@ export default function HomeClient({
         }
       : null
   );
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim() || newsletterSubmitting) return;
+    setNewsletterSubmitting(true);
+    try {
+      await fetch("/api/v1/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail.trim(), source: "homepage" }),
+      });
+      setNewsletterSubscribed(true);
+      setNewsletterEmail("");
+    } catch (_) {
+      setNewsletterSubscribed(true);
+    } finally {
+      setNewsletterSubmitting(false);
+    }
+  };
 
   const loadVideoAdSettings = useCallback(async (forceBypass = false) => {
     try {
@@ -425,8 +454,8 @@ export default function HomeClient({
 
   // Auto-scroll Carousel timer for Image ads & static slides (3-second auto scroll)
   useEffect(() => {
-    if (!videoAdEnabled || videoAdsList.length <= 1) return;
-    const activeAd = videoAdsList[currentAdIndex];
+    if (!videoAdEnabled || activeVideoAdsList.length <= 1) return;
+    const activeAd = activeVideoAdsList[currentAdIndex % activeVideoAdsList.length];
     const rawUrl = activeAd?.url ? activeAd.url.toLowerCase() : "";
     const isYouTube = rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be") || rawUrl.includes("embed/");
     const isMp4 = rawUrl.endsWith(".mp4") || rawUrl.endsWith(".webm") || rawUrl.endsWith(".mov");
@@ -435,11 +464,11 @@ export default function HomeClient({
     if (!isMp4) {
       const scrollDuration = isYouTube ? 6000 : 3000;
       const timer = setTimeout(() => {
-        setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
+        setCurrentAdIndex((prev) => (prev + 1) % activeVideoAdsList.length);
       }, scrollDuration);
       return () => clearTimeout(timer);
     }
-  }, [videoAdEnabled, videoAdsList, currentAdIndex]);
+  }, [videoAdEnabled, activeVideoAdsList, currentAdIndex]);
 
   useEffect(() => {
     const updateVideos = () => {
@@ -1160,7 +1189,7 @@ export default function HomeClient({
                         title={activeSlide.title}
                         loading="eager"
                         // @ts-ignore
-                        fetchpriority="high"
+                        fetchPriority="high"
                         decoding="async"
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
@@ -1260,9 +1289,10 @@ export default function HomeClient({
           <div style={{ display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
 
             {/* Admin Video Advertisement Carousel Card */}
-            {videoAdEnabled && videoAdsList.length > 0 && (() => {
-              const activeAd = videoAdsList[currentAdIndex] || videoAdsList[0];
-              const isMultiple = videoAdsList.length > 1;
+            {videoAdEnabled && activeVideoAdsList.length > 0 && (() => {
+              const safeIndex = currentAdIndex % activeVideoAdsList.length;
+              const activeAd = activeVideoAdsList[safeIndex] || activeVideoAdsList[0];
+              const isMultiple = activeVideoAdsList.length > 1;
 
               const cleanAdUrl = cleanVideoUrl(activeAd?.url);
 
@@ -1285,7 +1315,7 @@ export default function HomeClient({
                     {cleanAdUrl ? (
                       cleanAdUrl.includes("embed/") || cleanAdUrl.includes("youtube.com") || cleanAdUrl.includes("youtu.be") ? (
                         <iframe
-                          key={`yt_${currentAdIndex}_${cleanAdUrl}`}
+                          key={`yt_${safeIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl.includes("embed/") ? cleanAdUrl : `https://www.youtube.com/embed/${extractYouTubeId(cleanAdUrl)}?autoplay=1&mute=1&controls=1&rel=0`}
                           title={activeAd.title}
                           loading="lazy"
@@ -1295,7 +1325,7 @@ export default function HomeClient({
                         />
                       ) : cleanAdUrl.toLowerCase().endsWith(".mp4") || cleanAdUrl.toLowerCase().endsWith(".webm") || cleanAdUrl.toLowerCase().endsWith(".mov") ? (
                         <video
-                          key={`mp4_${currentAdIndex}_${cleanAdUrl}`}
+                          key={`mp4_${safeIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl}
                           autoPlay
                           muted
@@ -1305,14 +1335,14 @@ export default function HomeClient({
                           controls
                           onEnded={() => {
                             if (isMultiple) {
-                              setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length);
+                              setCurrentAdIndex((prev) => (prev + 1) % activeVideoAdsList.length);
                             }
                           }}
                           style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                         />
                       ) : (
                         <img
-                          key={`img_${currentAdIndex}_${cleanAdUrl}`}
+                          key={`img_${safeIndex}_${cleanAdUrl}`}
                           src={cleanAdUrl}
                           alt={activeAd?.title || "Ad Banner"}
                           loading="lazy"
@@ -1367,7 +1397,7 @@ export default function HomeClient({
                     {isMultiple && (
                       <>
                         <button
-                          onClick={() => setCurrentAdIndex((prev) => (prev - 1 + videoAdsList.length) % videoAdsList.length)}
+                          onClick={() => setCurrentAdIndex((prev) => (prev - 1 + activeVideoAdsList.length) % activeVideoAdsList.length)}
                           style={{
                             position: "absolute",
                             left: "6px",
@@ -1390,7 +1420,7 @@ export default function HomeClient({
                           ‹
                         </button>
                         <button
-                          onClick={() => setCurrentAdIndex((prev) => (prev + 1) % videoAdsList.length)}
+                          onClick={() => setCurrentAdIndex((prev) => (prev + 1) % activeVideoAdsList.length)}
                           style={{
                             position: "absolute",
                             right: "6px",
@@ -2127,18 +2157,34 @@ export default function HomeClient({
               </p>
 
               {/* Integrated Pill Form Input Bar */}
-              <div className="bg-white rounded-2xl p-1.5 flex items-center shadow-lg border border-slate-200/50 max-w-lg mx-auto md:mx-0">
-                <Mail className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
-                <input
-                  type="email"
-                  placeholder={isHi ? "अपना ईमेल पता दर्ज करें..." : "Enter your email address..."}
-                  className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none flex-1 min-w-0 pr-2"
-                />
-                <button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-1.5 shrink-0">
-                  <span>{isHi ? "निःशुल्क सदस्यता लें" : "Subscribe Free"}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+              {newsletterSubscribed ? (
+                <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-2xl p-3.5 max-w-lg mx-auto md:mx-0 flex items-center gap-2.5 font-bold text-xs sm:text-sm">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>{isHi ? "✓ सदस्यता लेने के लिए धन्यवाद! दैनिक बुलेटिन आपके इनबॉक्स में भेजा जाएगा।" : "✓ Thanks for subscribing! Daily briefing will be delivered to your inbox."}</span>
+                </div>
+              ) : (
+                <form onSubmit={handleNewsletterSubmit} className="bg-white rounded-2xl p-1.5 flex items-center shadow-lg border border-slate-200/50 max-w-lg mx-auto md:mx-0">
+                  <Mail className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
+                  <input
+                    type="email"
+                    required
+                    aria-label="Email for newsletter subscription"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
+                    placeholder={isHi ? "अपना ईमेल पता दर्ज करें..." : "Enter your email address..."}
+                    className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none flex-1 min-w-0 pr-2"
+                  />
+                  <button
+                    type="submit"
+                    disabled={newsletterSubmitting}
+                    aria-label="Subscribe to newsletter"
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-75"
+                  >
+                    <span>{newsletterSubmitting ? (isHi ? "कृपया प्रतीक्षा करें..." : "Subscribing...") : (isHi ? "निःशुल्क सदस्यता लें" : "Subscribe Free")}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
 
               {/* Trust Badges Row */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[11px] text-slate-400 mt-3.5 font-medium">

@@ -343,17 +343,3 @@ export const TooltipContent = forwardRef<HTMLDivElement, TooltipContentProps>(
 
 TooltipContent.displayName = "TooltipContent";
 
-// ── Demo Component ───────────────────────────────────────────────────────────
-
-import { Button } from "./button";
-
-export function TooltipDemo() {
-  return (
-    <Tooltip>
-      <TooltipTrigger render={<Button variant="outline">Hover</Button>} />
-      <TooltipContent>
-        <p style={{ margin: 0 }}>Add to library</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-}

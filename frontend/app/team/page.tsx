@@ -202,9 +202,31 @@ export default function PublicTeamPage() {
                         )}
                       </div>
 
-                      {/* Bottom Social Icons Row */}
-                      {(member.facebook || member.instagram || member.linkedin || member.twitter) && (
-                        <div className="flex items-center justify-center gap-3 pt-4 mt-3 border-t border-slate-100">
+                      {/* Bottom Social & Contact Row */}
+                      {(member.phone || member.email || member.facebook || member.instagram || member.linkedin || member.twitter) && (
+                        <div className="flex items-center justify-center flex-wrap gap-2.5 pt-4 mt-3 border-t border-slate-100">
+                          {member.phone && (
+                            <a
+                              href={`tel:${member.phone.replace(/[^0-9+]/g, "")}`}
+                              className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 hover:text-white hover:bg-emerald-600 hover:border-emerald-600 hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title={`Call ${displayName}: ${member.phone}`}
+                              aria-label={`Call ${displayName}`}
+                            >
+                              <Phone className="w-4 h-4" />
+                            </a>
+                          )}
+
+                          {member.email && (
+                            <a
+                              href={`mailto:${member.email}`}
+                              className="w-9 h-9 rounded-full bg-red-50 border border-red-200 text-red-600 hover:text-white hover:bg-red-600 hover:border-red-600 hover:scale-110 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                              title={`Email ${displayName}: ${member.email}`}
+                              aria-label={`Email ${displayName}`}
+                            >
+                              <Mail className="w-4 h-4" />
+                            </a>
+                          )}
+
                           {member.facebook && (
                             <a
                               href={member.facebook}

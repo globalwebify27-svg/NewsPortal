@@ -340,9 +340,16 @@ export const SEO_STORAGE_KEY = "ga_seo_settings";
 import { prisma } from "./prisma";
 import { serverCache, TTL } from "./cache";
 
-export async function getAllSeoConfigs(): Promise<SeoPageConfig[]> {
-  const cacheKey = "seo:configs:all";
+export function clearSeoCache() {
   if (typeof window === "undefined") {
+    serverCache.delete("seo:configs:all");
+    serverCache.invalidatePrefix("seo:");
+  }
+}
+
+export async function getAllSeoConfigs(forceBypass = false): Promise<SeoPageConfig[]> {
+  const cacheKey = "seo:configs:all";
+  if (typeof window === "undefined" && !forceBypass) {
     const cached = serverCache.get<SeoPageConfig[]>(cacheKey);
     if (cached) return cached;
   }

@@ -71,6 +71,7 @@ export interface ArticleAdItem {
   image?: string;
   badge?: string;
   placement?: "both" | "right" | "left" | "body";
+  enabled?: boolean;
 }
 
 export interface ArticleDetail {
@@ -97,6 +98,14 @@ export interface ArticleDetail {
   adBadge?: string;
   // Multiple Custom Ads Array
   customAds?: ArticleAdItem[];
+  // SEO & Meta Fields
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  focusKeyword?: string;
+  state?: string;
+  district?: string;
+  subCategory?: string;
 }
 
 interface Props {
@@ -123,6 +132,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
 
   const [likes, setLikes] = useState(initialArticle?.views || 42);
   const [hasLiked, setHasLiked] = useState(false);
+  const [likeToast, setLikeToast] = useState(false);
 
   // Left column 1fr state — Side news items grid
   const [sideNews, setSideNews] = useState<any[]>([]);
@@ -275,8 +285,15 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
   }, [article, slug]);
 
   const handleLike = () => {
-    setLikes((l) => (hasLiked ? l - 1 : l + 1));
-    setHasLiked((h) => !h);
+    if (!hasLiked) {
+      setLikes((l) => l + 1);
+      setHasLiked(true);
+      setLikeToast(true);
+      setTimeout(() => setLikeToast(false), 3000);
+    } else {
+      setLikes((l) => (l > 0 ? l - 1 : 0));
+      setHasLiked(false);
+    }
   };
 
 
@@ -310,7 +327,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
 
   const getActiveAdList = (): ArticleAdItem[] => {
     if (article?.customAds && Array.isArray(article.customAds) && article.customAds.length > 0) {
-      return article.customAds;
+      return article.customAds.filter((a) => a && a.enabled !== false);
     }
     if (article?.adImage || article?.adTitle) {
       return [{
@@ -472,7 +489,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
               alt={article.title}
               loading="eager"
               // @ts-ignore
-              fetchpriority="high"
+              fetchPriority="high"
               decoding="async"
               style={{
                 width: "100%",
@@ -1107,6 +1124,33 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           </div>
         </aside>
       </div>
+
+      {/* Floating Action Success Toast */}
+      {likeToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "32px",
+            right: "32px",
+            background: "#0f172a",
+            color: "#ffffff",
+            border: "1.5px solid #e50914",
+            padding: "12px 20px",
+            borderRadius: "14px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontSize: "0.86rem",
+            fontWeight: 700,
+            animation: "fadeIn 0.2s ease"
+          }}
+        >
+          <span style={{ fontSize: "1.1rem" }}>❤️</span>
+          <span>{lang === "HI" ? "खबर पसंद करने के लिए धन्यवाद!" : "Thanks for liking this story!"}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,90 +33,109 @@ const mukta = Mukta({
 
 const isNoIndex = process.env.NEXT_PUBLIC_ROBOTS_NOINDEX === "true";
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://www.globalawaaz.com"),
-  title: {
-    default: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News",
-    template: "%s | GLOBAL AWAAZ - LOCAL से GLOBAL तक",
-  },
-  description:
-    "GLOBAL AWAAZ (ग्लोबल आवाज़) — LOCAL से GLOBAL तक। देश-दुनिया, झारखंड, राजनीति, व्यापार, खेल, मनोरंजन, स्वास्थ्य और तकनीक की ताज़ा ब्रेकिंग खबरें व विस्तृत संपादकीय विश्लेषण।",
-  keywords: [
-    "GLOBAL AWAAZ",
-    "ग्लोबल आवाज़",
-    "LOCAL से GLOBAL तक",
-    "Breaking Hindi News",
-    "Jharkhand News",
-    "India News Hindi",
-    "World News Hindi",
-    "Latest News Portal",
-    "Hindi News Channel",
-    "Digital e-Paper",
-  ],
-  authors: [{ name: "GLOBAL AWAAZ" }],
-  creator: "GLOBAL AWAAZ",
-  publisher: "GLOBAL AWAAZ",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  alternates: {
-    canonical: "https://www.globalawaaz.com/",
-    languages: {
-      "hi-IN": "https://www.globalawaaz.com/",
-      "en-IN": "https://www.globalawaaz.com/",
+import { getSeoConfigForPath } from "@/lib/seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getSeoConfigForPath("/");
+
+  const siteTitle =
+    config?.metaTitle ||
+    "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News";
+  const siteDesc =
+    config?.metaDescription ||
+    "GLOBAL AWAAZ (ग्लोबल आवाज़) — LOCAL से GLOBAL तक। देश-दुनिया, झारखंड, राजनीति, व्यापार, खेल, मनोरंजन, स्वास्थ्य और तकनीक की ताज़ा ब्रेकिंग खबरें व विस्तृत संपादकीय विश्लेषण।";
+
+  const keywordsList = config?.keywords
+    ? config.keywords.split(",").map((k) => k.trim()).filter(Boolean)
+    : [
+        "GLOBAL AWAAZ",
+        "ग्लोबल आवाज़",
+        "LOCAL से GLOBAL तक",
+        "Breaking Hindi News",
+        "Jharkhand News",
+        "India News Hindi",
+        "World News Hindi",
+        "Latest News Portal",
+        "Hindi News Channel",
+        "Digital e-Paper",
+      ];
+
+  const ogTitle = config?.ogTitle || siteTitle;
+  const ogDesc = config?.ogDescription || siteDesc;
+  const ogImg = config?.ogImage || "https://www.globalawaaz.com/logo.png";
+  const canonicalUrl = config?.canonicalUrl || "https://www.globalawaaz.com/";
+
+  return {
+    metadataBase: new URL("https://www.globalawaaz.com"),
+    title: {
+      default: siteTitle,
+      template: "%s",
     },
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    description: siteDesc,
+    keywords: keywordsList,
+    authors: [{ name: "GLOBAL AWAAZ" }],
+    creator: "GLOBAL AWAAZ",
+    publisher: "GLOBAL AWAAZ",
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      languages: {
+        "hi-IN": "https://www.globalawaaz.com/",
+        "en-IN": "https://www.globalawaaz.com/",
+      },
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  openGraph: {
-    title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक | Breaking Hindi & English News",
-    description:
-      "देश-दुनिया और आपके अपने क्षेत्र की हर छोटी-बड़ी खबर सबसे पहले और सबसे सटीक अंदाज में पढ़ें।",
-    url: "https://www.globalawaaz.com/",
-    siteName: "GLOBAL AWAAZ",
-    locale: "hi_IN",
-    type: "website",
-    images: [
-      {
-        url: "https://www.globalawaaz.com/logo.png",
-        width: 1200,
-        height: 630,
-        alt: "GLOBAL AWAAZ — LOCAL से GLOBAL तक",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "GLOBAL AWAAZ - LOCAL से GLOBAL तक",
-    description:
-      "ग्लोबल आवाज़ — निष्पक्ष खबरें, सटीक विश्लेषण। देश-दुनिया की ताज़ा खबरें सबसे पहले।",
-    site: "@globalawaaz",
-    creator: "@globalawaaz",
-    images: ["https://www.globalawaaz.com/logo.png"],
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/logo.png", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-  verification: {
-    google: "XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA",
-  },
-};
+    },
+    openGraph: {
+      title: ogTitle,
+      description: ogDesc,
+      url: canonicalUrl,
+      siteName: "GLOBAL AWAAZ",
+      locale: "hi_IN",
+      type: "website",
+      images: [
+        {
+          url: ogImg,
+          width: 1200,
+          height: 630,
+          alt: siteTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: ogDesc,
+      site: "@globalawaaz",
+      creator: "@globalawaaz",
+      images: [ogImg],
+    },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/logo.png", type: "image/png" },
+      ],
+      shortcut: "/favicon.ico",
+      apple: "/apple-touch-icon.png",
+    },
+    verification: {
+      google: "XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA",
+    },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const orgSchema = generateNewsOrganizationSchema();

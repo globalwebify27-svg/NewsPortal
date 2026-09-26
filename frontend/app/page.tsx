@@ -9,10 +9,8 @@ import type { Metadata } from "next";
 import { getSeoConfigForPath } from "@/lib/seo";
 import HomeClient from "./HomeClient";
 
-// Revalidate this page every 60 seconds at most.
-// When admin saves SEO settings, revalidatePath("/") is called in the
-// SEO settings API → the page cache is purged immediately on next request.
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSeoConfigForPath("/");

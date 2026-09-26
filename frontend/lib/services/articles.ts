@@ -92,6 +92,30 @@ function parseCategories(raw: unknown, fallbackCat?: unknown): string[] {
   return catName ? [catName] : ["Top News"];
 }
 
+import fs from "fs";
+import path from "path";
+
+const ARTICLES_SNAPSHOT_FILE = path.join(process.cwd(), "articles_db.json");
+
+function getDiskArticles(): any[] {
+  try {
+    if (fs.existsSync(ARTICLES_SNAPSHOT_FILE)) {
+      const content = fs.readFileSync(ARTICLES_SNAPSHOT_FILE, "utf8");
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (_) {}
+  return [];
+}
+
+function saveDiskArticles(articles: any[]): void {
+  try {
+    if (Array.isArray(articles) && articles.length > 0) {
+      fs.writeFileSync(ARTICLES_SNAPSHOT_FILE, JSON.stringify(articles, null, 2), "utf8");
+    }
+  } catch (_) {}
+}
+
 /**
  * Get Public Articles — Strictly Returns Status: "PUBLISHED" directly from MySQL DB
  * Speed Optimized: Uses lightweight select projection to avoid transferring heavy body HTML payload over network.
@@ -163,13 +187,43 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
       status: (art.status || "PUBLISHED") as WorkflowArticleStatus
     }));
 
+    if (mapped.length > 0) {
+      saveDiskArticles(mapped);
+    }
+
     const result = { articles: mapped, total, page, limit };
     serverCache.set(cacheKey, result, TTL.ARTICLES_LIST);
     return result;
   } catch (error) {
     console.error("Error fetching public articles from MySQL DB:", error);
     const fallback = serverCache.getStale<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
-    if (fallback) return fallback;
+    if (fallback && fallback.articles?.length > 0) return fallback;
+
+    const diskArticles = getDiskArticles();
+    if (diskArticles.length > 0) {
+      let filtered = diskArticles;
+      if (params.category) {
+        const catVal = params.category.toLowerCase().trim();
+        filtered = filtered.filter((a) => {
+          const cSlug = (a.category?.slug || a.category?.name || "").toLowerCase();
+          const cMulti = Array.isArray(a.categories) ? a.categories.map((c: string) => c.toLowerCase()) : [];
+          return cSlug.includes(catVal) || catVal.includes(cSlug) || cMulti.some((c: string) => c.includes(catVal));
+        });
+      }
+      if (params.state && params.state !== "ALL" && params.state !== "all") {
+        const stVal = params.state.toLowerCase().trim();
+        filtered = filtered.filter((a) => (a.state || "").toLowerCase().includes(stVal) || stVal.includes((a.state || "").toLowerCase()));
+      }
+      if (params.district && params.district !== "ALL" && params.district !== "all") {
+        const distVal = params.district.toLowerCase().trim();
+        filtered = filtered.filter((a) => (a.district || "").toLowerCase().includes(distVal) || distVal.includes((a.district || "").toLowerCase()));
+      }
+      if (params.search) {
+        const q = params.search.toLowerCase().trim();
+        filtered = filtered.filter((a) => (a.title || "").toLowerCase().includes(q) || (a.summary || "").toLowerCase().includes(q));
+      }
+      return { articles: filtered.slice(skip, skip + limit), total: filtered.length, page, limit };
+    }
     return { articles: [], total: 0, page, limit };
   }
 }
@@ -233,6 +287,10 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
     console.error("Error fetching admin articles from MySQL DB:", e);
     const fallback = serverCache.getStale<{ articles: any[]; total: number; page: number; limit: number }>(cacheKey);
     if (fallback) return fallback;
+    const diskArticles = getDiskArticles();
+    if (diskArticles.length > 0) {
+      return { articles: diskArticles.slice(skip, skip + limit), total: diskArticles.length, page, limit };
+    }
     return { articles: [], total: 0, page: 1, limit: 50 };
   }
 }
@@ -327,6 +385,14 @@ export async function getArticleBySlug(slug: string) {
     console.error("Error fetching article by slug from MySQL DB:", error);
     const fallback = serverCache.getStale<any>(cacheKey);
     if (fallback) return fallback;
+    const diskArticles = getDiskArticles();
+    const diskMatch = diskArticles.find(
+      (a) =>
+        (a.slug && a.slug.toLowerCase() === targetSlug) ||
+        (a.id && a.id.toLowerCase() === targetSlug) ||
+        (targetSlug.includes(a.slug || "") && a.slug)
+    );
+    if (diskMatch) return diskMatch;
     return null;
   }
 }

@@ -8,7 +8,7 @@ export interface CityDistrict {
 }
 
 export const INDIAN_DISTRICTS: CityDistrict[] = [
-  // Jharkhand Districts & Major Cities
+  // Jharkhand (All 24 Districts)
   { id: "ranchi", nameEn: "Ranchi", nameHi: "रांची", stateCode: "JH" },
   { id: "dhanbad", nameEn: "Dhanbad", nameHi: "धनबाद", stateCode: "JH" },
   { id: "jamshedpur", nameEn: "Jamshedpur / East Singhbhum", nameHi: "जमशेदपुर / पूर्वी सिंहभूम", stateCode: "JH" },
@@ -24,8 +24,17 @@ export const INDIAN_DISTRICTS: CityDistrict[] = [
   { id: "sahebganj", nameEn: "Sahebganj", nameHi: "साहिबगंज", stateCode: "JH" },
   { id: "koderma", nameEn: "Koderma", nameHi: "कोडरमा", stateCode: "JH" },
   { id: "chatra", nameEn: "Chatra", nameHi: "चतरा", stateCode: "JH" },
+  { id: "garhwa", nameEn: "Garhwa", nameHi: "गढ़वा", stateCode: "JH" },
+  { id: "latehar", nameEn: "Latehar", nameHi: "लातेहार", stateCode: "JH" },
+  { id: "lohardaga", nameEn: "Lohardaga", nameHi: "लोहरदगा", stateCode: "JH" },
+  { id: "gumla", nameEn: "Gumla", nameHi: "गुमला", stateCode: "JH" },
+  { id: "simdega", nameEn: "Simdega", nameHi: "सिमडेगा", stateCode: "JH" },
+  { id: "khunti", nameEn: "Khunti", nameHi: "खूंटी", stateCode: "JH" },
+  { id: "saraikela", nameEn: "Saraikela Kharsawan", nameHi: "सरायकेला खरसावां", stateCode: "JH" },
+  { id: "jamtara", nameEn: "Jamtara", nameHi: "जामताड़ा", stateCode: "JH" },
+  { id: "pakur", nameEn: "Pakur", nameHi: "पाकुड़", stateCode: "JH" },
 
-  // Bihar Districts & Major Cities
+  // Bihar Districts
   { id: "patna", nameEn: "Patna", nameHi: "पटना", stateCode: "BR" },
   { id: "gaya", nameEn: "Gaya", nameHi: "गया", stateCode: "BR" },
   { id: "muzaffarpur", nameEn: "Muzaffarpur", nameHi: "मुजफ्फरपुर", stateCode: "BR" },
@@ -37,8 +46,35 @@ export const INDIAN_DISTRICTS: CityDistrict[] = [
   { id: "ara", nameEn: "Bhojpur / Ara", nameHi: "भोजपुर / आरा", stateCode: "BR" },
   { id: "samastipur", nameEn: "Samastipur", nameHi: "समस्तीपुर", stateCode: "BR" },
   { id: "chhapra", nameEn: "Saran / Chhapra", nameHi: "सारण / छपरा", stateCode: "BR" },
+  { id: "vaishali", nameEn: "Vaishali / Hajipur", nameHi: "वैशाली / हाजीपुर", stateCode: "BR" },
+  { id: "siwan", nameEn: "Siwan", nameHi: "सीवान", stateCode: "BR" },
+  { id: "gopalganj", nameEn: "Gopalganj", nameHi: "गोपालगंज", stateCode: "BR" },
+  { id: "motihari", nameEn: "East Champaran / Motihari", nameHi: "पूर्वी चंपारण / मोतिहारी", stateCode: "BR" },
+  { id: "bettiah", nameEn: "West Champaran / Bettiah", nameHi: "पश्चिम चंपारण / बेतिया", stateCode: "BR" },
+  { id: "sitamarhi", nameEn: "Sitamarhi", nameHi: "सीतामढ़ी", stateCode: "BR" },
+  { id: "madhubani", nameEn: "Madhubani", nameHi: "मधुबनी", stateCode: "BR" },
+  { id: "saharsa", nameEn: "Saharsa", nameHi: "सहरसा", stateCode: "BR" },
+  { id: "supaul", nameEn: "Supaul", nameHi: "सुपौल", stateCode: "BR" },
+  { id: "madhepura", nameEn: "Madhepura", nameHi: "मधेपुरा", stateCode: "BR" },
+  { id: "katihar", nameEn: "Katihar", nameHi: "कटिहार", stateCode: "BR" },
+  { id: "araria", nameEn: "Araria", nameHi: "अररिया", stateCode: "BR" },
+  { id: "kishanganj", nameEn: "Kishanganj", nameHi: "किशनगंज", stateCode: "BR" },
+  { id: "banka", nameEn: "Banka", nameHi: "बांका", stateCode: "BR" },
+  { id: "munger", nameEn: "Munger", nameHi: "मुंगेर", stateCode: "BR" },
+  { id: "jamui", nameEn: "Jamui", nameHi: "जमुई", stateCode: "BR" },
+  { id: "khagaria", nameEn: "Khagaria", nameHi: "खगड़िया", stateCode: "BR" },
+  { id: "lakhisarai", nameEn: "Lakhisarai", nameHi: "लखीसराय", stateCode: "BR" },
+  { id: "sheikhpura", nameEn: "Sheikhpura", nameHi: "शेखपुरा", stateCode: "BR" },
+  { id: "nawada", nameEn: "Nawada", nameHi: "नवादा", stateCode: "BR" },
+  { id: "aurangabad_br", nameEn: "Aurangabad", nameHi: "औरंगाबाद", stateCode: "BR" },
+  { id: "rohtas", nameEn: "Rohtas / Sasaram", nameHi: "रोहतास / सासाराम", stateCode: "BR" },
+  { id: "kaimur", nameEn: "Kaimur / Bhabua", nameHi: "कैमूर / भभुआ", stateCode: "BR" },
+  { id: "buxar", nameEn: "Buxar", nameHi: "बक्सर", stateCode: "BR" },
+  { id: "jehanabad", nameEn: "Jehanabad", nameHi: "जहानाबाद", stateCode: "BR" },
+  { id: "arwal", nameEn: "Arwal", nameHi: "अरवल", stateCode: "BR" },
+  { id: "sheohar", nameEn: "Sheohar", nameHi: "शिवहर", stateCode: "BR" },
 
-  // Uttar Pradesh Major Cities
+  // Uttar Pradesh Major Cities & Districts
   { id: "lucknow", nameEn: "Lucknow", nameHi: "लखनऊ", stateCode: "UP" },
   { id: "kanpur", nameEn: "Kanpur", nameHi: "कानपुर", stateCode: "UP" },
   { id: "varanasi", nameEn: "Varanasi", nameHi: "वाराणसी", stateCode: "UP" },
@@ -46,14 +82,24 @@ export const INDIAN_DISTRICTS: CityDistrict[] = [
   { id: "agra", nameEn: "Agra", nameHi: "आगरा", stateCode: "UP" },
   { id: "prayagraj", nameEn: "Prayagraj", nameHi: "प्रयागराज", stateCode: "UP" },
   { id: "gorakhpur", nameEn: "Gorakhpur", nameHi: "गोरखपुर", stateCode: "UP" },
+  { id: "ghaziabad", nameEn: "Ghaziabad", nameHi: "गाजियाबाद", stateCode: "UP" },
+  { id: "meerut", nameEn: "Meerut", nameHi: "मेरठ", stateCode: "UP" },
+  { id: "bareilly", nameEn: "Bareilly", nameHi: "बरेली", stateCode: "UP" },
+  { id: "aligarh", nameEn: "Aligarh", nameHi: "अलीगढ़", stateCode: "UP" },
+  { id: "moradabad", nameEn: "Moradabad", nameHi: "मुरादाबाद", stateCode: "UP" },
+  { id: "ayodhya", nameEn: "Ayodhya / Faizabad", nameHi: "अयोध्या / फैजाबाद", stateCode: "UP" },
 
   // Delhi & NCR
   { id: "delhi", nameEn: "Delhi NCR", nameHi: "दिल्ली एनसीआर", stateCode: "DL" },
+  { id: "new_delhi", nameEn: "New Delhi", nameHi: "नई दिल्ली", stateCode: "DL" },
+  { id: "central_delhi", nameEn: "Central Delhi", nameHi: "मध्य दिल्ली", stateCode: "DL" },
 
   // West Bengal
   { id: "kolkata", nameEn: "Kolkata", nameHi: "कोलकाता", stateCode: "WB" },
   { id: "siliguri", nameEn: "Siliguri", nameHi: "सिलीगुड़ी", stateCode: "WB" },
   { id: "asansol", nameEn: "Asansol", nameHi: "आसनसोल", stateCode: "WB" },
+  { id: "howrah", nameEn: "Howrah", nameHi: "हावड़ा", stateCode: "WB" },
+  { id: "durgapur", nameEn: "Durgapur", nameHi: "दुर्गापुर", stateCode: "WB" },
 
   // National / Statewide
   { id: "national", nameEn: "National / Statewide", nameHi: "राष्ट्रीय / राज्यव्यापी", stateCode: "ALL" }

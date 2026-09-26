@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { clearSeoCache } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -88,10 +89,14 @@ export async function POST(request: NextRequest) {
       fs.writeFileSync(ALT_DB_FILE_PATH, jsonStr, "utf-8");
     } catch (e) {}
 
+    // Clear in-memory server cache immediately so next request gets fresh DB data
+    clearSeoCache();
+
     // Purge Next.js page cache for every path that was updated
     // so the new title/meta shows immediately on the next page visit
     try {
-      // Always purge the homepage
+      // Always purge the homepage and root layout
+      revalidatePath("/", "layout");
       revalidatePath("/");
 
       // Purge every specific page path that was saved
@@ -102,7 +107,10 @@ export async function POST(request: NextRequest) {
             uniquePaths.add(item.path);
           }
         });
-        uniquePaths.forEach((p) => revalidatePath(p));
+        uniquePaths.forEach((p) => {
+          revalidatePath(p);
+          revalidatePath(p, "page");
+        });
       }
     } catch (rvErr) {
       console.warn("revalidatePath failed (safe to ignore in dev):", rvErr);

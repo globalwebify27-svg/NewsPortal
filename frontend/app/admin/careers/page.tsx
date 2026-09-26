@@ -495,12 +495,12 @@ export default function AdminCareersPage() {
                         <td className="p-4">
                           <div className="font-bold text-slate-900">{app.fullName}</div>
                           <div className="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
-                            <span className="flex items-center gap-1">
+                            <a href={`mailto:${app.email}`} className="flex items-center gap-1 hover:text-red-600 hover:underline">
                               <Mail className="w-3 h-3 text-slate-400" /> {app.email}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-slate-400" /> {app.phone}
-                            </span>
+                            </a>
+                            <a href={`tel:${app.phone.replace(/[^0-9+]/g, "")}`} className="flex items-center gap-1 text-emerald-600 font-semibold hover:underline">
+                              <Phone className="w-3 h-3 text-emerald-600" /> {app.phone}
+                            </a>
                           </div>
                         </td>
 

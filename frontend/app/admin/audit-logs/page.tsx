@@ -268,7 +268,10 @@ export default function AuditLogsPage() {
                         {log.user.name}
                       </div>
                       <div style={{ fontSize: "0.76rem", color: "#64748b" }}>
-                        {log.user.email} • ({log.user.role})
+                        <a href={`mailto:${log.user.email}`} style={{ color: "#0284c7", textDecoration: "none" }} onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")} onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}>
+                          {log.user.email}
+                        </a>{" "}
+                        • ({log.user.role})
                       </div>
                     </td>
 
