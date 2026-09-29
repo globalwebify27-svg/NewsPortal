@@ -949,12 +949,12 @@ export default function AdminSettingsPage() {
               <div style={{ border: "2px dashed #cbd5e1", borderRadius: "12px", padding: "18px 14px", textAlign: "center", background: "#ffffff", marginBottom: "16px", transition: "all 0.2s ease" }}>
                 <ImageIcon2 size={32} style={{ color: "#94a3b8", marginBottom: "6px" }} />
                 <p style={{ margin: "0 0 10px 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-                  Supports PNG, SVG, JPG, WebP — uploads to Hostinger Storage
+                  Supports PNG, SVG, JPG, WebP, GIF — uploads to Hostinger Storage
                 </p>
                 <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: logoLoading ? "#64748b" : "#e50914", color: "#ffffff", padding: "9px 18px", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: logoLoading ? "not-allowed" : "pointer", boxShadow: logoLoading ? "none" : "0 4px 12px rgba(229,9,20,0.25)", transition: "all 0.2s ease" }}>
                   {logoLoading ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Upload size={15} />}
                   {logoLoading ? "Uploading..." : "Choose Logo Image"}
-                  <input type="file" accept="image/*" onChange={handleLogoFileUpload} disabled={logoLoading} style={{ display: "none" }} />
+                  <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp,image/gif" onChange={handleLogoFileUpload} disabled={logoLoading} style={{ display: "none" }} />
                 </label>
               </div>
 
