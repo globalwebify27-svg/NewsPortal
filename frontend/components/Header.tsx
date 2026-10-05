@@ -891,39 +891,32 @@ export default function Header() {
               onMouseEnter={() => setHoveredNav("location")}
               onMouseLeave={() => setHoveredNav(null)}
             >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setIsStateModalOpen(true)}
-                    className="location-pill-btn"
-                    style={{
-                      background: "#ffffff",
-                      color: "#0f172a",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "20px",
-                      padding: "4px 9px",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontFamily: "var(--font-ui)",
-                      fontWeight: 700,
-                      letterSpacing: 0,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
-                    }}
-                    aria-label="Click to select Indian State"
-                  >
-                    <MapPin size={13} style={{ color: "#16a34a" }} />
-                    <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: 0, color: "#0f172a", fontSize: "0.82rem" }}>
-                      {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
-                    </span>
-                    <ChevronDown size={14} style={{ color: "#64748b" }} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "राज्य चुनें" : "Select State"}</p>
-                </TooltipContent>
-              </Tooltip>
+              <button
+                onClick={() => setIsStateModalOpen(true)}
+                className="location-pill-btn"
+                style={{
+                  background: "#ffffff",
+                  color: "#0f172a",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "20px",
+                  padding: "4px 9px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  fontFamily: "var(--font-ui)",
+                  fontWeight: 700,
+                  letterSpacing: 0,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)"
+                }}
+                aria-label="Click to select Indian State"
+              >
+                <MapPin size={13} style={{ color: "#16a34a" }} />
+                <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: 0, color: "#0f172a", fontSize: "0.82rem" }}>
+                  {lang === "HI" ? selectedState.nameHi : selectedState.nameEn}
+                </span>
+                <ChevronDown size={14} style={{ color: "#64748b" }} />
+              </button>
               <div
                 className="mega-dropdown"
                 style={{
@@ -936,50 +929,33 @@ export default function Header() {
                 }}
               >
                 {INDIAN_STATES.slice(0, 6).map((st) => (
-                  <Tooltip key={st.code}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={`/${st.slug}`}
-                        onClick={() => handleSelectState(st)}
-                        style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <span>📍</span>
-                        <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p style={{ margin: 0 }}>
-                        {lang === "HI" ? `${st.nameHi} समाचार` : `${st.nameEn} News`}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <Link
+                    key={st.code}
+                    href={`/${st.slug}`}
+                    onClick={() => handleSelectState(st)}
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    <span>📍</span>
+                    <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
+                  </Link>
                 ))}
                 <div className="dropdown-divider"></div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setIsStateModalOpen(true)}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "#e50914",
-                        fontWeight: 800,
-                        fontSize: "0.78rem",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        width: "100%",
-                        padding: "4px 8px"
-                      }}
-                    >
-                      {lang === "HI" ? "सभी राज्य देखें →" : "View All States →"}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p style={{ margin: 0 }}>
-                      {lang === "HI" ? "सभी राज्य देखें" : "View All States"}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+                <button
+                  onClick={() => setIsStateModalOpen(true)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#e50914",
+                    fontWeight: 800,
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    width: "100%",
+                    padding: "4px 8px"
+                  }}
+                >
+                  {lang === "HI" ? "सभी राज्य देखें →" : "View All States →"}
+                </button>
               </div>
             </div>
 
@@ -991,18 +967,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("home")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`} aria-label={lang === "HI" ? "मुख्य पृष्ठ" : "Home"}>
-                      <Home size={15} />
-                      <span>{t("home")}</span>
-                      {isActive("/") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "ताज़ा व मुख्य समाचार" : "Top Headlines"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/" className={`nav-link pill-nav-link ${isActive("/") ? "active" : ""}`} aria-label={lang === "HI" ? "मुख्य पृष्ठ" : "Home"}>
+                  <Home size={15} />
+                  <span>{t("home")}</span>
+                  {isActive("/") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1032,18 +1001,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("education")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`} aria-label={lang === "HI" ? "शिक्षा" : "Education"}>
-                      <Zap size={15} />
-                      <span>{lang === "HI" ? "शिक्षा" : "Education"}</span>
-                      {isActive("/education") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "शिक्षा, बोर्ड व प्रतियोगी परीक्षाएं" : "Education, Board & Entrance Exams"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/education" className={`nav-link pill-nav-link ${isActive("/education") ? "active" : ""}`} aria-label={lang === "HI" ? "शिक्षा" : "Education"}>
+                  <Zap size={15} />
+                  <span>{lang === "HI" ? "शिक्षा" : "Education"}</span>
+                  {isActive("/education") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1080,18 +1042,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("world")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`} aria-label={lang === "HI" ? "विदेश" : "World"}>
-                      <Globe size={15} />
-                      <span>{t("world")}</span>
-                      {isActive("/world") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "विदेश व अंतरराष्ट्रीय मामले" : "World & Global Affairs"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/world" className={`nav-link pill-nav-link ${isActive("/world") ? "active" : ""}`} aria-label={lang === "HI" ? "विदेश" : "World"}>
+                  <Globe size={15} />
+                  <span>{t("world")}</span>
+                  {isActive("/world") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1128,25 +1083,18 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("india")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href="/india"
-                      className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
-                      aria-label={lang === "HI" ? "भारत" : "India"}
-                      onClick={() => {
-                        sessionStorage.removeItem("ga_selected_state");
-                      }}
-                    >
-                      <MapPin size={15} />
-                      <span>{t("india")}</span>
-                      {isActive("/india") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "राष्ट्रीय व राज्य-वार समाचार" : "National & State-wise News"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link
+                  href="/india"
+                  className={`nav-link pill-nav-link ${isActive("/india") ? "active" : ""}`}
+                  aria-label={lang === "HI" ? "भारत" : "India"}
+                  onClick={() => {
+                    sessionStorage.removeItem("ga_selected_state");
+                  }}
+                >
+                  <MapPin size={15} />
+                  <span>{t("india")}</span>
+                  {isActive("/india") && <span className="active-pill-bar"></span>}
+                </Link>
                 {/* INDIA TAB MEGA DROPDOWN WITH ALL STATES SUB-TABS */}
                 <div
                   className="mega-dropdown"
@@ -1177,35 +1125,27 @@ export default function Header() {
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px 10px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
                     {INDIAN_STATES.map((st) => (
-                      <Tooltip key={st.code}>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={`/${st.slug}`}
-                            onClick={() => handleSelectState(st)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              padding: "6px 10px",
-                              borderRadius: "6px",
-                              fontSize: "0.82rem",
-                              fontWeight: selectedState.code === st.code ? 800 : 500,
-                              color: selectedState.code === st.code ? "#ffffff" : "#e2e8f0",
-                              background: selectedState.code === st.code ? "#e50914" : "rgba(255,255,255,0.06)",
-                              textDecoration: "none",
-                              transition: "all 0.15s ease"
-                            }}
-                          >
-                            <span style={{ fontSize: "0.75rem" }}>📍</span>
-                            <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p style={{ margin: 0 }}>
-                            {lang === "HI" ? `${st.nameHi} समाचार` : `${st.nameEn} News`}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <Link
+                        key={st.code}
+                        href={`/${st.slug}`}
+                        onClick={() => handleSelectState(st)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 10px",
+                          borderRadius: "6px",
+                          fontSize: "0.82rem",
+                          fontWeight: selectedState.code === st.code ? 800 : 500,
+                          color: selectedState.code === st.code ? "#ffffff" : "#e2e8f0",
+                          background: selectedState.code === st.code ? "#e50914" : "rgba(255,255,255,0.06)",
+                          textDecoration: "none",
+                          transition: "all 0.15s ease"
+                        }}
+                      >
+                        <span style={{ fontSize: "0.75rem" }}>📍</span>
+                        <span>{lang === "HI" ? st.nameHi : st.nameEn}</span>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -1215,18 +1155,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("business")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/business" className={`nav-link pill-nav-link ${isActive("/business") ? "active" : ""}`} aria-label={lang === "HI" ? "व्यापार" : "Business"}>
-                      <TrendingUp size={15} />
-                      <span>{t("business")}</span>
-                      {isActive("/business") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "शेयर बाज़ार, व्यापार व अर्थव्यवस्था" : "Business, Markets & Economy"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/business" className={`nav-link pill-nav-link ${isActive("/business") ? "active" : ""}`} aria-label={lang === "HI" ? "व्यापार" : "Business"}>
+                  <TrendingUp size={15} />
+                  <span>{t("business")}</span>
+                  {isActive("/business") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1263,18 +1196,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("technology")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/technology" className={`nav-link pill-nav-link ${isActive("/technology") ? "active" : ""}`} aria-label={lang === "HI" ? "तकनीक" : "Technology"}>
-                      <Cpu size={15} />
-                      <span>{t("technology")}</span>
-                      {isActive("/technology") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "तकनीक, गैजेट्स व एआई" : "Tech, Gadgets & AI Innovations"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/technology" className={`nav-link pill-nav-link ${isActive("/technology") ? "active" : ""}`} aria-label={lang === "HI" ? "तकनीक" : "Technology"}>
+                  <Cpu size={15} />
+                  <span>{t("technology")}</span>
+                  {isActive("/technology") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1311,18 +1237,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("sports")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/sports" className={`nav-link pill-nav-link ${isActive("/sports") ? "active" : ""}`} aria-label={lang === "HI" ? "खेल" : "Sports"}>
-                      <Trophy size={15} />
-                      <span>{t("sports")}</span>
-                      {isActive("/sports") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "खेल, क्रिकेट व लाइव स्कोर" : "Sports, Cricket & Match Updates"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/sports" className={`nav-link pill-nav-link ${isActive("/sports") ? "active" : ""}`} aria-label={lang === "HI" ? "खेल" : "Sports"}>
+                  <Trophy size={15} />
+                  <span>{t("sports")}</span>
+                  {isActive("/sports") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1359,18 +1278,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("entertainment")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/entertainment" className={`nav-link pill-nav-link ${isActive("/entertainment") ? "active" : ""}`} aria-label={lang === "HI" ? "मनोरंजन" : "Entertainment"}>
-                      <Film size={15} />
-                      <span>{t("entertainment")}</span>
-                      {isActive("/entertainment") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "सिनेमा, बॉलीवुड व ओटीटी" : "Movies, Bollywood & OTT Releases"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/entertainment" className={`nav-link pill-nav-link ${isActive("/entertainment") ? "active" : ""}`} aria-label={lang === "HI" ? "मनोरंजन" : "Entertainment"}>
+                  <Film size={15} />
+                  <span>{t("entertainment")}</span>
+                  {isActive("/entertainment") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1380,7 +1292,8 @@ export default function Header() {
                     pointerEvents: hoveredNav === "entertainment" ? "auto" : "none",
                     position: "absolute",
                     top: "100%",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     zIndex: 99999,
                     background: "#0d1117",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -1407,18 +1320,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("science")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`} aria-label={lang === "HI" ? "विज्ञान" : "Science"}>
-                      <Atom size={15} />
-                      <span>{t("science")}</span>
-                      {isActive("/science") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "विज्ञान व अंतरिक्ष अनुसंधान" : "Science, Space & Discoveries"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/science" className={`nav-link pill-nav-link ${isActive("/science") ? "active" : ""}`} aria-label={lang === "HI" ? "विज्ञान" : "Science"}>
+                  <Atom size={15} />
+                  <span>{t("science")}</span>
+                  {isActive("/science") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1428,7 +1334,8 @@ export default function Header() {
                     pointerEvents: hoveredNav === "science" ? "auto" : "none",
                     position: "absolute",
                     top: "100%",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     zIndex: 99999,
                     background: "#0d1117",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -1455,18 +1362,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("politics")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/politics" className={`nav-link pill-nav-link ${isActive("/politics") ? "active" : ""}`} aria-label={lang === "HI" ? "राजनीति" : "Politics"}>
-                      <Landmark size={15} />
-                      <span>{t("politics")}</span>
-                      {isActive("/politics") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "राजनीति, चुनाव व संसद समाचार" : "Politics, Elections & Parliament"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/politics" className={`nav-link pill-nav-link ${isActive("/politics") ? "active" : ""}`} aria-label={lang === "HI" ? "राजनीति" : "Politics"}>
+                  <Landmark size={15} />
+                  <span>{t("politics")}</span>
+                  {isActive("/politics") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1476,7 +1376,8 @@ export default function Header() {
                     pointerEvents: hoveredNav === "politics" ? "auto" : "none",
                     position: "absolute",
                     top: "100%",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     zIndex: 99999,
                     background: "#0d1117",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -1503,18 +1404,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("crime")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/crime" className={`nav-link pill-nav-link ${isActive("/crime") ? "active" : ""}`} aria-label={lang === "HI" ? "अपराध / जुर्म" : "Crime"}>
-                      <Shield size={15} />
-                      <span>{t("crime")}</span>
-                      {isActive("/crime") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "अपराध, पुलिस व कानून व्यवस्था" : "Crime, Police & Law Updates"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/crime" className={`nav-link pill-nav-link ${isActive("/crime") ? "active" : ""}`} aria-label={lang === "HI" ? "अपराध / जुर्म" : "Crime"}>
+                  <Shield size={15} />
+                  <span>{t("crime")}</span>
+                  {isActive("/crime") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1524,7 +1418,8 @@ export default function Header() {
                     pointerEvents: hoveredNav === "crime" ? "auto" : "none",
                     position: "absolute",
                     top: "100%",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     zIndex: 99999,
                     background: "#0d1117",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -1552,18 +1447,11 @@ export default function Header() {
                 onMouseEnter={() => setHoveredNav("videos")}
                 onMouseLeave={() => setHoveredNav(null)}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`} aria-label={lang === "HI" ? "वीडियो" : "Videos"}>
-                      <Tv size={15} />
-                      <span>{t("videos")}</span>
-                      {isActive("/videos") && <span className="active-pill-bar"></span>}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p style={{ margin: 0 }}>{lang === "HI" ? "वीडियो बुलेटिन व लाइव रिपोर्ट्स" : "Video Bulletins & Reports"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Link href="/videos" className={`nav-link pill-nav-link ${isActive("/videos") ? "active" : ""}`} aria-label={lang === "HI" ? "वीडियो" : "Videos"}>
+                  <Tv size={15} />
+                  <span>{t("videos")}</span>
+                  {isActive("/videos") && <span className="active-pill-bar"></span>}
+                </Link>
                 <div
                   className="mega-dropdown"
                   style={{
@@ -1573,7 +1461,8 @@ export default function Header() {
                     pointerEvents: hoveredNav === "videos" ? "auto" : "none",
                     position: "absolute",
                     top: "100%",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     zIndex: 99999,
                     background: "#0d1117",
                     border: "1px solid rgba(255, 255, 255, 0.2)",

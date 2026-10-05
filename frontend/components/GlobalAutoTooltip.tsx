@@ -60,12 +60,14 @@ export default function GlobalAutoTooltip() {
       let target = e.target as HTMLElement | null;
       if (!target) return null;
 
-      // Don't show global auto tooltip if an element has a local Tooltip component or is part of a tooltip
+      // Don't show global auto tooltip if an element has a local Tooltip component or is part of a tooltip or navigation bar
       if (
         target.closest("[data-tooltip-trigger='true']") ||
         target.closest(".global-auto-tooltip") ||
         target.closest("[role='tooltip']") ||
-        target.closest(".ui-tooltip-content")
+        target.closest(".ui-tooltip-content") ||
+        target.closest(".mega-menu-nav") ||
+        target.closest(".mega-dropdown")
       ) {
         return null;
       }
