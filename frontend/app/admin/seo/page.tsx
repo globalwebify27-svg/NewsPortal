@@ -498,16 +498,47 @@ export default function AdminSeoPage() {
             {/* PREVIEW SIMULATOR BOX */}
             {activeTab === "serp" && (
               <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px 22px", fontFamily: "sans-serif" }}>
-                <div style={{ fontSize: "0.72rem", color: "#4d5156", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <img src="https://www.google.com/favicon.ico" alt="" style={{ width: "16px", height: "16px" }} />
-                  <span>globalawaaz.com {activeConfig.path}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "6px" }}>
+                  <div style={{ fontSize: "0.75rem", color: "#4d5156", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: "16px", height: "16px" }} />
+                    <span style={{ fontWeight: 600, color: "#202124" }}>https://www.globalawaaz.com</span>
+                    <span style={{ color: "#70757a" }}>{activeConfig.path === "/" ? "" : `› ${activeConfig.path.replace(/^\//, "")}`}</span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      background: activeConfig.metaTitle && activeConfig.metaTitle.length > 60 ? "#fff7ed" : "#f0fdf4",
+                      color: activeConfig.metaTitle && activeConfig.metaTitle.length > 60 ? "#c2410c" : "#15803d",
+                      fontWeight: 700,
+                      border: `1px solid ${activeConfig.metaTitle && activeConfig.metaTitle.length > 60 ? "#fed7aa" : "#bbf7d0"}`
+                    }}
+                  >
+                    {activeConfig.metaTitle && activeConfig.metaTitle.length > 60
+                      ? `Google will truncate with "..." (${activeConfig.metaTitle.length} chars)`
+                      : "Fits Google SERP limit (<= 60 chars)"}
+                  </span>
                 </div>
-                <h4 style={{ fontSize: "1.18rem", color: "#1a0dab", fontWeight: 400, margin: "0 0 4px 0", cursor: "pointer", lineHeight: "1.3" }}>
-                  {activeConfig.metaTitle || "Page Title Sample"}
+                <h4 style={{ fontSize: "1.18rem", color: "#1a0dab", fontWeight: 400, margin: "0 0 6px 0", cursor: "pointer", lineHeight: "1.3" }}>
+                  {activeConfig.metaTitle ? (
+                    activeConfig.metaTitle.length > 60
+                      ? `${activeConfig.metaTitle.slice(0, 60).trim()}...`
+                      : activeConfig.metaTitle
+                  ) : "Page Title Sample"}
                 </h4>
                 <p style={{ fontSize: "0.85rem", color: "#4d5156", margin: 0, lineHeight: "1.4" }}>
-                  {activeConfig.metaDescription || "Page meta description will appear here when indexed by Google search engines."}
+                  {activeConfig.metaDescription ? (
+                    activeConfig.metaDescription.length > 160
+                      ? `${activeConfig.metaDescription.slice(0, 160).trim()}...`
+                      : activeConfig.metaDescription
+                  ) : "Page meta description will appear here when indexed by Google search engines."}
                 </p>
+                {activeConfig.metaTitle && activeConfig.metaTitle.length > 60 && (
+                  <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px dashed #e2e8f0", fontSize: "0.72rem", color: "#64748b" }}>
+                    <strong>Full Title sent to Google:</strong> {activeConfig.metaTitle}
+                  </div>
+                )}
               </div>
             )}
 
