@@ -14,7 +14,6 @@ import {
   Eye,
   Activity,
   ArrowUpRight,
-  Sparkles,
   Search,
   Edit,
   Trash2,
@@ -453,46 +452,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* AI & Quick Settings Banner */}
-        <div style={{ background: "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)", border: "1px solid #fecdd3", borderRadius: "20px", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#e50914", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Sparkles size={18} />
-              </div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-                AI Content & Branding Suite
-              </h3>
-            </div>
-            <p style={{ fontSize: "0.85rem", color: "#475569", margin: "0 0 20px 0", lineHeight: 1.5 }}>
-              Use AI copilot for headline generation or fine-tune site logos and header margins live across your news portal.
-            </p>
-          </div>
 
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Link
-              href="/admin/ai"
-              style={{ flex: 1, background: "#0f172a", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
-            >
-              Open AI Copilot
-            </Link>
-            <Link
-              href="/admin/team"
-              style={{ flex: 1, background: "#2563eb", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
-            >
-              Team Management
-            </Link>
-            {adminRole !== "editor" && (
-              <Link
-                href="/admin/settings"
-                style={{ flex: 1, background: "#e50914", color: "#ffffff", padding: "10px", borderRadius: "8px", textAlign: "center", fontWeight: 700, fontSize: "0.84rem", textDecoration: "none", minWidth: "120px" }}
-              >
-                Site Branding Settings
-              </Link>
-            )}
-          </div>
 
-        </div>
       </div>
 
       {/* Chief Editor Rejection Feedback Modal on Dashboard */}
