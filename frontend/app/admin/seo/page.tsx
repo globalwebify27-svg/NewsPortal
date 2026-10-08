@@ -36,11 +36,13 @@ export default function AdminSeoPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<"serp" | "social" | "schema">("serp");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     getAllSeoConfigs().then((res) => {
       if (Array.isArray(res)) setConfigs(res);
-    });
+    }).finally(() => setIsLoading(false));
   }, []);
 
   const showToast = (msg: string) => {
@@ -48,7 +50,7 @@ export default function AdminSeoPage() {
     setTimeout(() => setToastMessage(""), 3500);
   };
 
-  const activeConfig = configs.find((c) => c.path === selectedPath) || configs[0] || DEFAULT_SEO_PAGES[0];
+  const activeConfig = configs.find((c) => c.path === selectedPath) || configs[0];
 
   const updateActiveConfig = (updates: Partial<SeoPageConfig>) => {
     setConfigs((prev) =>
@@ -110,7 +112,9 @@ export default function AdminSeoPage() {
     }
   };
 
-  const { score, label, tips } = calculateSeoScore(activeConfig);
+  const { score, label, tips } = activeConfig
+    ? calculateSeoScore(activeConfig)
+    : { score: 0, label: "Loading...", tips: [] };
 
   const getScoreColor = (s: number) => {
     if (s >= 90) return "#00875a";
@@ -132,6 +136,22 @@ export default function AdminSeoPage() {
     if (filterCategory === "subtab") return c.isSubTab && !c.isState;
     return true;
   });
+
+  if (isLoading) {
+    return (
+      <div style={{ paddingBottom: "60px" }}>
+        {/* Loading Skeleton */}
+        <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", borderRadius: "20px", padding: "28px 32px", marginBottom: "28px", height: "110px", animation: "pulse 1.4s ease-in-out infinite" }} />
+        <div style={{ display: "grid", gridTemplateColumns: "310px 1fr", gap: "24px" }}>
+          <div style={{ background: "#f1f5f9", borderRadius: "16px", height: "480px", animation: "pulse 1.4s ease-in-out infinite" }} />
+          <div style={{ background: "#f1f5f9", borderRadius: "16px", height: "480px", animation: "pulse 1.4s ease-in-out infinite" }} />
+        </div>
+        <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }`}</style>
+      </div>
+    );
+  }
+
+  if (!activeConfig) return null;
 
   return (
     <div style={{ paddingBottom: "60px" }}>
