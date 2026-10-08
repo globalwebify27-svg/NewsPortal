@@ -83,12 +83,14 @@ export default async function Page() {
   let initialArticles: Article[] = [];
   let initialAdSettings: Record<string, string> = {};
   let initialLogoSettings: Record<string, string> = {};
+  let seoTitle = "";
 
   try {
-    const [articlesRes, adSettingsRes, logoSettingsRes] = await Promise.allSettled([
+    const [articlesRes, adSettingsRes, logoSettingsRes, seoRes] = await Promise.allSettled([
       getPublicArticles({ limit: 60 }),
       getAdSettings(),
       getLogoSettings(),
+      getSeoConfigForPath("/"),
     ]);
 
     if (articlesRes.status === "fulfilled" && articlesRes.value?.articles) {
@@ -100,6 +102,9 @@ export default async function Page() {
     if (logoSettingsRes.status === "fulfilled" && logoSettingsRes.value) {
       initialLogoSettings = JSON.parse(JSON.stringify(logoSettingsRes.value));
     }
+    if (seoRes.status === "fulfilled" && seoRes.value?.metaTitle) {
+      seoTitle = seoRes.value.metaTitle;
+    }
   } catch (e) {
     console.warn("SSR initial articles fetch error:", e);
   }
@@ -109,6 +114,7 @@ export default async function Page() {
       initialArticles={initialArticles}
       initialAdSettings={initialAdSettings}
       initialLogoSettings={initialLogoSettings}
+      seoTitle={seoTitle}
     />
   );
 }

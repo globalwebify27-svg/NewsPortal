@@ -155,11 +155,13 @@ function formatIndianDate(dateInput?: string | Date | null): string {
 export default function HomeClient({
   initialArticles = [],
   initialAdSettings = {},
-  initialLogoSettings = {}
+  initialLogoSettings = {},
+  seoTitle = ""
 }: {
   initialArticles?: Article[];
   initialAdSettings?: Record<string, string>;
   initialLogoSettings?: Record<string, string>;
+  seoTitle?: string;
 }) {
   const { lang, t } = useLanguage();
   const isHi = lang === "HI";
@@ -837,7 +839,10 @@ export default function HomeClient({
 
   return (
     <>
-
+      {/* Primary Semantic H1 for Google Search Indexing & Accessibility (Dynamic from Admin SEO Settings) */}
+      <h1 className="sr-only">
+        {seoTitle || "Global Awaaz: Breaking Hindi News, Jharkhand Samachar & Updates"}
+      </h1>
 
       {/* ===========================
           SPOTLIGHT NEWS GRID (Image 2 News Media Style)

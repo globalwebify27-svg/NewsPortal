@@ -27,9 +27,14 @@ export interface SchemaArticle {
 export function generateNewsOrganizationSchema() {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": "NewsMediaOrganization",
     "name": "Global Awaaz",
-    "alternateName": "Global Awaaz Hindi News",
+    "alternateName": [
+      "GLOBAL AWAAZ",
+      "ग्लोबल आवाज़",
+      "Global Awaaz Hindi News",
+      "Global Awaaz News"
+    ],
     "url": "https://www.globalawaaz.com/",
     "logo": "https://www.globalawaaz.com/uploads/logo--2-_1785996238254.png",
     "sameAs": [
@@ -50,10 +55,13 @@ export function generateWebSiteSchema() {
     "@type": "WebSite",
     "name": "Global Awaaz",
     "alternateName": [
-      "Global Awaaz News",
-      "Global Awaaz Hindi News"
+      "GLOBAL AWAAZ",
+      "ग्लोबल आवाज़",
+      "Global Awaaz Hindi News",
+      "Global Awaaz News"
     ],
     "url": "https://www.globalawaaz.com/",
+    "inLanguage": ["hi-IN", "en-IN"],
     "potentialAction": {
       "@type": "SearchAction",
       "target": "https://www.globalawaaz.com/search?search_term_string={search_term_string}",
