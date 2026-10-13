@@ -201,6 +201,10 @@ export default function Header() {
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
   const [customLogoSize, setCustomLogoSize] = useState<number>(56);
   const [customLogoMarginLeft, setCustomLogoMarginLeft] = useState<number>(75);
+  const [isDraggingLogo, setIsDraggingLogo] = useState<boolean>(false);
+  const logoDragStartX = useRef<number>(0);
+  const logoInitialMargin = useRef<number>(75);
+  const logoHasDragged = useRef<boolean>(false);
   const [headerBgGif, setHeaderBgGif] = useState<string | null>(null);
   const [headerBgHeight, setHeaderBgHeight] = useState<number>(110);
   const [headerBgSizeFit, setHeaderBgSizeFit] = useState<string>("cover");
@@ -271,6 +275,11 @@ export default function Header() {
           }
           if (data.site_logo_margin) {
             setCustomLogoMarginLeft(parseInt(data.site_logo_margin, 10) || 75);
+          } else {
+            try {
+              const localMargin = localStorage.getItem("ga_custom_logo_margin");
+              if (localMargin) setCustomLogoMarginLeft(parseInt(localMargin, 10) || 75);
+            } catch (_) {}
           }
           if (data.header_bg_gif) {
             setHeaderBgGif(cleanMediaUrl(data.header_bg_gif));
@@ -303,6 +312,54 @@ export default function Header() {
       window.removeEventListener("ga_logo_updated", handleLogoUpdate);
     };
   }, []);
+
+  // Drag and drop handler for logo emblem
+  const handleLogoPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    logoDragStartX.current = e.clientX;
+    logoInitialMargin.current = customLogoMarginLeft;
+    logoHasDragged.current = false;
+    setIsDraggingLogo(true);
+
+    const onPointerMove = (ev: PointerEvent) => {
+      const diffX = ev.clientX - logoDragStartX.current;
+      if (Math.abs(diffX) > 3) {
+        logoHasDragged.current = true;
+      }
+      const newMargin = Math.max(0, Math.min(350, Math.round(logoInitialMargin.current + diffX)));
+      setCustomLogoMarginLeft(newMargin);
+    };
+
+    const onPointerUp = async (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      setIsDraggingLogo(false);
+
+      if (logoHasDragged.current) {
+        const diffX = ev.clientX - logoDragStartX.current;
+        const finalMargin = Math.max(0, Math.min(350, Math.round(logoInitialMargin.current + diffX)));
+        try {
+          localStorage.setItem("ga_custom_logo_margin", String(finalMargin));
+        } catch (_) {}
+
+        try {
+          await fetch("/api/v1/logo-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key: "site_logo_margin", value: String(finalMargin) })
+          });
+          clearCacheKey("/api/v1/logo-settings");
+        } catch (_) {}
+
+        window.dispatchEvent(new Event("ga_logo_updated"));
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+  };
 
   // Dynamic Social Links State
   const [socialLinks, setSocialLinks] = useState({
@@ -535,24 +592,35 @@ export default function Header() {
                 <Menu size={22} />
               </button>
 
-              {/* Logo Emblem — always rendered with fallback */}
+              {/* Logo Emblem — interactive draggable with live position indicator */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
                     href="/"
                     aria-label="Global Awaaz Homepage"
                     className="header-left-logo-wrap"
+                    onPointerDown={handleLogoPointerDown}
+                    onClick={(e) => {
+                      if (logoHasDragged.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                    suppressHydrationWarning
                     style={{
                       textDecoration: "none",
                       display: "inline-flex",
                       alignItems: "center",
                       marginLeft: `${customLogoMarginLeft}px`,
-                      transition: "margin-left 0.2s ease",
-                      cursor: "pointer",
+                      transition: isDraggingLogo ? "none" : "margin-left 0.15s ease",
+                      cursor: isDraggingLogo ? "grabbing" : "grab",
                       position: "relative",
                       zIndex: 20,
+                      userSelect: "none",
+                      touchAction: "none",
                       pointerEvents: "auto"
                     }}
+                    title={isDraggingLogo ? `Logo Position: ${customLogoMarginLeft}px` : "Drag to reposition logo / लोगो खींचकर स्थान बदलें"}
                   >
                     <div
                       className="site-logo-emblem-left"
@@ -564,27 +632,57 @@ export default function Header() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        transition: "width 0.2s ease, height 0.2s ease",
-                        cursor: "pointer"
+                        transition: isDraggingLogo ? "none" : "width 0.2s ease, height 0.2s ease",
+                        cursor: isDraggingLogo ? "grabbing" : "grab",
+                        filter: isDraggingLogo ? "drop-shadow(0 6px 14px rgba(229,9,20,0.45))" : "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))",
+                        transform: isDraggingLogo ? "scale(1.05)" : "scale(1)"
                       }}
                     >
                       <img
                         src={customLogoUrl ? cleanMediaUrl(customLogoUrl) : "/logo.png"}
                         alt="Global Awaaz Logo"
+                        draggable={false}
                         style={{
                           width: "100%",
                           height: "100%",
                           objectFit: "contain",
-                          filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))",
-                          cursor: "pointer",
+                          cursor: isDraggingLogo ? "grabbing" : "grab",
                           pointerEvents: "none"
                         }}
                       />
                     </div>
+
+                    {/* Draggable Position Indicator Floating Badge */}
+                    {isDraggingLogo && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: "-22px",
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          background: "#e50914",
+                          color: "#ffffff",
+                          fontSize: "0.68rem",
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          whiteSpace: "nowrap",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
+                          pointerEvents: "none",
+                          zIndex: 30
+                        }}
+                      >
+                        {customLogoMarginLeft}px
+                      </span>
+                    )}
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
-                  <p style={{ margin: 0 }}>{lang === "HI" ? "ग्लोबल आवाज़ - मुख्य पृष्ठ" : "Global Awaaz - Homepage"}</p>
+                  <p style={{ margin: 0 }}>
+                    {isDraggingLogo
+                      ? `Position: ${customLogoMarginLeft}px`
+                      : (lang === "HI" ? "ग्लोबल आवाज़ (ड्रैग करके स्थान बदलें)" : "Global Awaaz (Drag to reposition)")}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>

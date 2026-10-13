@@ -18,7 +18,8 @@ import {
   Instagram,
   Youtube,
   Linkedin,
-  Phone
+  Phone,
+  Globe
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fetchWithCache, clearCacheKey } from "@/lib/settingsCache";
@@ -550,12 +551,20 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* Tech Stack */}
+          {/* Tech / Web Partner */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            <FileText size={15} style={{ color: "#e50914", flexShrink: 0 }} />
-            <span>
-              {isHindi ? "नेक्स्ट.जेएस आर्किटेक्चर द्वारा संचालित" : "Powered by Next.js Architecture"}
-            </span>
+            <Globe size={15} style={{ color: "#e50914", flexShrink: 0 }} />
+            <a
+              href="https://www.globalwebify.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#cbd5e1", textDecoration: "none", fontWeight: 600, transition: "color 0.15s ease" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#ffffff"; e.currentTarget.style.textDecoration = "underline"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#cbd5e1"; e.currentTarget.style.textDecoration = "none"; }}
+              aria-label="Globalwebify"
+            >
+              {isHindi ? "Globalwebify द्वारा संचालित" : "Powered by Globalwebify"}
+            </a>
           </div>
         </div>
 

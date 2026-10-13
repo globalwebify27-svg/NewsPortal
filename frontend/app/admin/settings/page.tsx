@@ -548,6 +548,11 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     loadLogoSettings();
     loadStickyAdSettings();
+    const onLogoUpdated = () => { loadLogoSettings(); };
+    window.addEventListener("ga_logo_updated", onLogoUpdated);
+    return () => {
+      window.removeEventListener("ga_logo_updated", onLogoUpdated);
+    };
   }, [loadLogoSettings, loadStickyAdSettings]);
 
   const handleAddCompanyLink = (e: React.FormEvent) => {

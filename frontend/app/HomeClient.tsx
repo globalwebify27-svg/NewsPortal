@@ -358,6 +358,14 @@ export default function HomeClient({
   const activeVideoAdsList = videoAdsList.filter((ad: any) => ad && ad.enabled !== false);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [trendingSlideIndex, setTrendingSlideIndex] = useState(0);
+  const [trendingSlideDirection, setTrendingSlideDirection] = useState<"next" | "prev">("next");
+  const [isTrendingPaused, setIsTrendingPaused] = useState(false);
+  const [trendingDragDistance, setTrendingDragDistance] = useState(0);
+  const [isTrendingDragging, setIsTrendingDragging] = useState(false);
+  const trendingTouchStartX = useRef<number | null>(null);
+  const trendingTouchStartY = useRef<number | null>(null);
+  const trendingMouseStartX = useRef<number | null>(null);
+  const trendingHasDragged = useRef(false);
   const [videoAdEnabled, setVideoAdEnabled] = useState(initialLogoSettings?.sidebar_video_ad_enabled !== "false");
   const [spotlightCol1Ad, setSpotlightCol1Ad] = useState<{ url: string; targetLink: string; title: string } | null>(
     initialLogoSettings?.spotlight_col1_ad_url
@@ -733,6 +741,120 @@ export default function HomeClient({
   const trendingSliderArticles = mainHero
     ? [mainHero, ...otherTrending, ...otherChronological].slice(0, 10)
     : displayList.slice(0, 10);
+
+  const displayTrendingSlides = trendingSliderArticles.length > 0
+    ? trendingSliderArticles
+    : (mainHero ? [mainHero] : []);
+  const totalTrendingSlides = displayTrendingSlides.length || 1;
+
+  // Auto-swipe & change timer for Trending News section
+  useEffect(() => {
+    if (isTrendingPaused || isTrendingDragging || totalTrendingSlides <= 1) return;
+    const timer = setInterval(() => {
+      setTrendingSlideDirection("next");
+      setTrendingSlideIndex((prev) => (prev + 1) % totalTrendingSlides);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [trendingSlideIndex, isTrendingPaused, isTrendingDragging, totalTrendingSlides]);
+
+  // Pause carousel rotation when browser tab is inactive
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsTrendingPaused(true);
+      } else {
+        setIsTrendingPaused(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Touch swipe gesture handlers (mobile & tablet)
+  const handleTrendingTouchStart = (e: React.TouchEvent) => {
+    setIsTrendingPaused(true);
+    trendingTouchStartX.current = e.touches[0].clientX;
+    trendingTouchStartY.current = e.touches[0].clientY;
+    trendingHasDragged.current = false;
+    setIsTrendingDragging(true);
+    setTrendingDragDistance(0);
+  };
+
+  const handleTrendingTouchMove = (e: React.TouchEvent) => {
+    if (trendingTouchStartX.current === null) return;
+    const diffX = e.touches[0].clientX - trendingTouchStartX.current;
+    const diffY = e.touches[0].clientY - (trendingTouchStartY.current ?? 0);
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      setTrendingDragDistance(diffX);
+      if (Math.abs(diffX) > 8) {
+        trendingHasDragged.current = true;
+      }
+    }
+  };
+
+  const handleTrendingTouchEnd = () => {
+    if (trendingTouchStartX.current !== null && trendingHasDragged.current) {
+      if (trendingDragDistance < -40) {
+        setTrendingSlideDirection("next");
+        setTrendingSlideIndex((prev) => (prev + 1) % totalTrendingSlides);
+      } else if (trendingDragDistance > 40) {
+        setTrendingSlideDirection("prev");
+        setTrendingSlideIndex((prev) => (prev - 1 + totalTrendingSlides) % totalTrendingSlides);
+      }
+    }
+    trendingTouchStartX.current = null;
+    trendingTouchStartY.current = null;
+    setTrendingDragDistance(0);
+    setIsTrendingDragging(false);
+    setIsTrendingPaused(false);
+    setTimeout(() => {
+      trendingHasDragged.current = false;
+    }, 80);
+  };
+
+  // Mouse drag handlers (desktop)
+  const handleTrendingMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    setIsTrendingPaused(true);
+    trendingMouseStartX.current = e.clientX;
+    trendingHasDragged.current = false;
+    setIsTrendingDragging(true);
+    setTrendingDragDistance(0);
+  };
+
+  const handleTrendingMouseMove = (e: React.MouseEvent) => {
+    if (trendingMouseStartX.current === null) return;
+    const diffX = e.clientX - trendingMouseStartX.current;
+    setTrendingDragDistance(diffX);
+    if (Math.abs(diffX) > 8) {
+      trendingHasDragged.current = true;
+    }
+  };
+
+  const handleTrendingMouseUp = () => {
+    if (trendingMouseStartX.current !== null && trendingHasDragged.current) {
+      if (trendingDragDistance < -40) {
+        setTrendingSlideDirection("next");
+        setTrendingSlideIndex((prev) => (prev + 1) % totalTrendingSlides);
+      } else if (trendingDragDistance > 40) {
+        setTrendingSlideDirection("prev");
+        setTrendingSlideIndex((prev) => (prev - 1 + totalTrendingSlides) % totalTrendingSlides);
+      }
+    }
+    trendingMouseStartX.current = null;
+    setTrendingDragDistance(0);
+    setIsTrendingDragging(false);
+    setTimeout(() => {
+      trendingHasDragged.current = false;
+    }, 80);
+  };
+
+  const handleTrendingMouseLeave = () => {
+    setIsTrendingPaused(false);
+    if (trendingMouseStartX.current !== null) {
+      handleTrendingMouseUp();
+    }
+  };
 
   // ── 3. Top 5 News (टॉप 5 न्यूज़ - 5 सबसे ताज़ा समाचार) ─────────────────────────
   // Strictly shows the NEXT 5 latest news directly following the featured trending news (excluding mainHero)
@@ -1123,8 +1245,32 @@ export default function HomeClient({
           gap: "20px",
           alignItems: "stretch"
         }}>
-          {/* Column 1: TRENDING NEWS (Manual Arrow Slider - Matched Height) */}
-          <div style={{ background: "var(--color-card-bg, #ffffff)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "14px", padding: "16px", display: "flex", flexDirection: "column", height: "100%", position: "relative", boxSizing: "border-box", justifyContent: "space-between" }}>
+          {/* Column 1: TRENDING NEWS (Auto-Swipe Card - Original Proportions Matched Height) */}
+          <div
+            onMouseEnter={() => setIsTrendingPaused(true)}
+            onMouseLeave={handleTrendingMouseLeave}
+            onTouchStart={handleTrendingTouchStart}
+            onTouchMove={handleTrendingTouchMove}
+            onTouchEnd={handleTrendingTouchEnd}
+            onMouseDown={handleTrendingMouseDown}
+            onMouseMove={handleTrendingMouseMove}
+            onMouseUp={handleTrendingMouseUp}
+            style={{
+              background: "var(--color-card-bg, #ffffff)",
+              border: "1px solid var(--color-border, #e2e8f0)",
+              borderRadius: "14px",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              position: "relative",
+              boxSizing: "border-box",
+              justifyContent: "space-between",
+              touchAction: "pan-y",
+              cursor: isTrendingDragging ? "grabbing" : undefined,
+              userSelect: "none"
+            }}
+          >
             <div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1134,20 +1280,30 @@ export default function HomeClient({
                   </h2>
                 </div>
                 
-                {/* Manual Slider Left/Right Navigation Arrows */}
+                {/* Navigation Arrows */}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, marginRight: "4px" }}>
-                    {trendingSlideIndex + 1} / {trendingSliderArticles.length || 1}
+                    {trendingSlideIndex + 1} / {totalTrendingSlides}
                   </span>
                   <button
-                    onClick={() => setTrendingSlideIndex((prev) => (prev - 1 + (trendingSliderArticles.length || 1)) % (trendingSliderArticles.length || 1))}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTrendingSlideDirection("prev");
+                      setTrendingSlideIndex((prev) => (prev - 1 + totalTrendingSlides) % totalTrendingSlides);
+                    }}
                     style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#f1f5f9", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#0f172a", fontWeight: 700 }}
                     title="Previous Trending News"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
-                    onClick={() => setTrendingSlideIndex((prev) => (prev + 1) % (trendingSliderArticles.length || 1))}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTrendingSlideDirection("next");
+                      setTrendingSlideIndex((prev) => (prev + 1) % totalTrendingSlides);
+                    }}
                     style={{ width: "28px", height: "28px", borderRadius: "50%", background: "#e50914", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ffffff", fontWeight: 700 }}
                     title="Next Trending News"
                   >
@@ -1156,95 +1312,123 @@ export default function HomeClient({
                 </div>
               </div>
 
-              {/* Active Trending Article Card (Manual Slider Slide) */}
+              {/* Active Trending Article Card (Auto-Swipe Slide) */}
               {(() => {
-                const activeSlide = trendingSliderArticles[trendingSlideIndex] || mainHero;
+                const activeSlide = displayTrendingSlides[trendingSlideIndex] || mainHero;
                 if (!activeSlide) return null;
 
                 const badgeLabel = `🔥 TRENDING NEWS #${trendingSlideIndex + 1}`;
 
                 return (
-                  <Link href={getArticleUrl(activeSlide)} title={activeSlide.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
-                      <span style={{
-                        background: "#e50914",
-                        color: "#ffffff",
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: "4px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.02em"
-                      }}>
-                        {badgeLabel}
-                      </span>
-                      {activeSlide.isHero && (
-                        <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.68rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
-                          🌟 SPOTLIGHT
+                  <div
+                    key={trendingSlideIndex}
+                    style={{
+                      animation: "trendingSwipeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1)",
+                      transform: trendingDragDistance ? `translateX(${trendingDragDistance}px)` : undefined,
+                      transition: trendingDragDistance ? "none" : undefined,
+                      width: "100%"
+                    }}
+                  >
+                    <style>{`
+                      @keyframes trendingSwipeIn {
+                        0% { opacity: 0.6; transform: translateX(${trendingSlideDirection === "prev" ? "-24px" : "24px"}); }
+                        100% { opacity: 1; transform: translateX(0); }
+                      }
+                    `}</style>
+                    <Link
+                      href={getArticleUrl(activeSlide)}
+                      title={activeSlide.title}
+                      onClick={(e) => {
+                        if (trendingHasDragged.current) {
+                          e.preventDefault();
+                        }
+                      }}
+                      style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                        <span style={{
+                          background: "#e50914",
+                          color: "#ffffff",
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.02em"
+                        }}>
+                          {badgeLabel}
                         </span>
-                      )}
-                    </div>
-                    <h3 title={activeSlide.title} style={{ fontFamily: "var(--font-headline)", fontSize: "1.2rem", fontWeight: 700, lineHeight: 1.45, margin: "0 0 10px", color: "var(--color-text, #0f172a)" }}>
-                      {activeSlide.title}
-                    </h3>
-                    <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
-                      <img
-                        src={getArticleImage(activeSlide, trendingSlideIndex, 1000)}
-                        alt={activeSlide.title}
-                        title={activeSlide.title}
-                        loading="eager"
-                        // @ts-ignore
-                        fetchPriority="high"
-                        decoding="async"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                      {activeSlide.videoUrl && (
-                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
-                          <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(229,9,20,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-                            <Play size={20} style={{ marginLeft: "3px" }} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <p style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: "0.86rem",
-                      color: "var(--color-secondary, #64748b)",
-                      margin: "8px 0 0",
-                      lineHeight: 1.5,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis"
-                    }}>
-                      {stripHtml(activeSlide.summary)}
-                    </p>
-                    <div style={{ marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "0.82rem", color: "#e50914", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                        {lang === "HI" ? "पूरी खबर पढ़ें ▶" : "Read Full Story ▶"}
-                      </span>
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        {trendingSliderArticles.slice(0, 10).map((_, dotIdx) => (
-                          <span
-                            key={dotIdx}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setTrendingSlideIndex(dotIdx);
-                            }}
-                            style={{
-                              width: dotIdx === trendingSlideIndex ? "16px" : "6px",
-                              height: "6px",
-                              borderRadius: "4px",
-                              background: dotIdx === trendingSlideIndex ? "#e50914" : "#cbd5e1",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease"
-                            }}
-                          />
-                        ))}
+                        {activeSlide.isHero && (
+                          <span style={{ background: "#dc2626", color: "#fff", fontSize: "0.68rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>
+                            🌟 SPOTLIGHT
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  </Link>
+                      <h3 title={activeSlide.title} style={{ fontFamily: "var(--font-headline)", fontSize: "1.2rem", fontWeight: 700, lineHeight: 1.45, margin: "0 0 10px", color: "var(--color-text, #0f172a)" }}>
+                        {activeSlide.title}
+                      </h3>
+                      <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
+                        <img
+                          src={getArticleImage(activeSlide, trendingSlideIndex, 1000)}
+                          alt={activeSlide.title}
+                          title={activeSlide.title}
+                          loading="eager"
+                          // @ts-ignore
+                          fetchPriority="high"
+                          decoding="async"
+                          draggable={false}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
+                        />
+                        {activeSlide.videoUrl && (
+                          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
+                            <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(229,9,20,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+                              <Play size={20} style={{ marginLeft: "3px" }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "0.86rem",
+                        color: "var(--color-secondary, #64748b)",
+                        margin: "8px 0 0",
+                        lineHeight: 1.5,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                      }}>
+                        {stripHtml(activeSlide.summary)}
+                      </p>
+                      <div style={{ marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "0.82rem", color: "#e50914", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          {lang === "HI" ? "पूरी खबर पढ़ें ▶" : "Read Full Story ▶"}
+                        </span>
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          {displayTrendingSlides.slice(0, 10).map((_, dotIdx) => (
+                            <span
+                              key={dotIdx}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTrendingSlideDirection(dotIdx >= trendingSlideIndex ? "next" : "prev");
+                                setTrendingSlideIndex(dotIdx);
+                              }}
+                              style={{
+                                width: dotIdx === trendingSlideIndex ? "16px" : "6px",
+                                height: "6px",
+                                borderRadius: "4px",
+                                background: dotIdx === trendingSlideIndex ? "#e50914" : "#cbd5e1",
+                                cursor: "pointer",
+                                transition: "all 0.2s ease"
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
                 );
               })()}
             </div>
