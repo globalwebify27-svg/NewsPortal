@@ -40,6 +40,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     writeAboutData(body);
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/about");
+      revalidatePath("/");
+    } catch (e) {}
     return NextResponse.json({ success: true, data: body, message: "About Us page data saved to database" });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err?.message || "Internal server error" }, { status: 500 });

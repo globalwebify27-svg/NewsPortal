@@ -1369,15 +1369,24 @@ export default function HomeClient({
                       </h3>
                       <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", background: "#0a0f1d" }}>
                         <img
-                          src={getArticleImage(activeSlide, trendingSlideIndex, 1000)}
+                          src={getArticleImage(activeSlide, trendingSlideIndex, 1920)}
                           alt={activeSlide.title}
                           title={activeSlide.title}
+                          className="hero-image-sharp"
                           loading="eager"
                           // @ts-ignore
                           fetchPriority="high"
                           decoding="async"
                           draggable={false}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            pointerEvents: "none",
+                            imageRendering: "-webkit-optimize-contrast" as any,
+                            transform: "translateZ(0)",
+                            backfaceVisibility: "hidden",
+                          }}
                         />
                         {activeSlide.videoUrl && (
                           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { getPublicArticles, getAllArticlesForAdmin, createOrUpdateArticle } from "@/lib/services/articles";
 import { requireAdminAuth } from "@/lib/apiAuth";
+import { fastRevalidateAfterArticle } from "@/lib/revalidation";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
         const item = await createOrUpdateArticle({ ...art, userRole: body.userRole || art.userRole });
         if (item) saved.push(item);
       }
+      fastRevalidateAfterArticle();
       return NextResponse.json({
         success: true,
         data: saved,
@@ -85,10 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Failed to persist article" }, { status: 500 });
     }
 
-    try {
-      revalidatePath("/");
-      revalidatePath("/latest");
-    } catch (rvErr) {}
+    fastRevalidateAfterArticle({
+      slug: created.slug,
+      categorySlug: created.category?.slug,
+    });
 
     return NextResponse.json({
       success: true,

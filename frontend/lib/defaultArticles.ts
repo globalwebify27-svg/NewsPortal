@@ -276,7 +276,7 @@ export function stripHtml(html?: string): string {
 export function getArticleImage(
   article?: ArticleItemLike | null,
   index: number = 0,
-  targetWidth: number = 720
+  targetWidth: number = 1200
 ): string {
   let img = "";
   if (article?.featuredImage && typeof article.featuredImage === "string" && article.featuredImage.trim().length > 3) {
@@ -301,18 +301,17 @@ export function getArticleImage(
     return `https://globalawaaz.com${pathPart.startsWith("/") ? pathPart : `/${pathPart}`}`;
   }
 
-  // Auto-compress Unsplash images to WebP format with size constraint for ultra-fast mobile loading
+  // Auto-format Unsplash images to WebP format with high clarity for Retina screens
   if (img.includes("images.unsplash.com")) {
-    const hasParams = img.includes("?");
     const cleanBase = img.split("?")[0];
-    const w = targetWidth || 720;
-    img = `${cleanBase}?w=${w}&q=75&auto=format&fit=crop`;
+    const w = targetWidth || 1200;
+    img = `${cleanBase}?w=${w}&q=88&auto=format&fit=crop`;
   }
 
-  // Auto-compress Cloudinary images to WebP with auto quality
+  // High-clarity Cloudinary WebP with auto best quality
   if (img.includes("res.cloudinary.com") && !img.includes("f_auto")) {
-    const w = targetWidth || 720;
-    img = img.replace("/upload/", `/upload/f_auto,q_auto:eco,w_${w},c_limit/`);
+    const w = targetWidth || 1200;
+    img = img.replace("/upload/", `/upload/f_auto,q_auto:best,w_${w},c_limit/`);
   }
 
   // Clean and normalize all uploaded media paths to /uploads/filename.ext

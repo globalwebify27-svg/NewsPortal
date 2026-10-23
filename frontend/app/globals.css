@@ -25,6 +25,23 @@ body {
   box-sizing: border-box !important;
 }
 
+/* =============================================================================
+   HIGH-CLARITY & SHARPNESS IMAGE RENDERING
+   Prevents blurriness & anti-aliasing softening on high-DPI & Retina screens
+   ============================================================================= */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+}
+
+.hero-image-sharp,
+.spotlight-3col-grid img,
+.mobile-story-img {
+  image-rendering: -webkit-optimize-contrast;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 #__next,
 main,
 .main-content,

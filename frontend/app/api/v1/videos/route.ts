@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminAuth } from "@/lib/apiAuth";
+import { fastRevalidateAfterVideos } from "@/lib/revalidation";
 
 const VIDEOS_SETTING_KEY = "custom_videos_list";
 const LIVETV_SETTING_KEY = "livetv_stream_config";
@@ -104,6 +105,8 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    fastRevalidateAfterVideos();
 
     return NextResponse.json({
       success: true,

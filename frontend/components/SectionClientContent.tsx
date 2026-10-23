@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Clock, Calendar, Loader2 } from "lucide-react";
@@ -129,8 +129,18 @@ export default function SectionClientContent({
     return () => window.removeEventListener("ga_subcat_changed", handleSubCatChange);
   }, []);
 
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
     async function fetchSectionArticles() {
+      // If SSR already provided initial articles for this section, skip redundant initial client-side network call
+      if (isInitialMount.current && initialArticles && initialArticles.length > 0) {
+        isInitialMount.current = false;
+        setLoading(false);
+        return;
+      }
+      isInitialMount.current = false;
+
       if (initialArticles.length === 0) {
         setLoading(true);
       }
@@ -486,11 +496,18 @@ export default function SectionClientContent({
               <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
                 {getArticleImage(item) && (
                   <img
-                    src={getArticleImage(item, 0, 600)}
+                    src={getArticleImage(item, 0, 800)}
                     alt={item.title}
+                    className="hero-image-sharp"
                     loading="lazy"
                     decoding="async"
-                    style={{ width: "100%", height: "200px", objectFit: "cover" }}
+                    style={{
+                      width: "100%",
+                      height: "200px",
+                      objectFit: "cover",
+                      imageRendering: "-webkit-optimize-contrast" as any,
+                      transform: "translateZ(0)",
+                    }}
                   />
                 )}
                 <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>

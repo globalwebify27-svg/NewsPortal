@@ -23,19 +23,54 @@ export async function POST(request: NextRequest) {
     let fileExt = path.extname(file.name) || ".jpg";
     let mimeType = file.type || "image/jpeg";
     const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|bmp|webp|tiff)$/i.test(file.name);
+    const isAlreadyWebP = file.type === "image/webp" || /\.webp$/i.test(file.name) || fileExt.toLowerCase() === ".webp";
+    const isSvg = file.type.includes("svg") || /\.svg$/i.test(file.name);
+    const sizeInKb = buffer.length / 1024;
 
-    // Optimize & Convert Images to WebP using sharp
-    if (isImage && !file.type.includes("svg")) {
-      try {
-        buffer = await sharp(buffer)
-          .resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 80, effort: 4 })
-          .toBuffer();
+    // RULE 1: Never re-compress an image that is ALREADY WebP!
+    // Re-compressing an existing WebP causes generation loss (blurriness, color fading, fuzzy edges).
+    // Preserve 100% of the original WebP buffer as-is!
+    if (isAlreadyWebP) {
+      fileExt = ".webp";
+      mimeType = "image/webp";
+      console.log(`[Upload] Already WebP (${sizeInKb.toFixed(1)} KB) — keeping 100% original buffer to prevent quality loss`);
+    } else if (isImage && !isSvg) {
+      // RULE 2: For non-WebP images (JPG, PNG, TIFF, BMP):
+      // If already under 120KB, preserve original to avoid re-compression degradation
+      if (sizeInKb <= 120) {
+        console.log(`[Upload] Image is already small (${sizeInKb.toFixed(1)} KB) — preserving original without re-compressing`);
+      } else {
+        try {
+          const optimizedBuffer = await sharp(buffer, { failOn: "none" })
+            .rotate() // Auto-orient photo based on EXIF metadata
+            .resize({
+              width: 2560,
+              height: 2560,
+              fit: "inside",
+              withoutEnlargement: true,
+              kernel: sharp.kernel.lanczos3,
+            })
+            .sharpen({
+              sigma: 1.15,
+              m1: 0.9,
+              m2: 0.4,
+            })
+            .webp({
+              quality: 92,
+              effort: 5,
+              smartSubsample: true,
+            })
+            .toBuffer();
 
-        fileExt = ".webp";
-        mimeType = "image/webp";
-      } catch (sharpErr) {
-        console.warn("Sharp WebP conversion fallback, using original file:", sharpErr);
+          if (optimizedBuffer && optimizedBuffer.length > 0) {
+            buffer = optimizedBuffer;
+            fileExt = ".webp";
+            mimeType = "image/webp";
+            console.log(`[Upload] Converted non-WebP to high-clarity WebP (${sizeInKb.toFixed(1)} KB ➔ ${(buffer.length / 1024).toFixed(1)} KB)`);
+          }
+        } catch (sharpErr) {
+          console.warn("Sharp WebP conversion fallback, using original file:", sharpErr);
+        }
       }
     }
 

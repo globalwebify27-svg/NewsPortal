@@ -9,9 +9,13 @@
  * @param quality Compression quality from 0.1 to 1.0 (default 0.85)
  * @returns Promise resolving to a WebP File object
  */
-export async function convertImageToWebP(file: File, quality: number = 0.85): Promise<File> {
-  // If already a webp or non-image (like PDF or Video), return original
-  if (file.type === "image/webp" || (!file.type.startsWith("image/") && !file.name.match(/\.(png|jpe?g|bmp|tiff|heic)$/i))) {
+export async function convertImageToWebP(file: File, quality: number = 0.95): Promise<File> {
+  const isWebP = file.type === "image/webp" || /\.webp$/i.test(file.name);
+  const isNonImage = !file.type.startsWith("image/") && !file.name.match(/\.(png|jpe?g|bmp|tiff|heic)$/i);
+  const isAlreadySmall = file.size <= 120 * 1024; // Less than or equal to 120KB
+
+  // Never re-compress if already WebP, non-image, or already low KB — prevents generation loss & blurring
+  if (isWebP || isNonImage || isAlreadySmall) {
     return file;
   }
 
@@ -22,25 +26,29 @@ export async function convertImageToWebP(file: File, quality: number = 0.85): Pr
       const img = new Image();
 
       img.onload = () => {
-        // Create offscreen canvas
+        // Create offscreen canvas preserving native resolution
         const canvas = document.createElement("canvas");
         canvas.width = img.width;
         canvas.height = img.height;
 
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { alpha: true });
         if (!ctx) {
           resolve(file); // Fallback to original if 2d context unavailable
           return;
         }
 
-        // Fill white background to prevent black alpha canvas bug
+        // Use highest quality multi-pass bicubic image smoothing
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // Fill white background for non-transparent formats to prevent black alpha canvas bug
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw image onto canvas
-        ctx.drawImage(img, 0, 0);
+        // Draw image onto canvas with high quality
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Convert canvas content to WebP blob
+        // Convert canvas content to WebP blob with pristine clarity
         canvas.toBlob(
           (blob) => {
             if (!blob) {
@@ -57,7 +65,7 @@ export async function convertImageToWebP(file: File, quality: number = 0.85): Pr
               lastModified: Date.now(),
             });
 
-            console.log(`🖼️ Converted ${file.name} (${(file.size / 1024).toFixed(1)} KB) ➔ ${webpFile.name} (${(webpFile.size / 1024).toFixed(1)} KB WebP)`);
+            console.log(`🖼️ High-Clarity WebP: ${file.name} (${(file.size / 1024).toFixed(1)} KB) ➔ ${webpFile.name} (${(webpFile.size / 1024).toFixed(1)} KB)`);
             resolve(webpFile);
           },
           "image/webp",

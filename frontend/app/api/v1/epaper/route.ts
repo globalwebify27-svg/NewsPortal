@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { requireAdminAuth } from "@/lib/apiAuth";
+import { fastRevalidateAfterEpaper } from "@/lib/revalidation";
 
 const DB_FILE_PATH = path.join(process.cwd(), "..", "backend", "prisma", "epaper_db.json");
 const ALT_DB_FILE_PATH = path.join(process.cwd(), "epaper_db.json");
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     writeEpaperData(body);
+    fastRevalidateAfterEpaper();
     return NextResponse.json({ success: true, data: body, message: "e-Paper data saved to database" });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Internal server error";

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/apiAuth";
 import { getCityNewsSettings, saveCityNewsSettings } from "@/lib/services/settings";
+import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
 // GET /api/v1/city-news-settings — returns all city news settings
 export async function GET() {
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       : [{ key: body.key, value: body.value }];
 
     await saveCityNewsSettings(pairs);
+    fastRevalidateAfterSettings("city");
     return NextResponse.json({ success: true, message: "City news settings saved successfully." });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to save city news settings";

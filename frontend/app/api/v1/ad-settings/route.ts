@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/apiAuth";
 import { getAdSettings, saveAdSettings, deleteAdSetting } from "@/lib/services/settings";
+import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
 // GET /api/v1/ad-settings — returns all ad settings as a key-value map
 export async function GET() {
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       : [{ key: body.key, value: body.value }];
 
     await saveAdSettings(pairs);
+    fastRevalidateAfterSettings("ads");
     return NextResponse.json({ success: true, message: "Advertisement settings saved." });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to save ad settings";
@@ -46,6 +48,7 @@ export async function DELETE(request: NextRequest) {
     const key = searchParams.get("key");
 
     await deleteAdSetting(key);
+    fastRevalidateAfterSettings("ads");
     return NextResponse.json({ success: true, message: "Ad setting reset." });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to reset ad settings";

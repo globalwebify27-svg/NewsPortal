@@ -60,38 +60,38 @@ const nextConfig = {
         ],
       },
       {
-        // Categories API — rarely changes, cache for 5 min
+        // Categories API — fast edge revalidation (30s)
         source: "/api/v1/categories",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
         ],
       },
       {
-        // Logo & header settings — changes only when admin edits, cache 5 min
+        // Logo & header settings — fast edge revalidation (30s)
         source: "/api/v1/logo-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
         ],
       },
       {
-        // Social links — rarely changes, cache 5 min
+        // Social links — fast edge revalidation (30s)
         source: "/api/v1/social-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=600" },
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
         ],
       },
       {
-        // Ad settings — cache 2 min
+        // Ad settings — fast edge revalidation (30s)
         source: "/api/v1/ad-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=120, stale-while-revalidate=300" },
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
         ],
       },
       {
-        // Videos — cache 30s
+        // Videos — fast edge revalidation (15s)
         source: "/api/v1/videos",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=120" },
+          { key: "Cache-Control", value: "public, s-maxage=15, stale-while-revalidate=30" },
         ],
       },
     ];

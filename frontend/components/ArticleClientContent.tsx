@@ -485,8 +485,9 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             justifyContent: "center"
           }}>
             <img
-              src={getArticleImage(article, 0, 1200)}
+              src={getArticleImage(article, 0, 1920)}
               alt={article.title}
+              className="hero-image-sharp"
               loading="eager"
               // @ts-ignore
               fetchPriority="high"
@@ -497,7 +498,9 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                 maxHeight: "560px",
                 objectFit: "contain",
                 display: "block",
-                margin: "0 auto"
+                margin: "0 auto",
+                imageRendering: "-webkit-optimize-contrast" as any,
+                transform: "translateZ(0)",
               }}
             />
             <div style={{ position: "absolute", bottom: "16px", right: "16px" }}>

@@ -61,9 +61,9 @@ export const serverCache = globalForCache.__ga_cache ?? (globalForCache.__ga_cac
 
 // TTL constants (milliseconds)
 export const TTL = {
-  ARTICLES_LIST: 30_000,     // 30s — public article lists
-  ARTICLE_DETAIL: 60_000,    // 60s — single article page
-  CATEGORIES: 300_000,       // 5 min — rarely changes
-  BREAKING_NEWS: 20_000,     // 20s — very time-sensitive
-  SETTINGS: 600_000,         // 10 min — site settings
+  ARTICLES_LIST: 15_000,     // 15s — public article lists (fresh, fast revalidation)
+  ARTICLE_DETAIL: 30_000,    // 30s — single article detail
+  CATEGORIES: 60_000,        // 60s (1 min) — categories
+  BREAKING_NEWS: 10_000,     // 10s — rapid breaking news propagation
+  SETTINGS: 60_000,          // 60s (1 min) — branding & settings
 } as const;

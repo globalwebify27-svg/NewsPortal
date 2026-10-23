@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { requireAdminAuth } from "@/lib/apiAuth";
+import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
     };
 
     writeSocialData(updated);
+    fastRevalidateAfterSettings("social");
 
     return NextResponse.json({
       success: true,

@@ -407,8 +407,9 @@ export async function deleteArticleByIdOrSlug(idOrSlug: string) {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
       },
     });
-    // Invalidate all article caches after deletion
+    // Invalidate all article and sitemap caches after deletion
     serverCache.invalidatePrefix("articles:");
+    serverCache.invalidatePrefix("sitemap:");
     return true;
   } catch (error) {
     console.error("Error deleting article from MySQL DB:", error);
@@ -571,8 +572,9 @@ export async function createOrUpdateArticle(data: any) {
       });
     }
 
-    // Invalidate all article list caches so next request gets fresh data
+    // Invalidate all article list and sitemap caches so next request gets fresh data
     serverCache.invalidatePrefix("articles:");
+    serverCache.invalidatePrefix("sitemap:");
     return articleRecord;
   } catch (error: any) {
     console.error("Error creating/updating article in MySQL DB:", error);

@@ -29,7 +29,8 @@ import {
   ShieldAlert,
   History,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  RefreshCw
 } from "lucide-react";
 import { cleanMediaUrl } from "@/lib/mediaUpload";
 
@@ -53,6 +54,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const [actualRole, setActualRole] = useState<AdminRoleSlug>("super_admin");
   const [siteLogo, setSiteLogo] = useState<string>("/global-awaaz-logo.jpg");
+
+  // Fast Cache Purge state
+  const [isClearingCache, setIsClearingCache] = useState(false);
+  const [cacheClearSuccess, setCacheClearSuccess] = useState(false);
+
+  const handleClearCache = async () => {
+    setIsClearingCache(true);
+    try {
+      const res = await fetch("/api/v1/admin/cache/clear", { method: "POST" });
+      const json = await res.json();
+      if (json.success) {
+        setCacheClearSuccess(true);
+        setTimeout(() => setCacheClearSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error("Cache purge error:", err);
+    } finally {
+      setIsClearingCache(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/v1/logo-settings")
@@ -551,24 +572,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </p>
           </div>
 
-          {/* User Name & Authenticated DB Security Role Badge (No Role Switcher) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f8fafc", padding: "8px 16px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#0f172a" }}>
-              {adminUser}
-            </span>
-            <span
+          {/* Right Header Controls: Cache Purge Button & User Role Badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={handleClearCache}
+              disabled={isClearingCache}
+              title="Instantly clear all server caches and revalidate homepage & articles"
               style={{
-                fontSize: "0.72rem",
-                fontWeight: 800,
-                padding: "3px 10px",
-                borderRadius: "6px",
-                background: adminRole === "super_admin" ? "rgba(229,9,20,0.12)" : adminRole === "chief_editor" ? "rgba(37,99,235,0.12)" : "rgba(16,185,129,0.12)",
-                color: adminRole === "super_admin" ? "#e50914" : adminRole === "chief_editor" ? "#2563eb" : "#059669",
-                border: `1px solid ${adminRole === "super_admin" ? "rgba(229,9,20,0.25)" : adminRole === "chief_editor" ? "rgba(37,99,235,0.25)" : "rgba(16,185,129,0.25)"}`
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                border: cacheClearSuccess ? "1px solid #a7f3d0" : "1px solid #cbd5e1",
+                background: cacheClearSuccess ? "#ecfdf5" : "#ffffff",
+                color: cacheClearSuccess ? "#059669" : "#334155",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                cursor: isClearingCache ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
               }}
             >
-              ● {adminRole === "super_admin" ? "SUPER ADMIN" : adminRole === "chief_editor" ? "CHIEF EDITOR" : "EDITOR"}
-            </span>
+              <RefreshCw
+                size={14}
+                style={{
+                  animation: isClearingCache ? "spin 1s linear infinite" : "none",
+                  color: cacheClearSuccess ? "#059669" : "#e50914"
+                }}
+              />
+              {isClearingCache
+                ? "Clearing..."
+                : cacheClearSuccess
+                ? "✓ Site Revalidated!"
+                : "Purge Cache & Revalidate"}
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#f8fafc", padding: "8px 16px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#0f172a" }}>
+                {adminUser}
+              </span>
+              <span
+                style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 800,
+                  padding: "3px 10px",
+                  borderRadius: "6px",
+                  background: adminRole === "super_admin" ? "rgba(229,9,20,0.12)" : adminRole === "chief_editor" ? "rgba(37,99,235,0.12)" : "rgba(16,185,129,0.12)",
+                  color: adminRole === "super_admin" ? "#e50914" : adminRole === "chief_editor" ? "#2563eb" : "#059669",
+                  border: `1px solid ${adminRole === "super_admin" ? "rgba(229,9,20,0.25)" : adminRole === "chief_editor" ? "rgba(37,99,235,0.25)" : "rgba(16,185,129,0.25)"}`
+                }}
+              >
+                ● {adminRole === "super_admin" ? "SUPER ADMIN" : adminRole === "chief_editor" ? "CHIEF EDITOR" : "EDITOR"}
+              </span>
+            </div>
           </div>
         </header>
 

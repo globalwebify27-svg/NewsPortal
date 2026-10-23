@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminAuth } from "@/lib/apiAuth";
 import { serverCache, TTL } from "@/lib/cache";
+import { fastRevalidateAfterCategory } from "@/lib/revalidation";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    serverCache.delete(CACHE_KEY_CATEGORIES);
+    fastRevalidateAfterCategory(cat.slug);
 
     return NextResponse.json({
       success: true,
@@ -115,8 +116,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Category ID is required" }, { status: 400 });
     }
 
+    const existing = await prisma.category.findUnique({ where: { id }, select: { slug: true } });
     await prisma.category.delete({ where: { id } });
-    serverCache.delete(CACHE_KEY_CATEGORIES);
+    fastRevalidateAfterCategory(existing?.slug);
 
     return NextResponse.json({
       success: true,

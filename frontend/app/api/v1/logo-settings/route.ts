@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAuth } from "@/lib/apiAuth";
 import { getLogoSettings, saveLogoSettings, deleteLogoSetting } from "@/lib/services/settings";
+import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
 // GET /api/v1/logo-settings — returns all logo-related settings as a map
 export async function GET() {
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       : [{ key: body.key, value: body.value }];
 
     await saveLogoSettings(pairs);
+    fastRevalidateAfterSettings("logo");
     return NextResponse.json({ success: true, message: "Logo settings saved." });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to save logo settings";
@@ -60,6 +62,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    fastRevalidateAfterSettings("logo");
     return NextResponse.json({ success: true, message: `Setting '${key}' deleted.` });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to delete logo setting";
