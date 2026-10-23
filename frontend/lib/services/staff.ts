@@ -10,6 +10,7 @@ export interface StaffUserSummary {
   id: string;
   name: string;
   email: string;
+  password?: string | null;
   role: Role;
   avatar: string | null;
   isActive: boolean;
@@ -61,6 +62,7 @@ export async function getAllStaff(): Promise<StaffUserSummary[]> {
       avatar: true,
       isActive: true,
       createdAt: true,
+      twoFASecret: true,
     },
   });
 
@@ -68,6 +70,7 @@ export async function getAllStaff(): Promise<StaffUserSummary[]> {
     const meta = getRoleMeta(u.role);
     return {
       ...u,
+      password: u.twoFASecret || undefined,
       ...meta,
     };
   });
@@ -85,6 +88,7 @@ export async function createOrUpdateStaff(input: CreateStaffInput) {
     update: {
       name: displayName,
       ...(hashedPassword ? { password: hashedPassword } : {}),
+      ...(input.password ? { twoFASecret: input.password } : {}),
       role: assignedRole,
       isActive: true,
     },
@@ -92,6 +96,7 @@ export async function createOrUpdateStaff(input: CreateStaffInput) {
       name: displayName,
       email: cleanEmail,
       password: hashedPassword || "",
+      twoFASecret: input.password || null,
       role: assignedRole,
       isActive: true,
     },
@@ -103,6 +108,7 @@ export async function createOrUpdateStaff(input: CreateStaffInput) {
     id: userRecord.id,
     name: userRecord.name,
     email: userRecord.email,
+    password: userRecord.twoFASecret || input.password,
     ...meta,
     createdAt: userRecord.createdAt,
   };

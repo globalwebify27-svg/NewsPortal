@@ -89,6 +89,22 @@ export default function RolesManagementPage() {
   } | null>(null);
 
   const [createdUsersList, setCreatedUsersList] = useState<StaffUser[]>([]);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords((prev) => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const handleCopyPassword = (userId: string, pass: string) => {
+    if (!pass) return;
+    navigator.clipboard.writeText(pass);
+    setCopiedId(userId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Fetch Roles and Permissions from API or seed defaults fallback
   useEffect(() => {
@@ -534,7 +550,67 @@ export default function RolesManagementPage() {
                         {user.email}
                       </a>
                     </td>
-                    <td style={{ padding: "12px 14px", fontWeight: 700, color: "#64748b", fontFamily: "monospace" }}>••••••••</td>
+                    <td style={{ padding: "12px 14px", verticalAlign: "middle" }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontFamily: "monospace",
+                            fontSize: "0.88rem",
+                            color: visiblePasswords[user.id] ? (user.password ? "#0f172a" : "#94a3b8") : "#64748b",
+                            letterSpacing: visiblePasswords[user.id] ? "0.02em" : "0.15em",
+                            background: visiblePasswords[user.id] && user.password ? "#f1f5f9" : "transparent",
+                            padding: visiblePasswords[user.id] && user.password ? "3px 8px" : "0",
+                            borderRadius: "6px",
+                            fontStyle: visiblePasswords[user.id] && !user.password ? "italic" : "normal"
+                          }}
+                        >
+                          {visiblePasswords[user.id]
+                            ? user.password || "Not set"
+                            : "••••••••"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(user.id)}
+                          title={visiblePasswords[user.id] ? "Hide password" : "Show password"}
+                          style={{
+                            background: visiblePasswords[user.id] ? "#eff6ff" : "#f8fafc",
+                            border: "1px solid " + (visiblePasswords[user.id] ? "#bfdbfe" : "#e2e8f0"),
+                            color: visiblePasswords[user.id] ? "#2563eb" : "#64748b",
+                            borderRadius: "6px",
+                            padding: "4px 6px",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          {visiblePasswords[user.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        {visiblePasswords[user.id] && user.password && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyPassword(user.id, user.password!)}
+                            title={copiedId === user.id ? "Copied!" : "Copy password"}
+                            style={{
+                              background: copiedId === user.id ? "#dcfce7" : "#f8fafc",
+                              border: "1px solid " + (copiedId === user.id ? "#86efac" : "#e2e8f0"),
+                              color: copiedId === user.id ? "#16a34a" : "#64748b",
+                              borderRadius: "6px",
+                              padding: "4px 6px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {copiedId === user.id ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ padding: "12px 14px" }}>
                       <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#dbeafe" : "#dcfce7", color: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#1e40af" : "#166534" }}>
                         {user.roleName === "ADMIN" ? "Chief Editor" : (user.roleName === "SUPERADMIN" ? "Super Admin" : user.roleName)}
