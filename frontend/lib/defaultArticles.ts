@@ -166,22 +166,33 @@ export async function translateHindiToEnglishSlug(text: string): Promise<string>
 
 /**
  * Helper to ensure any date suffix in a slug strictly uses YY-MM-DD format (-26-08-13-)
+ * Idempotent: once in YY-MM-DD format, it will never oscillate or flip back.
  */
 export function normalizeSlugDateToYyMmDd(rawSlug: string): string {
   if (!rawSlug) return rawSlug;
   const s = rawSlug.toLowerCase().trim();
+  const currentYy = new Date().getFullYear() % 100; // 26 for 2026
 
-  // Match -DD-MM-YY-hash or -DD-MM-YYYY-hash at the end of the slug
-  return s.replace(/-(\d{2})-(\d{2})-(2\d|\d{4})-([a-zA-Z0-9]+)$/, (_match, day, month, yearRaw, hash) => {
-    let year = yearRaw;
-    if (year.length === 4) year = year.slice(-2);
-    const dNum = parseInt(day, 10);
-    const yNum = parseInt(year, 10);
-    // If first part is day (<= 31) and 3rd part is year (>= 20), swap to YY-MM-DD
-    if (dNum <= 31 && yNum >= 20 && yNum <= 35) {
-      return `-${year}-${month}-${day}-${hash}`;
+  // Match -XX-MM-YY-hash or -XX-MM-YYYY-hash at the end of the slug
+  return s.replace(/-(\d{2})-(\d{2})-(2\d|\d{4})-([a-zA-Z0-9]+)$/, (_match, p1, month, p3Raw, hash) => {
+    let p3 = p3Raw;
+    const wasFourDigitYear = p3.length === 4;
+    if (wasFourDigitYear) p3 = p3.slice(-2);
+    const n1 = parseInt(p1, 10);
+    const n3 = parseInt(p3, 10);
+
+    // If already in YY-MM-DD format where first part is current year (or adjacent year)
+    if (n1 === currentYy || n1 === currentYy - 1 || n1 === currentYy + 1) {
+      return `-${p1}-${month}-${p3}-${hash}`;
     }
-    return `-${day}-${month}-${year}-${hash}`;
+
+    // If 3rd part is the year (e.g. DD-MM-YY or DD-MM-YYYY), swap to YY-MM-DD
+    if (wasFourDigitYear || n3 === currentYy || n3 === currentYy - 1 || n3 === currentYy + 1) {
+      return `-${p3}-${month}-${p1}-${hash}`;
+    }
+
+    // Default fallback: keep existing
+    return `-${p1}-${month}-${p3}-${hash}`;
   });
 }
 

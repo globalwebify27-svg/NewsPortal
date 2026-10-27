@@ -9,9 +9,9 @@ import { prisma } from "@/lib/prisma";
 
 // =============================================================================
 // Full-Page Incremental Static Regeneration (ISR)
-// Serves instantly from edge cache, revalidates in the background every 60s
+// Serves instantly from edge cache, revalidates in the background every 300s (5 min)
 // =============================================================================
-export const revalidate = 60;
+export const revalidate = 300;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

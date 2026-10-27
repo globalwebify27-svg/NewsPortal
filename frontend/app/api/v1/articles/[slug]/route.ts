@@ -17,10 +17,14 @@ export async function GET(
     return NextResponse.json({ success: false, message: "Article not found" }, { status: 404 });
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     data: article,
   });
+
+  // 5m edge cache + 24h stale-while-revalidate to absorb repeat views & social crawlers
+  response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+  return response;
 }
 
 export async function DELETE(

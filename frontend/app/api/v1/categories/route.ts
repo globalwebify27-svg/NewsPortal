@@ -33,15 +33,19 @@ export async function GET() {
 
     serverCache.set(CACHE_KEY_CATEGORIES, categories, TTL.CATEGORIES);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: categories,
     });
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return response;
   } catch (error) {
     console.warn("Failed fetching categories from DB:", error);
     const fallback = serverCache.getStale<any[]>(CACHE_KEY_CATEGORIES);
     if (fallback) {
-      return NextResponse.json({ success: true, data: fallback });
+      const response = NextResponse.json({ success: true, data: fallback });
+      response.headers.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=3600");
+      return response;
     }
     return NextResponse.json({
       success: true,

@@ -12,9 +12,9 @@ import { getSeoConfigForPath } from "@/lib/seo";
 
 // =============================================================================
 // Full-Page Incremental Static Regeneration (ISR)
-// Background revalidation every 60 seconds
+// Background revalidation every 300 seconds (5 min) to prevent repetitive DB connections
 // =============================================================================
-export const revalidate = 60;
+export const revalidate = 300;
 export const dynamicParams = true;
 
 // Build a reverse map: sub-slug -> { category, subName }

@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { prisma } from "../prisma";
-import { generateArticleSlug, normalizeSlugDateToYyMmDd } from "../defaultArticles";
+import { generateArticleSlug, normalizeSlugDateToYyMmDd, findDefaultArticle } from "../defaultArticles";
 import { INDIAN_STATES } from "../states";
 import { serverCache, TTL } from "../cache";
 
@@ -108,13 +108,36 @@ function getDiskArticles(): any[] {
   return [];
 }
 
-function saveDiskArticles(articles: any[]): void {
+function saveDiskArticles(newArticles: any[]): void {
   try {
-    if (Array.isArray(articles) && articles.length > 0) {
-      fs.writeFileSync(ARTICLES_SNAPSHOT_FILE, JSON.stringify(articles, null, 2), "utf8");
+    if (!Array.isArray(newArticles) || newArticles.length === 0) return;
+    const existing = getDiskArticles();
+    const map = new Map<string, any>();
+    for (const art of existing) {
+      const key = art?.id || art?.slug;
+      if (key) map.set(key, art);
     }
+    for (const art of newArticles) {
+      const key = art?.id || art?.slug;
+      if (key) {
+        const prev = map.get(key) || {};
+        map.set(key, { ...prev, ...art });
+      }
+    }
+    const merged = Array.from(map.values())
+      .sort((a, b) => new Date(b.createdAt || b.publishedAt || 0).getTime() - new Date(a.createdAt || a.publishedAt || 0).getTime())
+      .slice(0, 500);
+
+    fs.writeFileSync(ARTICLES_SNAPSHOT_FILE, JSON.stringify(merged, null, 2), "utf8");
   } catch (_) {}
 }
+
+function saveSingleDiskArticle(article: any): void {
+  if (article && (article.id || article.slug)) {
+    saveDiskArticles([article]);
+  }
+}
+
 
 /**
  * Get Public Articles — Strictly Returns Status: "PUBLISHED" directly from MySQL DB
@@ -301,15 +324,20 @@ export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
 export async function getArticleBySlug(slug: string) {
   const targetSlug = decodeURIComponent(slug).trim().toLowerCase();
 
-  // Serve from cache if available (60s TTL)
+  // 1. Serve from memory cache if available (TTL: 10 min)
   const cacheKey = `articles:slug:${targetSlug}`;
   const cached = serverCache.get<any>(cacheKey);
   if (cached) return cached;
 
+  let article: any = null;
+  const cleanTargetSlug = targetSlug.includes("/") ? targetSlug.split("/").pop() || targetSlug : targetSlug;
+  const normalizedSlug = normalizeSlugDateToYyMmDd(cleanTargetSlug);
+
   try {
-    let article = await prisma.article.findFirst({
+    // 2. Query MySQL DB
+    article = await prisma.article.findFirst({
       where: {
-        OR: [{ slug: targetSlug }, { id: targetSlug }],
+        OR: [{ slug: targetSlug }, { id: targetSlug }, { slug: cleanTargetSlug }, { id: cleanTargetSlug }],
       },
       include: {
         category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
@@ -317,84 +345,105 @@ export async function getArticleBySlug(slug: string) {
       },
     });
 
-    if (!article) {
-      // 2. Try removing category/section prefix if targetSlug is e.g. "top-news/nesar-ansari..." or "top news/nesar-ansari..."
-      const cleanTargetSlug = targetSlug.includes("/") ? targetSlug.split("/").pop() || targetSlug : targetSlug;
-
+    if (!article && normalizedSlug !== cleanTargetSlug) {
       article = await prisma.article.findFirst({
         where: {
-          OR: [{ slug: cleanTargetSlug }, { id: cleanTargetSlug }],
+          OR: [{ slug: normalizedSlug }, { id: normalizedSlug }],
         },
         include: {
           category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
           author: { select: { id: true, name: true, avatar: true, bio: true } },
         },
       });
-
-      // 3. Fall back to ID suffix matching or partial slug matching
-      if (!article) {
-        const parts = cleanTargetSlug.split("-");
-        const possibleId = parts[parts.length - 1];
-        if (possibleId && possibleId.length >= 2) {
-          article = await prisma.article.findFirst({
-            where: {
-              OR: [{ id: possibleId }, { id: { endsWith: possibleId } }, { slug: { contains: possibleId } }],
-            },
-            include: {
-              category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
-              author: { select: { id: true, name: true, avatar: true, bio: true } },
-            },
-          });
-        }
-      }
     }
 
-    if (article) {
-      let customAdsArray: any[] = [];
-      if (article.customAds && typeof article.customAds === "string") {
-        try {
-          customAdsArray = JSON.parse(article.customAds);
-        } catch (e) {}
-      } else if (Array.isArray(article.customAds)) {
-        customAdsArray = article.customAds;
+    // 3. Fall back to ID suffix matching or partial slug matching
+    if (!article) {
+      const parts = cleanTargetSlug.split("-");
+      const possibleId = parts[parts.length - 1];
+      if (possibleId && possibleId.length >= 3) {
+        article = await prisma.article.findFirst({
+          where: {
+            OR: [{ id: possibleId }, { id: { endsWith: possibleId } }, { slug: { contains: possibleId } }],
+          },
+          include: {
+            category: { select: { id: true, name: true, nameHi: true, slug: true, color: true } },
+            author: { select: { id: true, name: true, avatar: true, bio: true } },
+          },
+        });
       }
-
-      const rawAuthorName = article.author?.name;
-      const submittedByName = (article as any).submittedBy;
-      const authorName = (rawAuthorName && rawAuthorName !== "Global Awaaz Admin" && rawAuthorName !== "Global Admin")
-        ? rawAuthorName
-        : (submittedByName || rawAuthorName || "Global Awaaz Admin");
-
-      const result = {
-        ...article,
-        categories: parseCategories((article as any).categories, article.category),
-        customAds: customAdsArray.length > 0 ? customAdsArray : (article.customAds || undefined),
-        author: {
-          ...article.author,
-          name: authorName,
-          bio: article.author?.bio || (authorName === "Global Awaaz Admin" ? "Chief Editor & Administrator at Global Awaaz." : "Editor & Correspondent at Global Awaaz")
-        },
-        isHero: !!article.isFeatured
-      };
-      serverCache.set(cacheKey, result, TTL.ARTICLE_DETAIL);
-      return result;
     }
-
-    return null;
   } catch (error) {
-    console.error("Error fetching article by slug from MySQL DB:", error);
-    const fallback = serverCache.getStale<any>(cacheKey);
-    if (fallback) return fallback;
-    const diskArticles = getDiskArticles();
-    const diskMatch = diskArticles.find(
-      (a) =>
-        (a.slug && a.slug.toLowerCase() === targetSlug) ||
-        (a.id && a.id.toLowerCase() === targetSlug) ||
-        (targetSlug.includes(a.slug || "") && a.slug)
-    );
-    if (diskMatch) return diskMatch;
-    return null;
+    console.warn("DB fetch error in getArticleBySlug (will fallback to cache/disk):", error);
   }
+
+  // If found in MySQL, format, persist to disk snapshot and cache in memory
+  if (article) {
+    let customAdsArray: any[] = [];
+    if (article.customAds && typeof article.customAds === "string") {
+      try {
+        customAdsArray = JSON.parse(article.customAds);
+      } catch (e) {}
+    } else if (Array.isArray(article.customAds)) {
+      customAdsArray = article.customAds;
+    }
+
+    const rawAuthorName = article.author?.name;
+    const submittedByName = (article as any).submittedBy;
+    const authorName = (rawAuthorName && rawAuthorName !== "Global Awaaz Admin" && rawAuthorName !== "Global Admin")
+      ? rawAuthorName
+      : (submittedByName || rawAuthorName || "Global Awaaz Admin");
+
+    const result = {
+      ...article,
+      categories: parseCategories((article as any).categories, article.category),
+      customAds: customAdsArray.length > 0 ? customAdsArray : (article.customAds || undefined),
+      author: {
+        ...article.author,
+        name: authorName,
+        bio: article.author?.bio || (authorName === "Global Awaaz Admin" ? "Chief Editor & Administrator at Global Awaaz." : "Editor & Correspondent at Global Awaaz")
+      },
+      isHero: !!article.isFeatured
+    };
+
+    saveSingleDiskArticle(result);
+    serverCache.set(cacheKey, result, TTL.ARTICLE_DETAIL);
+    return result;
+  }
+
+  // 4. Fallback 1: Stale memory cache
+  const fallback = serverCache.getStale<any>(cacheKey);
+  if (fallback) return fallback;
+
+  // 5. Fallback 2: Disk snapshot search
+  const diskArticles = getDiskArticles();
+  const parts = cleanTargetSlug.split("-");
+  const possibleId = parts[parts.length - 1];
+
+  const diskMatch = diskArticles.find(
+    (a) =>
+      (a.slug && a.slug.toLowerCase() === targetSlug) ||
+      (a.id && a.id.toLowerCase() === targetSlug) ||
+      (a.slug && a.slug.toLowerCase() === cleanTargetSlug) ||
+      (a.slug && a.slug.toLowerCase() === normalizedSlug) ||
+      (possibleId && possibleId.length >= 3 && a.slug && a.slug.toLowerCase().includes(possibleId.toLowerCase())) ||
+      (possibleId && possibleId.length >= 3 && a.id && a.id.toLowerCase().includes(possibleId.toLowerCase())) ||
+      (targetSlug.includes(a.slug || "") && a.slug)
+  );
+
+  if (diskMatch) {
+    serverCache.set(cacheKey, diskMatch, TTL.ARTICLE_DETAIL);
+    return diskMatch;
+  }
+
+  // 6. Fallback 3: Built-in default articles
+  const defaultFound = findDefaultArticle(targetSlug) || findDefaultArticle(cleanTargetSlug);
+  if (defaultFound) {
+    serverCache.set(cacheKey, defaultFound, TTL.ARTICLE_DETAIL);
+    return defaultFound;
+  }
+
+  return null;
 }
 
 /**

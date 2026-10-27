@@ -206,7 +206,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
     async function loadSideNews() {
       let pool: any[] = [];
       try {
-        const res = await fetch(API_ENDPOINTS.articles);
+        const res = await fetch(`${API_ENDPOINTS.articles}?limit=6`);
         if (res.ok) {
           const json = await res.json();
           if (json?.data && Array.isArray(json.data)) pool = json.data;
