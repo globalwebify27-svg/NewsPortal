@@ -60,38 +60,45 @@ const nextConfig = {
         ],
       },
       {
-        // Categories API — fast edge revalidation (30s)
+        // Categories API — edge cache 5 min with stale-while-revalidate
         source: "/api/v1/categories",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
         ],
       },
       {
-        // Logo & header settings — fast edge revalidation (30s)
+        // Logo & header settings — edge cache 5 min
         source: "/api/v1/logo-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
         ],
       },
       {
-        // Social links — fast edge revalidation (30s)
+        // City news settings — edge cache 5 min
+        source: "/api/v1/city-news-settings",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
+        ],
+      },
+      {
+        // Social links — edge cache 5 min
         source: "/api/v1/social-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
         ],
       },
       {
-        // Ad settings — fast edge revalidation (30s)
+        // Ad settings — edge cache 5 min
         source: "/api/v1/ad-settings",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60" },
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
         ],
       },
       {
-        // Videos — fast edge revalidation (15s)
+        // Videos & Live TV config — edge cache 5 min
         source: "/api/v1/videos",
         headers: [
-          { key: "Cache-Control", value: "public, s-maxage=15, stale-while-revalidate=30" },
+          { key: "Cache-Control", value: "public, s-maxage=300, stale-while-revalidate=86400" },
         ],
       },
     ];

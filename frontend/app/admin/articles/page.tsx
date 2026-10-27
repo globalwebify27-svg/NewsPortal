@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import RichTextEditor from "@/components/RichTextEditor";
 import {
   FileText,
@@ -17,7 +18,15 @@ import {
   Megaphone,
   X,
   AlertCircle,
-  MessageSquare
+  MessageSquare,
+  Folder,
+  Layers,
+  MapPin,
+  ArrowLeft,
+  Check,
+  Globe,
+  ChevronRight,
+  BookOpen
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
 import { getArticleImage, formatArticleSlug, translateHindiToEnglishSlug } from "@/lib/defaultArticles";
@@ -57,6 +66,22 @@ function normalizeCategoriesArray(raw: any, fallbackCatName?: string): string[] 
   }
   return fallbackCatName ? [fallbackCatName] : ["Education"];
 }
+
+const FRONTEND_NAV_TABS = [
+  { en: "Education", hi: "शिक्षा", icon: "⚡", slug: "education" },
+  { en: "World", hi: "विदेश", icon: "🌐", slug: "world" },
+  { en: "India", hi: "भारत", icon: "📍", slug: "india" },
+  { en: "Business", hi: "व्यापार", icon: "📈", slug: "business" },
+  { en: "Technology", hi: "तकनीक", icon: "⚙️", slug: "technology" },
+  { en: "Sports", hi: "खेल", icon: "🏆", slug: "sports" },
+  { en: "Entertainment", hi: "मनोरंजन", icon: "🎬", slug: "entertainment" },
+  { en: "Science", hi: "विज्ञान", icon: "⚛️", slug: "science" },
+  { en: "Politics", hi: "राजनीति", icon: "🏛️", slug: "politics" },
+  { en: "Crime", hi: "अपराध / जुर्म", icon: "🛡️", slug: "crime" },
+  { en: "Videos", hi: "वीडियो", icon: "📺", slug: "videos" },
+  { en: "Top News", hi: "टॉप न्यूज़", icon: "🏠", slug: "latest" },
+  { en: "Markets", hi: "शेयर बाजार", icon: "📊", slug: "markets" }
+];
 
 interface AdminArticle {
   id: string;
@@ -108,14 +133,31 @@ interface AdminArticle {
   focusKeyword?: string;
 }
 
-export default function AdminArticlesPage() {
+function AdminArticlesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const queryStatus = searchParams.get("status")?.toUpperCase();
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    if (queryStatus === "REVIEW" || queryStatus === "PENDING_REVIEW") return "PENDING_REVIEW";
+    return queryStatus || "ALL";
+  });
+
   const [articles, setArticles] = useState<AdminArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [languageFilter, setLanguageFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
   const [toastMessage, setToastMessage] = useState("");
+
+  // Sync filter when URL search params change
+  useEffect(() => {
+    const s = searchParams.get("status")?.toUpperCase();
+    if (s) {
+      const target = s === "REVIEW" ? "PENDING_REVIEW" : s;
+      setStatusFilter(target);
+    }
+  }, [searchParams]);
 
   // Role Context
   const [adminRole, setAdminRole] = useState<string>("super_admin");
@@ -129,6 +171,7 @@ export default function AdminArticlesPage() {
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<AdminArticle | null>(null);
+  const [activeModalTab, setActiveModalTab] = useState<"placement" | "content" | "advanced">("placement");
 
   // Form Fields
   const [formTitle, setFormTitle] = useState("");
@@ -175,6 +218,23 @@ export default function AdminArticlesPage() {
   const [formFocusKeyword, setFormFocusKeyword] = useState("");
   const [isSeoTitleCustomized, setIsSeoTitleCustomized] = useState(false);
   const [isSeoDescCustomized, setIsSeoDescCustomized] = useState(false);
+
+  const handleSelectCategory = (newCat: string) => {
+    setFormCategory(newCat);
+    if (!formCategories.includes(newCat)) {
+      setFormCategories([newCat, ...formCategories.filter((c) => c !== formCategory)]);
+    }
+    const subs = getSubCategories(newCat);
+    const isCurrentSubValid = subs.some(
+      (s) =>
+        s.en.toLowerCase() === formSubCategory.toLowerCase() ||
+        s.hi.toLowerCase() === formSubCategory.toLowerCase()
+    );
+    if (!isCurrentSubValid) {
+      if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
+      else setFormSubCategory("General");
+    }
+  };
 
   const autoGenerateSeoFields = (title: string, summary: string, category: string, stateName: string) => {
     setFormSeoTitle(title);
@@ -240,29 +300,6 @@ export default function AdminArticlesPage() {
     }
 
     initArticlesPageRole();
-
-    async function loadInitialArticles() {
-      try {
-        const res = await fetch("/api/v1/articles?admin=true", { cache: "no-store" });
-        const json = await res.json();
-        if (json && (json.data || json.articles)) {
-          const list = json.data || json.articles;
-          if (Array.isArray(list)) {
-            const sanitized = list.map((a: any) => ({
-              ...a,
-              categories: normalizeCategoriesArray(a.categories, a.category?.name),
-            }));
-            setArticles(sanitized);
-          }
-        }
-      } catch (err) {
-        console.warn("Backend fetch failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadInitialArticles();
   }, []);
 
   const handleOpenModal = async (art?: AdminArticle) => {
@@ -391,8 +428,67 @@ export default function AdminArticlesPage() {
       setFormAdBadge("SPONSORED");
       setFormCustomAds([]);
     }
+    setActiveModalTab("placement");
     setIsModalOpen(true);
   };
+
+  useEffect(() => {
+    async function loadQueueArticles() {
+      try {
+        setLoading(true);
+        const filter = statusFilter;
+        let url = "/api/v1/articles?admin=true&limit=200";
+        if (filter && filter !== "ALL") {
+          url += `&status=${filter}`;
+        }
+
+        const promises: Promise<Response>[] = [fetch(url, { cache: "no-store" })];
+        if (filter === "ALL") {
+          promises.push(fetch("/api/v1/articles?admin=true&status=PENDING_REVIEW&limit=50", { cache: "no-store" }));
+        }
+
+        const responses = await Promise.all(promises);
+        const json = await responses[0].json();
+        let list = (json && (json.data || json.articles)) ? (json.data || json.articles) : [];
+
+        if (promises.length > 1) {
+          try {
+            const pJson = await responses[1].json();
+            const pList = (pJson && (pJson.data || pJson.articles)) ? (pJson.data || pJson.articles) : [];
+            const merged = [...pList];
+            for (const a of list) {
+              if (!merged.some((item: any) => item.id === a.id)) {
+                merged.push(a);
+              }
+            }
+            list = merged;
+          } catch (_) {}
+        }
+
+        if (Array.isArray(list)) {
+          const sanitized = list.map((a: any) => ({
+            ...a,
+            categories: normalizeCategoriesArray(a.categories, a.category?.name),
+          }));
+          setArticles(sanitized);
+
+          const editId = searchParams.get("edit");
+          if (editId) {
+            const target = sanitized.find((a: any) => a.id === editId);
+            if (target) {
+              handleOpenModal(target);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Backend fetch failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadQueueArticles();
+  }, [statusFilter]);
 
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
@@ -449,7 +545,8 @@ export default function AdminArticlesPage() {
   const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
-      showToast("Title is required!");
+      setActiveModalTab("content");
+      showToast("Article headline is required!");
       return;
     }
 
@@ -793,7 +890,19 @@ export default function AdminArticlesPage() {
       <div className="admin-table-container">
         <div className="admin-table-header">
           <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>
-            Live Queue ({filteredArticles.length})
+            {statusFilter === "PENDING_REVIEW" ? (
+              <span style={{ color: "#854d0e", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                ⏳ Pending Review Queue ({filteredArticles.length})
+              </span>
+            ) : statusFilter === "PUBLISHED" ? (
+              <span>Published Live News ({filteredArticles.length})</span>
+            ) : statusFilter === "REJECTED" ? (
+              <span>Rejected Submissions ({filteredArticles.length})</span>
+            ) : statusFilter === "DRAFT" ? (
+              <span>Drafts ({filteredArticles.length})</span>
+            ) : (
+              <span>News Queue ({filteredArticles.length})</span>
+            )}
           </h3>
           <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ position: "relative" }}>
@@ -808,8 +917,24 @@ export default function AdminArticlesPage() {
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid var(--color-border)", fontSize: "0.85rem" }}
+              onChange={(e) => {
+                const newStatus = e.target.value;
+                setStatusFilter(newStatus);
+                if (newStatus === "ALL") {
+                  router.replace("/admin/articles");
+                } else {
+                  router.replace(`/admin/articles?status=${newStatus}`);
+                }
+              }}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: statusFilter === "PENDING_REVIEW" ? "2px solid #ca8a04" : "1px solid var(--color-border)",
+                fontSize: "0.85rem",
+                fontWeight: statusFilter === "PENDING_REVIEW" ? 800 : 500,
+                background: statusFilter === "PENDING_REVIEW" ? "#fefce8" : "#ffffff",
+                color: statusFilter === "PENDING_REVIEW" ? "#854d0e" : "inherit"
+              }}
             >
               <option value="ALL">All Status</option>
               <option value="PENDING_REVIEW">⏳ Pending Review</option>
@@ -838,6 +963,23 @@ export default function AdminArticlesPage() {
             </div>
           </div>
         </div>
+
+        {statusFilter === "PENDING_REVIEW" && (
+          <div style={{ background: "#fefce8", borderBottom: "1px solid #fef08a", padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.86rem", color: "#854d0e", fontWeight: 700 }}>
+              <span>⚠️ Showing {filteredArticles.length} editor {filteredArticles.length === 1 ? "submission" : "submissions"} awaiting Chief Editor & Super Admin review & approval.</span>
+            </div>
+            <button
+              onClick={() => {
+                setStatusFilter("ALL");
+                router.replace("/admin/articles");
+              }}
+              style={{ background: "#ffffff", border: "1px solid #ca8a04", color: "#854d0e", padding: "5px 12px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+            >
+              Show All News (Clear Filter)
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--color-secondary)" }}>
@@ -1070,921 +1212,1120 @@ export default function AdminArticlesPage() {
         )}
       </div>
 
-      {/* Article Creation Modal */}
+      {/* Article Creation & Editing Modal */}
       {isModalOpen && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "20px" }}>
-          <div style={{ background: "#ffffff", borderRadius: "20px", width: "100%", maxWidth: "960px", maxHeight: "90vh", overflowY: "auto", padding: "36px", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}>
-            <h3 style={{ fontSize: "1.3rem", fontWeight: 800, margin: "0 0 20px 0", color: "#0f172a" }}>
-              {isEditor(adminRole)
-                ? (editingArticle ? (editingArticle.status === "REJECTED" ? "Revise Rejected Article Draft" : "Edit Article Draft") : "Compose & Submit News for Review")
-                : (editingArticle ? "Edit Article Details" : "Compose & Publish New Article")}
-            </h3>
-
-            <form onSubmit={handleSaveArticle} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Article Headline / समाचार शीर्षक *</label>
-                <input
-                  type="text"
-                  placeholder="Enter news headline (e.g. LPG उपभोक्ताओं की बढ़ सकती है परेशानी)..."
-                  value={formTitle}
-                  onChange={(e) => {
-                    const newTitle = e.target.value;
-                    setFormTitle(newTitle);
-                    if (!isSeoTitleCustomized) {
-                      setFormSeoTitle(newTitle);
-                    }
-                    if (!isSlugCustomized) {
-                      const instantSlug = formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
-                      setFormSlug(instantSlug);
-
-                      if (slugTranslateTimer.current) clearTimeout(slugTranslateTimer.current);
-                      slugTranslateTimer.current = setTimeout(async () => {
-                        if (/[\u0900-\u097F]/.test(newTitle)) {
-                          const fullSlug = await translateHindiToEnglishSlug(newTitle);
-                          if (fullSlug) {
-                            setFormSlug(fullSlug);
-                          }
-                        }
-                      }, 500);
-                    }
-                  }}
-                  style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.95rem", fontWeight: 600 }}
-                  required
-                />
-              </div>
-
-
-
-              {/* MULTI-TAB / MULTI-CATEGORY PUBLISHING SELECTOR */}
-              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <label style={{ fontSize: "0.86rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span>📌</span> Publish Article in Multiple Categories / Nav Tabs ({formCategories.length} Selected)
-                  </label>
-                  <span style={{ fontSize: "0.74rem", color: "#e50914", fontWeight: 700 }}>Click tabs to toggle placement</span>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.65)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "16px" }}>
+          <div style={{ background: "#ffffff", borderRadius: "20px", width: "100%", maxWidth: "980px", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.25)", overflow: "hidden" }}>
+            
+            {/* Header */}
+            <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "#fee2e2", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <FileText size={20} />
                 </div>
-
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {["Top News", "Politics", "Crime", "Markets", "Education", "World", "India", "Business", "Technology", "Sports", "Entertainment", "Science", "Videos"].map((catName) => {
-                    const isSelected = formCategories.includes(catName);
-                    return (
-                      <button
-                        key={catName}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            if (formCategories.length > 1) {
-                              const remaining = formCategories.filter((c) => c !== catName);
-                              setFormCategories(remaining);
-                              // If removing the active primary category, switch primary to the first available category
-                              if (formCategory === catName) {
-                                const nextPrimary = remaining[0];
-                                setFormCategory(nextPrimary);
-                                const subs = getSubCategories(nextPrimary);
-                                setFormSubCategory(subs && subs.length > 0 ? subs[0].en : "General");
-                              }
-                            }
-                          } else {
-                            // Selecting this category: add it and auto-sync Primary Category & Sub-Category
-                            setFormCategories([...formCategories, catName]);
-                            setFormCategory(catName);
-                            const subs = getSubCategories(catName);
-                            setFormSubCategory(subs && subs.length > 0 ? subs[0].en : "General");
-                          }
-                        }}
-                        style={{
-                          padding: "6px 14px",
-                          borderRadius: "20px",
-                          fontSize: "0.82rem",
-                          fontWeight: isSelected ? 800 : 600,
-                          border: isSelected ? "2px solid #e50914" : "1px solid #cbd5e1",
-                          background: isSelected ? "#e50914" : "#ffffff",
-                          color: isSelected ? "#ffffff" : "#334155",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          transition: "all 0.15s ease",
-                          boxShadow: isSelected ? "0 2px 8px rgba(229,9,20,0.25)" : "none"
-                        }}
-                      >
-                        {isSelected ? <span>✓</span> : <Plus size={12} />}
-                        <span>{catName}</span>
-                      </button>
-                    );
-                  })}
+                <div>
+                  <h3 style={{ fontSize: "1.18rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    {isEditor(adminRole)
+                      ? (editingArticle ? (editingArticle.status === "REJECTED" ? "Revise Rejected Article" : "Edit Article Draft") : "Compose News Submission")
+                      : (editingArticle ? "Edit Article Details" : "Compose & Publish Article")}
+                  </h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+                    Write story content, choose desk placements, and publish across portals.
+                  </p>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                style={{ background: "#f1f5f9", border: "none", width: "34px", height: "34px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", cursor: "pointer", transition: "background 0.15s ease" }}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-              {/* HERO BANNER PLACEMENT CARD */}
-              <div
-                onClick={() => setFormIsHero(!formIsHero)}
+            {/* Segmented Tab Bar */}
+            <div style={{ display: "flex", gap: "6px", padding: "8px 24px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              <button
+                type="button"
+                onClick={() => setActiveModalTab("placement")}
                 style={{
-                  background: formIsHero ? "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)" : "#f8fafc",
-                  border: `2px solid ${formIsHero ? "#e50914" : "#cbd5e1"}`,
-                  borderRadius: "12px",
-                  padding: "14px 18px",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: activeModalTab === "placement" ? "1px solid #e2e8f0" : "1px solid transparent",
+                  fontSize: "0.84rem",
+                  fontWeight: 700,
                   cursor: "pointer",
-                  transition: "all 0.2s ease"
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: activeModalTab === "placement" ? "#ffffff" : "transparent",
+                  color: activeModalTab === "placement" ? "#e50914" : "#64748b",
+                  boxShadow: activeModalTab === "placement" ? "0 2px 6px rgba(0,0,0,0.04)" : "none"
                 }}
               >
-                <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={formIsHero}
-                    onChange={(e) => setFormIsHero(e.target.checked)}
-                    style={{ width: "20px", height: "20px", accentColor: "#e50914", cursor: "pointer" }}
-                  />
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Sparkles size={16} style={{ color: "#e50914" }} />
-                      <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
-                        🌟 Set as Main Hero Banner (Top Lead Story)
-                      </span>
-                    </div>
-                    <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
-                      Check this box to display this article as the primary Hero Card with giant banner image on Home Page & Category headers.
-                    </p>
-                  </div>
-                </label>
-              </div>
+                <Zap size={15} /> 1. Category & Sub-Tab
+              </button>
 
-              <div style={{ display: "grid", gridTemplateColumns: formCategory.toLowerCase() === "india" ? "1fr 1fr 1fr 1fr" : "1fr 1fr 1fr", gap: "12px", transition: "all 0.2s ease" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Primary Category / मुख्य श्रेणी</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => {
-                      const newCat = e.target.value;
-                      setFormCategory(newCat);
-                      if (!formCategories.includes(newCat)) {
-                        setFormCategories([newCat, ...formCategories.filter(c => c !== formCategory)]);
-                      }
-                      const subs = getSubCategories(newCat);
-                      const isCurrentSubValid = subs.some(s => s.en.toLowerCase() === formSubCategory.toLowerCase() || s.hi.toLowerCase() === formSubCategory.toLowerCase());
-                      if (!isCurrentSubValid) {
-                        if (subs && subs.length > 0) setFormSubCategory(subs[0].en);
-                        else setFormSubCategory("General");
-                      }
-                    }}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
-                  >
-                    {[
-                      { en: "Top News", hi: "टॉप न्यूज़" },
-                      { en: "Politics", hi: "राजनीति" },
-                      { en: "Crime", hi: "अपराध / जुर्म" },
-                      { en: "Markets", hi: "शेयर बाजार" },
-                      { en: "Education", hi: "शिक्षा" },
-                      { en: "World", hi: "विदेश" },
-                      { en: "India", hi: "भारत" },
-                      { en: "Business", hi: "व्यापार" },
-                      { en: "Technology", hi: "तकनीक" },
-                      { en: "Sports", hi: "खेल" },
-                      { en: "Entertainment", hi: "मनोरंजन" },
-                      { en: "Science", hi: "विज्ञान" },
-                      { en: "Videos", hi: "वीडियो" }
-                    ].map((c) => (
-                      <option key={c.en} value={c.en}>{c.hi} ({c.en})</option>
-                    ))}
-                  </select>
-                </div>
+              <button
+                type="button"
+                onClick={() => setActiveModalTab("content")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: activeModalTab === "content" ? "1px solid #e2e8f0" : "1px solid transparent",
+                  fontSize: "0.84rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: activeModalTab === "content" ? "#ffffff" : "transparent",
+                  color: activeModalTab === "content" ? "#e50914" : "#64748b",
+                  boxShadow: activeModalTab === "content" ? "0 2px 6px rgba(0,0,0,0.04)" : "none"
+                }}
+              >
+                <FileText size={15} /> 2. Story & Media
+              </button>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Sub-Category / उप-श्रेणी (Sub-Tab)</label>
-                  <select
-                    value={formSubCategory}
-                    onChange={(e) => setFormSubCategory(e.target.value)}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
-                  >
-                    <option value="General">General / All Sub-Tabs (सामान्य / सभी उप-श्रेणियां)</option>
-                    {getSubCategories(formCategory).map((sub) => (
-                      <option key={sub.en} value={sub.en}>
-                        📌 {sub.hi} ({sub.en})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {formCategory.toLowerCase() === "india" && (
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Target State (Optional)</label>
-                    <select
-                      value={formState}
-                      onChange={(e) => setFormState(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
-                    >
-                      <option value="National">All India (National)</option>
-                      {INDIAN_STATES.map((st) => (
-                        <option key={st.slug} value={st.nameEn}>
-                          {st.nameEn} ({st.nameHi})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setActiveModalTab("advanced")}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: activeModalTab === "advanced" ? "1px solid #e2e8f0" : "1px solid transparent",
+                  fontSize: "0.84rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: activeModalTab === "advanced" ? "#ffffff" : "transparent",
+                  color: activeModalTab === "advanced" ? "#e50914" : "#64748b",
+                  boxShadow: activeModalTab === "advanced" ? "0 2px 6px rgba(0,0,0,0.04)" : "none"
+                }}
+              >
+                <Sparkles size={15} /> 3. SEO & Sponsor Ads
+                {formCustomAds.length > 0 && (
+                  <span style={{ fontSize: "0.7rem", background: "#eff6ff", color: "#2563eb", padding: "1px 6px", borderRadius: "10px", fontWeight: 800 }}>
+                    {formCustomAds.length} Ads
+                  </span>
                 )}
+              </button>
+            </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>Language Portal</label>
-                  <select
-                    value={formLanguage}
-                    onChange={(e) => setFormLanguage(e.target.value as "EN" | "HI")}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
-                  >
-                    <option value="HI">Hindi (हिंदी) Portal</option>
-                    <option value="EN">English Portal</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Section Placement Controls */}
-              <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "12px", padding: "14px", marginTop: "10px" }}>
-                <label style={{ display: "block", fontSize: "0.84rem", fontWeight: 800, color: "#0f172a", marginBottom: "10px" }}>
-                  📌 Special Homepage Section Assignments / प्लेसमेंट
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "20px" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#0f172a" }}>
-                    <input
-                      type="checkbox"
-                      checked={formIsHero}
-                      onChange={(e) => setFormIsHero(e.target.checked)}
-                      style={{ width: "16px", height: "16px", accentColor: "#e50914" }}
-                    />
-                    <span>🌟 Main Spotlight Lead Story (Hero Banner)</span>
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#dc2626" }}>
-                    <input
-                      type="checkbox"
-                      checked={formIsSuperfast}
-                      onChange={(e) => setFormIsSuperfast(e.target.checked)}
-                      style={{ width: "16px", height: "16px", accentColor: "#dc2626" }}
-                    />
-                    <span>⚡ Superfast News (सुपरफ़ास्ट NEWS Section)</span>
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#ea580c" }}>
-                    <input
-                      type="checkbox"
-                      checked={formIsTrending}
-                      onChange={(e) => setFormIsTrending(e.target.checked)}
-                      style={{ width: "16px", height: "16px", accentColor: "#ea580c" }}
-                    />
-                    <span>🔥 Trending / Hot Topic (ट्रेंडिंग ख़बर)</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* State & City / District Selection */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>State / राज्य</label>
-                  <select
-                    value={formState}
-                    onChange={(e) => {
-                      const newSt = e.target.value;
-                      setFormState(newSt);
-                      if (newSt === "National" || newSt === "National / All India") {
-                        setFormDistrict("All");
-                      } else {
-                        const stObj = INDIAN_STATES.find((s) => s.nameEn === newSt);
-                        const dists = getDistrictsForState(stObj?.code || "");
-                        if (dists.length > 0) setFormDistrict(dists[0].nameEn);
-                        else setFormDistrict("All");
-                      }
-                    }}
-                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a" }}
-                  >
-                    <option value="National">National / All India (पूरा भारत)</option>
-                    {INDIAN_STATES.map((st) => (
-                      <option key={st.slug} value={st.nameEn}>
-                        {st.nameEn} ({st.nameHi})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>City / District / शहर / ज़िला</label>
-                  <select
-                    value={formDistrict}
-                    onChange={(e) => setFormDistrict(e.target.value)}
-                    disabled={formState === "National" || formState === "National / All India"}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "0.88rem",
-                      background: (formState === "National" || formState === "National / All India") ? "#f1f5f9" : "#ffffff",
-                      color: (formState === "National" || formState === "National / All India") ? "#94a3b8" : "#0f172a",
-                      cursor: (formState === "National" || formState === "National / All India") ? "not-allowed" : "pointer"
-                    }}
-                  >
-                    {(formState === "National" || formState === "National / All India") ? (
-                      <option value="All">All Cities & Districts (सभी शहर और ज़िले)</option>
-                    ) : (
-                      <>
-                        <option value="All">All Districts in {formState} (सभी ज़िले)</option>
-                        {getDistrictsForState(INDIAN_STATES.find((s) => s.nameEn === formState)?.code || "").map((d) => (
-                          <option key={d.id} value={d.nameEn}>
-                            📍 {d.nameEn} ({d.nameHi})
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              {/* News Composed By / Author Selection */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
-                  ✍️ News Composed By / Author Name (लेखक / संवाददाता नाम)
-                </label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. amatjeet, Amarjeet, Raj..."
-                    value={formAuthor}
-                    onChange={(e) => setFormAuthor(e.target.value)}
-                    style={{ flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", background: "#ffffff", color: "#0f172a", fontWeight: 700 }}
-                  />
-                  {staffMembersList.length > 0 && (
-                    <select
-                      value={formAuthor}
-                      onChange={(e) => setFormAuthor(e.target.value)}
-                      style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem", background: "#f8fafc", color: "#0f172a", fontWeight: 600, cursor: "pointer" }}
-                    >
-                      <option value="">Select Staff Account...</option>
-                      {staffMembersList.map((st: any) => (
-                        <option key={st.id || st.email} value={st.name || st.email}>
-                          👤 {st.name || st.email} ({st.roleName || "Staff"})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-                <span style={{ fontSize: "0.74rem", color: "#64748b", display: "block", marginTop: "4px" }}>
-                  The article page will display <strong>{formAuthor || adminUserName}</strong> as the author on the website.
-                </span>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
-                  Upload Featured Cover Image *
-                </label>
-
-                {/* Primary Computer File Upload Dropzone */}
-                <div style={{ border: "2px dashed #cbd5e1", borderRadius: "14px", padding: "20px", textAlign: "center", background: "#f8fafc", transition: "all 0.2s ease" }}>
-                  {formImage ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "14px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                        <div style={{ width: "96px", height: "64px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1", background: "#000", flexShrink: 0 }}>
-                          <img src={formImage} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        </div>
-                        <div style={{ textAlign: "left" }}>
-                          <span style={{ fontSize: "0.86rem", fontWeight: 800, color: "#0f172a", display: "block" }}>
-                            {imageFileName || "Uploaded Article Image"}
-                          </span>
-                          <span style={{ fontSize: "0.76rem", color: isUploadingImage ? "#ea580c" : "#16a34a", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
-                            {isUploadingImage ? (
-                              <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #ea580c", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading to Hostinger Storage…</>
-                            ) : (
-                              <><CheckCircle size={14} /> Uploaded to Hostinger Storage ✓</>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <label style={{ background: "#0f172a", color: "#ffffff", padding: "8px 16px", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                          <Upload size={14} /> Choose Different File
-                          <input type="file" accept="image/*" onChange={handleImageFileUpload} style={{ display: "none" }} />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => { setFormImage(""); setImageFileName(""); }}
-                          style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "8px 14px", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <ImageIcon2 size={36} style={{ color: "#e50914", marginBottom: "8px" }} />
-                      <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem", fontWeight: 800, color: "#0f172a" }}>
-                        Upload Cover Image from Computer
-                      </h4>
-                      <p style={{ margin: "0 0 14px 0", fontSize: "0.78rem", color: "#64748b" }}>
-                        Supports JPG, PNG, WebP, SVG high-resolution photo graphics
-                      </p>
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#e50914", color: "#ffffff", padding: "10px 22px", borderRadius: "8px", fontWeight: 800, fontSize: "0.88rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(229,9,20,0.25)" }}>
-                        <Upload size={16} /> Choose Image File from Computer
-                        <input type="file" accept="image/*" onChange={handleImageFileUpload} style={{ display: "none" }} />
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                {/* Optional URL Toggle / Link */}
-                <div style={{ marginTop: "8px", textAlign: "right" }}>
-                  {!showUrlInput ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowUrlInput(true)}
-                      style={{ background: "none", border: "none", color: "#64748b", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
-                    >
-                      Or paste an Image CDN URL instead
-                    </button>
-                  ) : (
-                    <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
-                      <input
-                        type="text"
-                        placeholder="https://images.unsplash.com/..."
-                        value={formImage.startsWith("data:") ? "" : formImage}
-                        onChange={(e) => { setFormImage(e.target.value); setImageFileName("URL Image"); }}
-                        style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowUrlInput(false)}
-                        style={{ background: "#f1f5f9", border: "none", padding: "8px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700 }}
-                      >
-                        Hide URL Input
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* MULTI-ADVERTISEMENT BUILDER FOR THIS ARTICLE */}
-              <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", borderRadius: "14px", padding: "18px", marginTop: "12px", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: "8px" }}>
-                  <label style={{ fontSize: "0.9rem", fontWeight: 800, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Megaphone size={18} style={{ color: "#e50914" }} />
-                    <span>📢 Custom Advertisements for this News (एक या अधिक विज्ञापन जोड़ें — {formCustomAds.length})</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormCustomAds([
-                        ...formCustomAds,
-                        {
-                          id: `ad_${Date.now()}_${formCustomAds.length}`,
-                          title: "",
-                          subtitle: "",
-                          link: "",
-                          image: "",
-                          badge: "SPONSORED",
-                          enabled: true
-                        }
-                      ]);
-                    }}
-                    style={{
-                      background: "#e50914", color: "#ffffff", border: "none",
-                      padding: "6px 14px", borderRadius: "8px", fontWeight: 800,
-                      fontSize: "0.78rem", cursor: "pointer", display: "inline-flex",
-                      alignItems: "center", gap: "6px"
-                    }}
-                  >
-                    <Plus size={14} /> Add Another Ad (+ दूसरा विज्ञापन जोड़ें)
-                  </button>
-                </div>
-
-                <p style={{ margin: "0 0 14px 0", fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.45 }}>
-                  You can add multiple sponsored ad banners specifically for this article. Select placement to display ads on Both Sides (Left &amp; Right), Right Sidebar, Left Column, or inside Article Body!
-                </p>
-
-                {formCustomAds.length === 0 ? (
-                  <div style={{ padding: "14px", borderRadius: "8px", background: "rgba(255,255,255,0.04)", textAlign: "center", color: "#94a3b8", fontSize: "0.82rem" }}>
-                    No custom ads added for this story yet. Click <strong>&quot;+ Add Another Ad&quot;</strong> to attach specific sponsor banners!
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {formCustomAds.map((adItem, index) => {
-                      const isAdEnabled = adItem.enabled !== false;
-                      return (
-                      <div key={adItem.id || index} style={{ background: isAdEnabled ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)", border: isAdEnabled ? "1px solid rgba(255,255,255,0.12)" : "1px dashed rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px", opacity: isAdEnabled ? 1 : 0.7, transition: "all 0.2s ease" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px dashed rgba(255,255,255,0.1)", paddingBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ fontSize: "0.8rem", fontWeight: 800, color: isAdEnabled ? "#f87171" : "#94a3b8" }}>
-                              🚩 Ad Slot #{index + 1}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...formCustomAds];
-                                updated[index].enabled = !isAdEnabled;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                padding: "3px 10px 3px 5px",
-                                borderRadius: "16px",
-                                border: isAdEnabled ? "1px solid #16a34a" : "1px solid #64748b",
-                                background: isAdEnabled ? "rgba(22,163,74,0.15)" : "rgba(100,116,139,0.15)",
-                                cursor: "pointer",
-                                transition: "all 0.2s ease"
-                              }}
-                              title={`Toggle Ad Slot #${index + 1} ON/OFF`}
-                            >
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  width: "28px",
-                                  height: "16px",
-                                  borderRadius: "16px",
-                                  background: isAdEnabled ? "#16a34a" : "#475569",
-                                  position: "relative",
-                                  transition: "background 0.2s ease"
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    position: "absolute",
-                                    top: "2px",
-                                    left: isAdEnabled ? "14px" : "2px",
-                                    width: "12px",
-                                    height: "12px",
-                                    borderRadius: "50%",
-                                    background: "#ffffff",
-                                    transition: "left 0.2s ease"
-                                  }}
-                                />
-                              </span>
-                              <span style={{ fontSize: "0.72rem", fontWeight: 800, color: isAdEnabled ? "#4ade80" : "#94a3b8" }}>
-                                {isAdEnabled ? "ON (चालू)" : "OFF (बंद)"}
-                              </span>
-                            </button>
+            {/* Form */}
+            <form onSubmit={handleSaveArticle} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "22px 26px", display: "flex", flexDirection: "column", gap: "18px" }}>
+                
+                {/* TAB 1: CATEGORY & PLACEMENT */}
+                {activeModalTab === "placement" && (
+                  <>
+                    {/* 1. Professional Category & Sub-Tab Navigation Mapper */}
+                    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px 20px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+                      {/* Top Header: Title & Edition toggle */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#fef2f2", color: "#e50914", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Folder size={17} />
                           </div>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 800, color: "#0f172a" }}>
+                              Primary Category & Sub-Tab (वेबसाइट नेविगेशन मैपिंग)
+                            </h4>
+                            <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>
+                              First select the main navigation tab, then select the sub-tab (बिल्कुल वेबसाइट की तरह)
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Edition Selector */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f8fafc", padding: "3px 6px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                          <span style={{ fontSize: "0.73rem", fontWeight: 700, color: "#64748b", marginRight: "4px" }}>Edition:</span>
                           <button
                             type="button"
-                            onClick={() => setFormCustomAds(formCustomAds.filter((_, i) => i !== index))}
-                            style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 800, cursor: "pointer" }}
+                            onClick={() => setFormLanguage("HI")}
+                            style={{
+                              padding: "4px 9px",
+                              borderRadius: "5px",
+                              border: "none",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              background: formLanguage === "HI" ? "#e50914" : "transparent",
+                              color: formLanguage === "HI" ? "#ffffff" : "#475569",
+                              transition: "all 0.15s ease"
+                            }}
                           >
-                            🗑️ Delete Ad #{index + 1}
+                            🇮🇳 Hindi
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormLanguage("EN")}
+                            style={{
+                              padding: "4px 9px",
+                              borderRadius: "5px",
+                              border: "none",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              background: formLanguage === "EN" ? "#0f172a" : "transparent",
+                              color: formLanguage === "EN" ? "#ffffff" : "#475569",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            🌐 English
                           </button>
                         </div>
+                      </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Title / Sponsor Name</label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Prabhat Khabar / Brand Sponsor"
-                              value={adItem.title || ""}
-                              onChange={(e) => {
-                                const updated = [...formCustomAds];
-                                updated[index].title = e.target.value;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
-                            />
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Subtitle / Details</label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Special offer details..."
-                              value={adItem.subtitle || ""}
-                              onChange={(e) => {
-                                const updated = [...formCustomAds];
-                                updated[index].subtitle = e.target.value;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
-                            />
-                          </div>
+                      {/* STEP 1: SLEEK FRONTEND NAVBAR BAR (Single horizontal line, exactly matching Screenshot 2) */}
+                      <div style={{ marginBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            Step 1: Main Category Tab (मुख्य श्रेणी टैब चुनें) <span style={{ color: "#e50914" }}>*</span>
+                          </span>
+                          <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                            Selected Tab: <b style={{ color: "#e50914" }}>{formCategory}</b>
+                          </span>
                         </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.9fr 1fr", gap: "10px", marginBottom: "10px" }}>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Target Redirect Link URL</label>
-                            <input
-                              type="text"
-                              placeholder="https://sponsor.com or /advertise"
-                              value={adItem.link || ""}
-                              onChange={(e) => {
-                                const updated = [...formCustomAds];
-                                updated[index].link = e.target.value;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
-                            />
+                        <div style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          background: "#f8fafc",
+                          border: "1.5px solid #e2e8f0",
+                          borderRadius: "12px",
+                          padding: "8px 10px",
+                          gap: "8px"
+                        }}>
+                          {FRONTEND_NAV_TABS.map((cat) => {
+                            const isSelected = formCategory.toLowerCase() === cat.en.toLowerCase();
+                            return (
+                              <button
+                                key={cat.en}
+                                type="button"
+                                onClick={() => handleSelectCategory(cat.en)}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "7px",
+                                  padding: "9px 15px",
+                                  borderRadius: "8px",
+                                  background: isSelected ? "#e50914" : "#ffffff",
+                                  color: isSelected ? "#ffffff" : "#1e293b",
+                                  border: isSelected ? "1.5px solid #dc2626" : "1.5px solid #e2e8f0",
+                                  fontSize: "0.88rem",
+                                  fontWeight: isSelected ? 800 : 600,
+                                  cursor: "pointer",
+                                  whiteSpace: "nowrap",
+                                  boxShadow: isSelected ? "0 2px 8px rgba(229,9,20,0.25)" : "0 1px 2px rgba(0,0,0,0.03)",
+                                  transition: "all 0.15s ease"
+                                }}
+                              >
+                                <span style={{ fontSize: "1rem" }}>{cat.icon}</span>
+                                <span>{cat.hi}</span>
+                                {isSelected && <Check size={14} strokeWidth={2.5} style={{ marginLeft: "2px" }} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* STEP 2: ATTACHED SUB-TABS CARDS */}
+                      {(() => {
+                        const currentCatObj = FRONTEND_NAV_TABS.find((c) => c.en.toLowerCase() === formCategory.toLowerCase()) || {
+                          en: formCategory,
+                          hi: formCategory,
+                          slug: formCategory.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+                          icon: "📁"
+                        };
+                        const activeSubs = getSubCategories(formCategory);
+                        const currentSubObj = activeSubs.find(
+                          (s) => s.en.toLowerCase() === formSubCategory.toLowerCase() || s.hi.toLowerCase() === formSubCategory.toLowerCase()
+                        );
+                        const subSlug =
+                          formSubCategory && formSubCategory.toLowerCase() !== "general"
+                            ? (currentSubObj ? currentSubObj.en : formSubCategory)
+                                .toLowerCase()
+                                .trim()
+                                .replace(/[^a-z0-9]+/g, "-")
+                                .replace(/^-+|-+$/g, "")
+                            : "";
+                        const previewUrl = subSlug ? `/${currentCatObj.slug}/${subSlug}` : `/${currentCatObj.slug}`;
+
+                        return (
+                          <div style={{
+                            background: "#ffffff",
+                            border: "1.5px solid #e2e8f0",
+                            borderRadius: "14px",
+                            padding: "16px 18px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+                            position: "relative"
+                          }}>
+                            {/* Header row of Sub-Tabs menu */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "1.05rem" }}>{currentCatObj.icon}</span>
+                                  <span>Step 2: {currentCatObj.hi} के उप-टैब्स (Sub-Desk)</span>
+                                </span>
+                                <span style={{ fontSize: "0.76rem", color: "#64748b" }}>— संबंधित टॉपिक चुनें:</span>
+                              </div>
+                              <div style={{ fontSize: "0.76rem", color: "#2563eb", background: "#eff6ff", border: "1px solid #dbeafe", padding: "4px 10px", borderRadius: "8px", fontFamily: "monospace", fontWeight: 700 }}>
+                                URL Route: {previewUrl}
+                              </div>
+                            </div>
+
+                            {/* Sub-Tabs Grid */}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "10px" }}>
+                              {/* Option 1: General / All */}
+                              <button
+                                type="button"
+                                onClick={() => setFormSubCategory("General")}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  padding: "12px 16px",
+                                  borderRadius: "10px",
+                                  border: formSubCategory.toLowerCase() === "general" ? "2px solid #2563eb" : "1.5px solid #e2e8f0",
+                                  background: formSubCategory.toLowerCase() === "general" ? "#eff6ff" : "#ffffff",
+                                  color: formSubCategory.toLowerCase() === "general" ? "#1d4ed8" : "#0f172a",
+                                  fontSize: "0.88rem",
+                                  fontWeight: formSubCategory.toLowerCase() === "general" ? 800 : 600,
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  transition: "all 0.15s ease",
+                                  boxShadow: formSubCategory.toLowerCase() === "general" ? "0 3px 10px rgba(37,99,235,0.12)" : "0 1px 3px rgba(0,0,0,0.02)"
+                                }}
+                              >
+                                <div style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "8px",
+                                  background: formSubCategory.toLowerCase() === "general" ? "#dbeafe" : "#f1f5f9",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0
+                                }}>
+                                  <BookOpen size={16} color={formSubCategory.toLowerCase() === "general" ? "#2563eb" : "#64748b"} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: "0.88rem", fontWeight: 700 }}>General / All</div>
+                                  <div style={{ fontSize: "0.74rem", color: formSubCategory.toLowerCase() === "general" ? "#2563eb" : "#64748b" }}>सभी उप-टैब्स</div>
+                                </div>
+                                {formSubCategory.toLowerCase() === "general" && <Check size={16} color="#2563eb" strokeWidth={2.5} />}
+                              </button>
+
+                              {/* Specific Sub-Categories */}
+                              {activeSubs.map((sub) => {
+                                const isSelected = formSubCategory.toLowerCase() === sub.en.toLowerCase() || formSubCategory.toLowerCase() === sub.hi.toLowerCase();
+                                return (
+                                  <button
+                                    key={sub.en}
+                                    type="button"
+                                    onClick={() => setFormSubCategory(sub.en)}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "10px",
+                                      padding: "12px 16px",
+                                      borderRadius: "10px",
+                                      border: isSelected ? "2px solid #2563eb" : "1.5px solid #e2e8f0",
+                                      background: isSelected ? "#eff6ff" : "#ffffff",
+                                      color: isSelected ? "#1d4ed8" : "#0f172a",
+                                      fontSize: "0.88rem",
+                                      fontWeight: isSelected ? 800 : 600,
+                                      cursor: "pointer",
+                                      textAlign: "left",
+                                      transition: "all 0.15s ease",
+                                      boxShadow: isSelected ? "0 3px 10px rgba(37,99,235,0.12)" : "0 1px 3px rgba(0,0,0,0.02)"
+                                    }}
+                                  >
+                                    <div style={{
+                                      width: "32px",
+                                      height: "32px",
+                                      borderRadius: "8px",
+                                      background: isSelected ? "#dbeafe" : "#f1f5f9",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0
+                                    }}>
+                                      <BookOpen size={16} color={isSelected ? "#2563eb" : "#64748b"} />
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: "0.88rem", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub.hi}</div>
+                                      <div style={{ fontSize: "0.74rem", color: isSelected ? "#2563eb" : "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub.en}</div>
+                                    </div>
+                                    {isSelected && <Check size={16} color="#2563eb" strokeWidth={2.5} />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Live Display Mapping Footer Bar */}
+                            <div style={{
+                              marginTop: "14px",
+                              paddingTop: "10px",
+                              borderTop: "1px solid #e2e8f0",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              gap: "8px",
+                              fontSize: "0.8rem"
+                            }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#334155" }}>
+                                <span style={{ color: "#64748b", fontWeight: 700 }}>लाइव मैपिंग:</span>
+                                <span style={{ background: "#e50914", color: "#fff", padding: "3px 10px", borderRadius: "6px", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "0.82rem" }}>
+                                  {currentCatObj.icon} {currentCatObj.hi}
+                                </span>
+                                <span style={{ color: "#94a3b8", fontWeight: 900 }}>›</span>
+                                <span style={{ background: "#f8fafc", border: "1.5px solid #cbd5e1", color: "#0f172a", padding: "3px 10px", borderRadius: "6px", fontWeight: 700, fontSize: "0.82rem" }}>
+                                  {formSubCategory.toLowerCase() === "general" ? "सभी उप-टैब्स" : (currentSubObj?.hi || formSubCategory)}
+                                </span>
+                              </div>
+                              <span style={{ color: "#64748b", fontSize: "0.74rem" }}>
+                                (वेबसाइट नेविगेशन बार और आर्टिकल ब्रेडक्रम्ब में ऐसा प्रदर्शित होगा)
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Badge</label>
-                            <select
-                              value={adItem.badge || "SPONSORED"}
-                              onChange={(e) => {
-                                const updated = [...formCustomAds];
-                                updated[index].badge = e.target.value;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem" }}
-                            >
-                              <option value="SPONSORED">SPONSORED</option>
-                              <option value="ADVERTISEMENT">ADVERTISEMENT</option>
-                              <option value="PROMOTED">PROMOTED</option>
-                              <option value="EXCLUSIVE">EXCLUSIVE</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "4px" }}>Ad Placement / Position (विज्ञापन स्थान)</label>
-                            <select
-                              value={adItem.placement || "both"}
-                              onChange={(e) => {
-                                const updated = [...formCustomAds];
-                                (updated[index] as any).placement = e.target.value;
-                                setFormCustomAds(updated);
-                              }}
-                              style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.82rem", fontWeight: 700 }}
-                            >
-                              <option value="both">↔️ Both Sides (Left & Right / दोनों तरफ)</option>
-                              <option value="right">👉 Right Sidebar Only (दायां कॉलम)</option>
-                              <option value="left">👈 Left Column Only (बायां कॉलम)</option>
-                              <option value="body">📄 Inside Body Paragraphs (लेख के बीच में)</option>
-                            </select>
-                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* 2. Location Coverage & Reporter */}
+                    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "18px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#ecfdf5", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <MapPin size={16} />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: "0.92rem", fontWeight: 800, color: "#0f172a" }}>
+                            Location Coverage & Reporter Byline
+                          </h4>
+                          <p style={{ margin: 0, fontSize: "0.74rem", color: "#64748b" }}>
+                            Tag regional audience filters for city news and assign the article author
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: "14px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                            Target State / Territory
+                          </label>
+                          <select
+                            value={formState}
+                            onChange={(e) => {
+                              const newSt = e.target.value;
+                              setFormState(newSt);
+                              if (newSt === "National" || newSt === "National / All India") {
+                                setFormDistrict("All");
+                              } else {
+                                const stObj = INDIAN_STATES.find((s) => s.nameEn === newSt);
+                                const dists = getDistrictsForState(stObj?.code || "");
+                                if (dists.length > 0) setFormDistrict(dists[0].nameEn);
+                                else setFormDistrict("All");
+                              }
+                            }}
+                            style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.86rem", background: "#ffffff", color: "#0f172a", fontWeight: 600 }}
+                          >
+                            <option value="National">National (All India)</option>
+                            {INDIAN_STATES.map((st) => (
+                              <option key={st.slug} value={st.nameEn}>
+                                {st.nameEn} ({st.nameHi})
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
-                          <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#cbd5e1", marginBottom: "6px" }}>Upload Ad Banner Image</label>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                            {adItem.image && (
-                              <div style={{ width: "90px", height: "55px", borderRadius: "6px", overflow: "hidden", border: "1px solid #e50914", flexShrink: 0 }}>
-                                <img src={adItem.image} alt="Ad Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              </div>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                            City / District
+                          </label>
+                          <select
+                            value={formDistrict}
+                            onChange={(e) => setFormDistrict(e.target.value)}
+                            disabled={formState === "National" || formState === "National / All India"}
+                            style={{
+                              width: "100%",
+                              padding: "10px 12px",
+                              borderRadius: "8px",
+                              border: "1px solid #cbd5e1",
+                              fontSize: "0.86rem",
+                              background: (formState === "National" || formState === "National / All India") ? "#f8fafc" : "#ffffff",
+                              color: (formState === "National" || formState === "National / All India") ? "#94a3b8" : "#0f172a",
+                              fontWeight: 600,
+                              cursor: (formState === "National" || formState === "National / All India") ? "not-allowed" : "pointer"
+                            }}
+                          >
+                            {(formState === "National" || formState === "National / All India") ? (
+                              <option value="All">All Cities & Districts (National)</option>
+                            ) : (
+                              <>
+                                <option value="All">All Districts in {formState}</option>
+                                {getDistrictsForState(INDIAN_STATES.find((s) => s.nameEn === formState)?.code || "").map((d) => (
+                                  <option key={d.id} value={d.nameEn}>
+                                    📍 {d.nameEn}
+                                  </option>
+                                ))}
+                              </>
                             )}
-                            <label style={{ background: "#e50914", color: "#ffffff", padding: "6px 14px", borderRadius: "6px", fontWeight: 800, fontSize: "0.78rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                              <Upload size={13} /> {adItem.image ? "Change Photo" : "Upload Ad Photo"}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={async (e) => {
-                                  const rawFile = e.target.files?.[0];
-                                  if (!rawFile) return;
-                                  showToast("⏳ Converting Ad photo to WebP format...");
-                                  const file = await convertImageToWebP(rawFile);
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const updated = [...formCustomAds];
-                                    updated[index].image = reader.result as string;
-                                    setFormCustomAds(updated);
-                                  };
-                                  reader.readAsDataURL(file);
+                          </select>
+                        </div>
 
-                                  try {
-                                    const fd = new FormData();
-                                    fd.append("file", file);
-                                    const res = await fetch("/api/v1/media/upload", { method: "POST", body: fd });
-                                    const json = await res.json();
-                                    if (json?.success && json?.data?.url) {
-                                      const updated = [...formCustomAds];
-                                      updated[index].image = json.data.url;
-                                      setFormCustomAds(updated);
-                                      showToast("✅ Ad Banner uploaded successfully!");
-                                    }
-                                  } catch (err) {}
-                                }}
-                                style={{ display: "none" }}
-                              />
-                            </label>
-                            {adItem.image && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = [...formCustomAds];
-                                  updated[index].image = "";
-                                  setFormCustomAds(updated);
-                                }}
-                                style={{ background: "rgba(255,255,255,0.1)", color: "#f87171", border: "none", padding: "6px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "5px" }}>
+                            Reporter / Author Name
+                          </label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <input
+                              type="text"
+                              placeholder="Reporter byline name..."
+                              value={formAuthor}
+                              onChange={(e) => setFormAuthor(e.target.value)}
+                              style={{ flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.86rem", background: "#ffffff", color: "#0f172a", fontWeight: 600 }}
+                            />
+                            {staffMembersList.length > 0 && (
+                              <select
+                                value={formAuthor}
+                                onChange={(e) => setFormAuthor(e.target.value)}
+                                style={{ maxWidth: "130px", padding: "10px 8px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff", color: "#0f172a", fontWeight: 600 }}
                               >
-                                Remove Photo
-                              </button>
+                                <option value="">Staff...</option>
+                                {staffMembersList.map((st: any) => (
+                                  <option key={st.id || st.email} value={st.name || st.email}>
+                                    👤 {st.name || st.email}
+                                  </option>
+                                ))}
+                              </select>
                             )}
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
-                  </div>
+                    </div>
+
+                    {/* Step Navigation Bar */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", paddingTop: "6px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab("content")}
+                        style={{
+                          background: "#0f172a",
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "8px 18px",
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        Next: 2. Story & Media <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  </>
                 )}
-              </div>
 
-              {/* Summary Teaser Textarea */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
-                  Summary Teaser / संक्षिप्त विवरण (समाचार कार्ड पूर्वावलोकन के लिए)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Enter brief synopsis for article card previews and news excerpts..."
-                  value={formSummary}
-                  onChange={(e) => {
-                    const newSummary = e.target.value;
-                    setFormSummary(newSummary);
-                    if (!isSeoDescCustomized) {
-                      setFormSeoDescription(newSummary);
-                    }
-                  }}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", fontWeight: 500 }}
-                />
-              </div>
-
-              {/* SEARCH ENGINE OPTIMIZATION (SEO) & GOOGLE INDEXING METADATA CARD */}
-              <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "20px", marginTop: "10px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Search size={18} style={{ color: "#2563eb" }} />
-                    <span style={{ fontWeight: 900, color: "#0f172a", fontSize: "0.95rem" }}>
-                      🔍 Search Engine Optimization (SEO) & Google Search Settings
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        autoGenerateSeoFields(formTitle, formSummary, formCategory, formState);
-                        showToast("⚡ Auto-synced SEO Title, Description & Keywords from news content!");
-                      }}
-                      style={{
-                        background: "#eff6ff",
-                        color: "#2563eb",
-                        border: "1px solid #bfdbfe",
-                        padding: "4px 12px",
-                        borderRadius: "8px",
-                        fontSize: "0.75rem",
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px"
-                      }}
-                    >
-                      ⚡ Auto-Fill SEO from News
-                    </button>
-                    <span style={{ fontSize: "0.74rem", fontWeight: 800, background: "#dbeafe", color: "#1d4ed8", padding: "3px 10px", borderRadius: "12px" }}>
-                      Google News Indexing
-                    </span>
-                  </div>
-                </div>
-
-                {/* Real-time Google Search Result Preview Box */}
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                    🌐 Google Search Result Live Preview (गूगल खोज परिणाम पूर्वावलोकन)
-                  </span>
-                  <div style={{ fontFamily: "arial, sans-serif" }}>
-                    <div style={{ fontSize: "0.8rem", color: "#202124", display: "flex", alignItems: "center", gap: "6px" }}>
-                      <img src="/favicon.ico" alt="" style={{ width: 14, height: 14 }} />
-                      <span>GLOBAL AWAAZ</span>
-                      <span style={{ color: "#5f6368" }}>https://www.globalawaaz.com › {(formCategory || "top-news").toLowerCase()} › {formSlug || "news-article-slug"}</span>
+                {/* TAB 2: STORY & MEDIA */}
+                {activeModalTab === "content" && (
+                  <>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1e293b" }}>
+                          Article Headline <span style={{ color: "#e50914" }}>*</span>
+                        </label>
+                        <span style={{ fontSize: "0.74rem", color: "#64748b" }}>Hindi or English headline</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Enter news headline (e.g. LPG उपभोक्ताओं की बढ़ सकती है परेशानी)..."
+                        value={formTitle}
+                        onChange={(e) => {
+                          const newTitle = e.target.value;
+                          setFormTitle(newTitle);
+                          if (!isSeoTitleCustomized) setFormSeoTitle(newTitle);
+                          if (!isSlugCustomized) {
+                            const instantSlug = formatArticleSlug({ title: newTitle, createdAt: editingArticle?.publishedAt || new Date().toISOString() });
+                            setFormSlug(instantSlug);
+                            if (slugTranslateTimer.current) clearTimeout(slugTranslateTimer.current);
+                            slugTranslateTimer.current = setTimeout(async () => {
+                              if (/[\u0900-\u097F]/.test(newTitle)) {
+                                const fullSlug = await translateHindiToEnglishSlug(newTitle);
+                                if (fullSlug) setFormSlug(fullSlug);
+                              }
+                            }, 500);
+                          }
+                        }}
+                        style={{ width: "100%", padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #cbd5e1", fontSize: "0.96rem", fontWeight: 600, color: "#0f172a" }}
+                        required
+                      />
                     </div>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 400, color: "#1a0dab", marginTop: "2px", textDecoration: "none", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {formSeoTitle || formTitle || "Article Headline Title Goes Here | GLOBAL AWAAZ"}
-                    </div>
-                    <div style={{ fontSize: "0.86rem", color: "#4d5156", marginTop: "4px", lineHeight: "1.4" }}>
-                      {formSeoDescription || formSummary || "Add a brief search snippet description to show in Google Search Engine results..."}
-                    </div>
-                  </div>
-                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "12px" }}>
-                  {/* Custom Meta Title */}
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                      <label style={{ fontSize: "0.8rem", fontWeight: 800, color: "#334155" }}>
-                        Meta Title / SEO शीर्षक Tag {!isSeoTitleCustomized && <span style={{ color: "#2563eb", fontSize: "0.7rem" }}>(⚡ Auto-synced with Title)</span>}
+                    {/* Featured Cover Image */}
+                    <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <label style={{ fontSize: "0.84rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <ImageIcon2 size={16} style={{ color: "#e50914" }} />
+                          <span>Featured Cover Photo</span>
+                        </label>
+                        {!showUrlInput && (
+                          <button
+                            type="button"
+                            onClick={() => setShowUrlInput(true)}
+                            style={{ background: "none", border: "none", color: "#2563eb", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            + Paste Image URL
+                          </button>
+                        )}
+                      </div>
+
+                      {formImage ? (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "10px", padding: "12px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div style={{ width: "90px", height: "58px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1", background: "#000", flexShrink: 0 }}>
+                              <img src={formImage} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                            <div>
+                              <span style={{ fontSize: "0.84rem", fontWeight: 800, color: "#0f172a", display: "block" }}>
+                                {imageFileName || "Uploaded Article Image"}
+                              </span>
+                              <span style={{ fontSize: "0.74rem", color: isUploadingImage ? "#ea580c" : "#16a34a", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", marginTop: "2px" }}>
+                                {isUploadingImage ? (
+                                  <><span style={{ display: "inline-block", width: 13, height: 13, border: "2px solid #ea580c", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading to Hostinger…</>
+                                ) : (
+                                  <><CheckCircle size={13} /> Optimized WebP on Hostinger ✓</>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <label style={{ background: "#0f172a", color: "#ffffff", padding: "6px 12px", borderRadius: "7px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                              <Upload size={13} /> Change
+                              <input type="file" accept="image/*" onChange={handleImageFileUpload} style={{ display: "none" }} />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => { setFormImage(""); setImageFileName(""); }}
+                              style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "6px 10px", borderRadius: "7px", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ border: "2px dashed #cbd5e1", borderRadius: "10px", padding: "20px 14px", textAlign: "center", background: "#ffffff" }}>
+                          <Upload size={24} style={{ color: "#e50914", marginBottom: "6px" }} />
+                          <div style={{ fontSize: "0.9rem", fontWeight: 800, color: "#0f172a", marginBottom: "2px" }}>
+                            Choose Cover Image
+                          </div>
+                          <p style={{ margin: "0 0 10px 0", fontSize: "0.76rem", color: "#64748b" }}>
+                            Auto-converted to high-resolution WebP format (JPG, PNG, WebP)
+                          </p>
+                          <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#e50914", color: "#ffffff", padding: "8px 18px", borderRadius: "8px", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer", boxShadow: "0 3px 8px rgba(229,9,20,0.25)" }}>
+                            <Upload size={14} /> Upload from Computer
+                            <input type="file" accept="image/*" onChange={handleImageFileUpload} style={{ display: "none" }} />
+                          </label>
+                        </div>
+                      )}
+
+                      {showUrlInput && (
+                        <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                          <input
+                            type="text"
+                            placeholder="https://images.unsplash.com/..."
+                            value={formImage.startsWith("data:") ? "" : formImage}
+                            onChange={(e) => { setFormImage(e.target.value); setImageFileName("URL Image"); }}
+                            style={{ flex: 1, padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowUrlInput(false)}
+                            style={{ background: "#f1f5f9", border: "none", padding: "8px 12px", borderRadius: "8px", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Summary Teaser */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label style={{ fontSize: "0.85rem", fontWeight: 800, color: "#334155" }}>
+                          Summary Teaser
+                        </label>
+                        <span style={{ fontSize: "0.74rem", color: "#64748b" }}>Short synopsis for cards and previews</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        placeholder="Enter brief synopsis for article card previews and news excerpts..."
+                        value={formSummary}
+                        onChange={(e) => {
+                          const newSummary = e.target.value;
+                          setFormSummary(newSummary);
+                          if (!isSeoDescCustomized) setFormSeoDescription(newSummary);
+                        }}
+                        style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.88rem", fontWeight: 500 }}
+                      />
+                    </div>
+
+                    {/* Rich Text Editor */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
+                        Article Body Content <span style={{ color: "#e50914" }}>*</span>
                       </label>
-                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: (formSeoTitle.length > 60 ? "#dc2626" : "#16a34a") }}>
-                        {formSeoTitle.length} / 60 chars
-                      </span>
+                      <RichTextEditor value={formContent} onChange={setFormContent} />
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Custom Meta Title for Search Engines..."
-                      value={formSeoTitle}
-                      onChange={(e) => {
-                        setFormSeoTitle(e.target.value);
-                        setIsSeoTitleCustomized(true);
-                      }}
-                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: isSeoTitleCustomized ? 700 : 500 }}
-                    />
-                  </div>
 
-                  {/* Primary Focus Keyword */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
-                      Primary Focus Keyword / मुख्य कीवर्ड
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Jharkhand Board Exam 2026, JPSC Result"
-                      value={formFocusKeyword}
-                      onChange={(e) => setFormFocusKeyword(e.target.value)}
-                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                    />
-                  </div>
-                </div>
+                    {/* Step Navigation Bar */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "6px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab("placement")}
+                        style={{
+                          background: "#ffffff",
+                          color: "#475569",
+                          border: "1px solid #cbd5e1",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <ArrowLeft size={14} /> Back to 1. Category & Placement
+                      </button>
 
-                {/* Custom Meta Description */}
-                <div style={{ marginBottom: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <label style={{ fontSize: "0.8rem", fontWeight: 800, color: "#334155" }}>
-                      Meta Description / विवरण Tag (Snippet for Google & Social Media) {!isSeoDescCustomized && <span style={{ color: "#2563eb", fontSize: "0.7rem" }}>(⚡ Auto-synced with Summary)</span>}
-                    </label>
-                    <span style={{ fontSize: "0.72rem", fontWeight: 700, color: (formSeoDescription.length > 160 ? "#dc2626" : "#16a34a") }}>
-                      {formSeoDescription.length} / 160 chars
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab("advanced")}
+                        style={{
+                          background: "#0f172a",
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "8px 18px",
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        Next: 3. SEO & Sponsor Ads <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* TAB 3: SEO & SPONSORS */}
+                {activeModalTab === "advanced" && (
+                  <>
+                    {/* SEO Card */}
+                    <div style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Search size={18} style={{ color: "#2563eb" }} />
+                          <span style={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>
+                            Google Search Engine Optimization (SEO)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            autoGenerateSeoFields(formTitle, formSummary, formCategory, formState);
+                            showToast("⚡ Auto-synced SEO Title, Description & Keywords from news content!");
+                          }}
+                          style={{
+                            background: "#eff6ff",
+                            color: "#2563eb",
+                            border: "1px solid #bfdbfe",
+                            padding: "4px 12px",
+                            borderRadius: "8px",
+                            fontSize: "0.75rem",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          ⚡ Auto-Fill SEO from News
+                        </button>
+                      </div>
+
+                      {/* Google Search Live Preview */}
+                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px 14px", marginBottom: "14px", fontFamily: "arial, sans-serif" }}>
+                        <div style={{ fontSize: "0.78rem", color: "#202124", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <img src="/favicon.ico" alt="" style={{ width: 14, height: 14 }} />
+                          <span>GLOBAL AWAAZ</span>
+                          <span style={{ color: "#5f6368" }}>https://www.globalawaaz.com › {(formCategory || "news").toLowerCase()} › {formSlug || "news-slug"}</span>
+                        </div>
+                        <div style={{ fontSize: "1.05rem", color: "#1a0dab", marginTop: "2px", fontWeight: 400, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {formSeoTitle || formTitle || "Article Headline Title | GLOBAL AWAAZ"}
+                        </div>
+                        <div style={{ fontSize: "0.82rem", color: "#4d5156", marginTop: "3px", lineHeight: "1.4" }}>
+                          {formSeoDescription || formSummary || "Add a brief search snippet description to show in Google search results..."}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                              Meta Title
+                            </label>
+                            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: formSeoTitle.length > 60 ? "#dc2626" : "#16a34a" }}>
+                              {formSeoTitle.length} / 60
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Custom Meta Title..."
+                            value={formSeoTitle}
+                            onChange={(e) => {
+                              setFormSeoTitle(e.target.value);
+                              setIsSeoTitleCustomized(true);
+                            }}
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                            Primary Focus Keyword
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Jharkhand Board Exam 2026"
+                            value={formFocusKeyword}
+                            onChange={(e) => setFormFocusKeyword(e.target.value)}
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                            Meta Description
+                          </label>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: formSeoDescription.length > 160 ? "#dc2626" : "#16a34a" }}>
+                            {formSeoDescription.length} / 160
+                          </span>
+                        </div>
+                        <textarea
+                          rows={2}
+                          placeholder="Enter snippet for Google search results..."
+                          value={formSeoDescription}
+                          onChange={(e) => {
+                            setFormSeoDescription(e.target.value);
+                            setIsSeoDescCustomized(true);
+                          }}
+                          style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem" }}
+                        />
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "12px" }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                            Target Keywords (Comma-separated)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Ranchi News, Jharkhand Jobs"
+                            value={formSeoKeywords}
+                            onChange={(e) => setFormSeoKeywords(e.target.value)}
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem" }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                            Canonical URL (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Default: https://www.globalawaaz.com/..."
+                            value={formCanonicalUrl}
+                            onChange={(e) => setFormCanonicalUrl(e.target.value)}
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.84rem" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Article-Specific Sponsor Ads */}
+                    <div style={{ background: "#0f172a", color: "#ffffff", borderRadius: "14px", padding: "18px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.12)", paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <Megaphone size={18} style={{ color: "#e50914" }} />
+                          <span style={{ fontSize: "0.9rem", fontWeight: 800 }}>
+                            Custom Sponsor Banners ({formCustomAds.length})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormCustomAds([
+                              ...formCustomAds,
+                              {
+                                id: `ad_${Date.now()}_${formCustomAds.length}`,
+                                title: "",
+                                subtitle: "",
+                                link: "",
+                                image: "",
+                                badge: "SPONSORED",
+                                enabled: true
+                              }
+                            ]);
+                          }}
+                          style={{
+                            background: "#e50914", color: "#ffffff", border: "none",
+                            padding: "6px 14px", borderRadius: "8px", fontWeight: 800,
+                            fontSize: "0.78rem", cursor: "pointer", display: "inline-flex",
+                            alignItems: "center", gap: "6px"
+                          }}
+                        >
+                          <Plus size={14} /> Add Sponsor Ad
+                        </button>
+                      </div>
+
+                      {formCustomAds.length === 0 ? (
+                        <div style={{ padding: "16px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", textAlign: "center", color: "#94a3b8", fontSize: "0.82rem" }}>
+                          No custom ads configured for this article. Click <strong>&quot;+ Add Sponsor Ad&quot;</strong> to insert specific sponsor banners.
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                          {formCustomAds.map((adItem, index) => {
+                            const isAdEnabled = adItem.enabled !== false;
+                            return (
+                              <div key={adItem.id || index} style={{ background: isAdEnabled ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)", border: isAdEnabled ? "1px solid rgba(255,255,255,0.12)" : "1px dashed rgba(255,255,255,0.08)", borderRadius: "10px", padding: "12px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                  <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#cbd5e1" }}>
+                                    Ad Slot #{index + 1}
+                                  </span>
+                                  <div style={{ display: "flex", gap: "8px" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...formCustomAds];
+                                        updated[index].enabled = !isAdEnabled;
+                                        setFormCustomAds(updated);
+                                      }}
+                                      style={{ background: isAdEnabled ? "#16a34a" : "#475569", color: "#ffffff", border: "none", padding: "3px 10px", borderRadius: "12px", fontSize: "0.72rem", fontWeight: 800, cursor: "pointer" }}
+                                    >
+                                      {isAdEnabled ? "ON" : "OFF"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFormCustomAds(formCustomAds.filter((_, i) => i !== index))}
+                                      style={{ background: "#fee2e2", color: "#dc2626", border: "none", padding: "3px 8px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 800, cursor: "pointer" }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Sponsor Name / Title"
+                                    value={adItem.title || ""}
+                                    onChange={(e) => {
+                                      const updated = [...formCustomAds];
+                                      updated[index].title = e.target.value;
+                                      setFormCustomAds(updated);
+                                    }}
+                                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.8rem" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Target Link URL"
+                                    value={adItem.link || ""}
+                                    onChange={(e) => {
+                                      const updated = [...formCustomAds];
+                                      updated[index].link = e.target.value;
+                                      setFormCustomAds(updated);
+                                    }}
+                                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.8rem" }}
+                                  />
+                                </div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "8px" }}>
+                                  <select
+                                    value={adItem.placement || "both"}
+                                    onChange={(e) => {
+                                      const updated = [...formCustomAds];
+                                      (updated[index] as any).placement = e.target.value;
+                                      setFormCustomAds(updated);
+                                    }}
+                                    style={{ width: "100%", padding: "7px 10px", borderRadius: "6px", border: "1px solid #475569", background: "#020617", color: "#ffffff", fontSize: "0.8rem" }}
+                                  >
+                                    <option value="both">Both Sidebars</option>
+                                    <option value="right">Right Column Only</option>
+                                    <option value="left">Left Column Only</option>
+                                    <option value="body">Inside Body Paragraphs</option>
+                                  </select>
+
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    {adItem.image && (
+                                      <img src={adItem.image} alt="" style={{ width: "40px", height: "26px", borderRadius: "4px", objectFit: "cover" }} />
+                                    )}
+                                    <label style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", padding: "6px 10px", borderRadius: "6px", fontSize: "0.74rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                      <Upload size={11} /> {adItem.image ? "Change Photo" : "Upload Banner"}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                          const rawFile = e.target.files?.[0];
+                                          if (!rawFile) return;
+                                          const file = await convertImageToWebP(rawFile);
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            const updated = [...formCustomAds];
+                                            updated[index].image = reader.result as string;
+                                            setFormCustomAds(updated);
+                                          };
+                                          reader.readAsDataURL(file);
+                                          try {
+                                            const fd = new FormData();
+                                            fd.append("file", file);
+                                            const res = await fetch("/api/v1/media/upload", { method: "POST", body: fd });
+                                            const json = await res.json();
+                                            if (json?.success && json?.data?.url) {
+                                              const updated = [...formCustomAds];
+                                              updated[index].image = json.data.url;
+                                              setFormCustomAds(updated);
+                                              showToast("✅ Ad Banner uploaded!");
+                                            }
+                                          } catch (_) {}
+                                        }}
+                                        style={{ display: "none" }}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step Navigation Bar */}
+                    <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center", paddingTop: "6px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab("content")}
+                        style={{
+                          background: "#ffffff",
+                          color: "#475569",
+                          border: "1px solid #cbd5e1",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <ArrowLeft size={14} /> Back to 2. Story & Media
+                      </button>
+                    </div>
+                  </>
+                )}
+
+              </div>
+
+              {/* Sticky Footer Action Bar */}
+              <div style={{
+                padding: "14px 24px",
+                borderTop: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 600 }}>
+                    Publishing to:
+                  </span>
+                  <span style={{ background: "#e2e8f0", color: "#0f172a", padding: "4px 10px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: 800 }}>
+                    📁 {formCategory}
+                  </span>
+                  {formSubCategory && formSubCategory.toLowerCase() !== "general" && (
+                    <span style={{ background: "#eff6ff", color: "#2563eb", padding: "4px 10px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: 700, border: "1px solid #dbeafe" }}>
+                      › {formSubCategory}
                     </span>
-                  </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Enter SEO Meta Description snippet for search engines..."
-                    value={formSeoDescription}
-                    onChange={(e) => {
-                      setFormSeoDescription(e.target.value);
-                      setIsSeoDescCustomized(true);
-                    }}
-                    style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", fontWeight: isSeoDescCustomized ? 700 : 500 }}
-                  />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "14px" }}>
-                  {/* Target SEO Keywords & Tags */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
-                      Target SEO Keywords / टैग (Comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Ranchi News, Jharkhand Jobs, Hemant Soren"
-                      value={formSeoKeywords}
-                      onChange={(e) => setFormSeoKeywords(e.target.value)}
-                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                    />
-                  </div>
-
-                  {/* Canonical URL Override */}
-                  <div>
-                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#334155", marginBottom: "4px" }}>
-                      Canonical Link URL (Optional Override)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Default: https://www.globalawaaz.com/..."
-                      value={formCanonicalUrl}
-                      onChange={(e) => setFormCanonicalUrl(e.target.value)}
-                      style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem" }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Full News Text Box / Rich Text Editor */}
-              <div>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#334155", marginBottom: "6px" }}>
-                  Article Body Content / मुख्य समाचार पाठ (News Body Content) *
-                </label>
-                <RichTextEditor value={formContent} onChange={setFormContent} />
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "16px" }}>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  style={{ background: "#f1f5f9", color: "#475569", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: 700, cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploadingImage}
-                  style={{
-                    background: isUploadingImage ? "#94a3b8" : adminRole === "editor" ? "#2563eb" : "#e50914",
-                    color: "#ffffff",
-                    border: "none",
-                    padding: "10px 24px",
-                    borderRadius: "8px",
-                    fontWeight: 800,
-                    cursor: isUploadingImage ? "not-allowed" : "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px"
-                  }}
-                >
-                  {isUploadingImage ? (
-                    <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading Image…</>
-                  ) : adminRole === "editor" ? (
-                    editingArticle
-                      ? (editingArticle.status === "REJECTED" ? "Re-submit for Review" : "Update & Submit for Review")
-                      : "Submit Article for Review"
-                  ) : (
-                    editingArticle ? "Update Article" : "Publish Article"
                   )}
-                </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    style={{
+                      background: "#ffffff",
+                      color: "#475569",
+                      border: "1px solid #cbd5e1",
+                      padding: "9px 18px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploadingImage}
+                    style={{
+                      background: isUploadingImage ? "#94a3b8" : adminRole === "editor" ? "#2563eb" : "#e50914",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "9px 24px",
+                      borderRadius: "8px",
+                      fontWeight: 800,
+                      fontSize: "0.88rem",
+                      cursor: isUploadingImage ? "not-allowed" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 4px 12px rgba(229,9,20,0.25)"
+                    }}
+                  >
+                    {isUploadingImage ? (
+                      <><span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} /> Uploading Image…</>
+                    ) : adminRole === "editor" ? (
+                      editingArticle
+                        ? (editingArticle.status === "REJECTED" ? "Re-submit for Review" : "Update & Submit")
+                        : "Submit for Review"
+                    ) : (
+                      editingArticle ? "Update Article" : "Publish Article"
+                    )}
+                  </button>
+                </div>
               </div>
+
             </form>
           </div>
         </div>
@@ -2048,5 +2389,13 @@ export default function AdminArticlesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminArticlesPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading Editorial News Queue...</div>}>
+      <AdminArticlesContent />
+    </Suspense>
   );
 }

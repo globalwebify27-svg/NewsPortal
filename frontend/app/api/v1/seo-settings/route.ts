@@ -4,29 +4,37 @@ import path from "path";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { clearSeoCache } from "@/lib/seo";
+import { serverCache, TTL } from "@/lib/cache";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+const CACHE_KEY_SEO = "settings:seo";
 
 const DB_FILE_PATH = path.join(process.cwd(), "..", "backend", "prisma", "seo_settings_db.json");
 const ALT_DB_FILE_PATH = path.join(process.cwd(), "seo_settings_db.json");
 
+const CDN_CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+};
+
 const NO_CACHE_HEADERS = {
-  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-  "Pragma": "no-cache",
-  "Expires": "0",
+  "Cache-Control": "no-store, no-cache, must-revalidate",
 };
 
 export async function GET() {
+  const cached = serverCache.get<any>(CACHE_KEY_SEO);
+  if (cached) {
+    return NextResponse.json({ success: true, data: cached }, { headers: CDN_CACHE_HEADERS });
+  }
+
   try {
     const setting = await prisma.siteSetting.findUnique({
       where: { key: "seo_settings_data" }
     });
     if (setting && setting.value) {
       const parsed = JSON.parse(setting.value);
+      serverCache.set(CACHE_KEY_SEO, parsed, TTL.SETTINGS);
       return NextResponse.json(
         { success: true, data: parsed },
-        { headers: NO_CACHE_HEADERS }
+        { headers: CDN_CACHE_HEADERS }
       );
     }
   } catch (err) {
@@ -37,21 +45,25 @@ export async function GET() {
   try {
     if (fs.existsSync(ALT_DB_FILE_PATH)) {
       const fileData = fs.readFileSync(ALT_DB_FILE_PATH, "utf-8");
+      const parsed = JSON.parse(fileData);
+      serverCache.set(CACHE_KEY_SEO, parsed, TTL.SETTINGS);
       return NextResponse.json(
-        { success: true, data: JSON.parse(fileData) },
-        { headers: NO_CACHE_HEADERS }
+        { success: true, data: parsed },
+        { headers: CDN_CACHE_HEADERS }
       );
     }
     if (fs.existsSync(DB_FILE_PATH)) {
       const fileData = fs.readFileSync(DB_FILE_PATH, "utf-8");
+      const parsed = JSON.parse(fileData);
+      serverCache.set(CACHE_KEY_SEO, parsed, TTL.SETTINGS);
       return NextResponse.json(
-        { success: true, data: JSON.parse(fileData) },
-        { headers: NO_CACHE_HEADERS }
+        { success: true, data: parsed },
+        { headers: CDN_CACHE_HEADERS }
       );
     }
   } catch (e) {}
 
-  return NextResponse.json({ success: true, data: [] }, { headers: NO_CACHE_HEADERS });
+  return NextResponse.json({ success: true, data: [] }, { headers: CDN_CACHE_HEADERS });
 }
 
 export async function POST(request: NextRequest) {
@@ -91,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     // Clear in-memory server cache immediately so next request gets fresh DB data
     clearSeoCache();
+    serverCache.delete(CACHE_KEY_SEO);
 
     // Purge Next.js page cache for every path that was updated
     // so the new title/meta shows immediately on the next page visit

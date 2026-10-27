@@ -171,6 +171,7 @@ export default function Footer() {
 
   return (
     <footer
+      className="site-main-footer"
       style={{
         background: "#0b0f17",
         color: "#f8fafc",

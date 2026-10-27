@@ -12,17 +12,11 @@ import {
   Facebook,
   Instagram,
   Search,
-  ShieldCheck,
-  ChevronRight,
   Award,
   Newspaper,
   UserCheck,
   GraduationCap,
-  Briefcase,
-  Clock,
-  Globe,
-  Lock,
-  Send
+  Briefcase
 } from "lucide-react";
 
 interface TeamMember {
@@ -282,86 +276,6 @@ export default function PublicTeamPage() {
               })}
             </div>
           )}
-        </section>
-
-        {/* Compact Horizontal Newsletter Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-          <div className="relative bg-gradient-to-r from-zinc-950 via-zinc-900 to-[#1d080a] text-white rounded-[24px] p-5 sm:p-7 shadow-2xl border border-red-900/30 overflow-hidden">
-            {/* Background Decorative Glow */}
-            <div className="absolute top-0 right-0 w-80 h-full bg-red-600/10 blur-3xl pointer-events-none rounded-full" />
-            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-red-600/10 blur-2xl pointer-events-none rounded-full" />
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 lg:gap-10">
-              {/* Left Graphic Badge */}
-              <div className="relative shrink-0 flex items-center justify-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-red-600 via-red-700 to-red-900 border-4 border-red-950/60 shadow-xl flex items-center justify-center text-white relative">
-                  <Mail className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white/20" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white shadow-md">
-                    <Send className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Content & Form */}
-              <div className="flex-1 text-center md:text-left">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-1 tracking-tight">
-                  {isHi ? (
-                    <>
-                      GLOBAL मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
-                    </>
-                  ) : (
-                    <>
-                      Stay Ahead with <span className="text-red-500">Global Morning Briefing</span>
-                    </>
-                  )}
-                </h2>
-
-                <p className="text-slate-400 text-xs sm:text-sm mb-4 max-w-2xl leading-relaxed font-normal">
-                  {isHi
-                    ? "हर सुबह अपने इनबॉक्स में संपादकीय विश्लेषण, बाजार की जानकारी और ताज़ा अंतरराष्ट्रीय अपडेट प्राप्त करें।"
-                    : "Get editorial analysis, market insights, and fresh international updates delivered to your inbox every morning."}
-                </p>
-
-                {/* Integrated Pill Form Input Bar */}
-                <div className="bg-white rounded-2xl p-1.5 flex items-center shadow-lg border border-slate-200/50 max-w-lg mx-auto md:mx-0">
-                  <Mail className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
-                  <input
-                    type="email"
-                    placeholder={isHi ? "अपना ईमेल पता दर्ज करें..." : "Enter your email address..."}
-                    className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none flex-1 min-w-0 pr-2"
-                  />
-                  <button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-1.5 shrink-0">
-                    <span>{isHi ? "निःशुल्क सदस्यता लें" : "Subscribe Free"}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Trust Badges Row */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[11px] text-slate-400 mt-3.5 font-medium">
-                  <span className="flex items-center gap-1 text-slate-300">
-                    <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
-                    {isHi ? "विश्वसनीय समाचार" : "Trusted Journalism"}
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <span className="flex items-center gap-1 text-slate-300">
-                    <Clock className="w-3.5 h-3.5 text-red-500" />
-                    {isHi ? "हर सुबह अपडेट" : "Daily Morning Updates"}
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <span className="flex items-center gap-1 text-slate-300">
-                    <Globe className="w-3.5 h-3.5 text-red-500" />
-                    {isHi ? "स्थानीय से वैश्विक कवरेज" : "Global & Local Coverage"}
-                  </span>
-                </div>
-
-                {/* Privacy Note */}
-                <div className="mt-2 text-[10px] text-slate-500 flex items-center justify-center md:justify-start gap-1">
-                  <Lock className="w-3 h-3 text-slate-500" />
-                  <span>{isHi ? "आपकी जानकारी सुरक्षित है। हम स्पैम नहीं भेजते।" : "Your information is 100% secure. We never spam."}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </section>
       </main>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Youtube,
@@ -20,7 +20,8 @@ import {
   ExternalLink,
   X,
   SkipBack,
-  SkipForward
+  SkipForward,
+  RefreshCw
 } from "lucide-react";
 import {
   YouTubeVideoItem,
@@ -48,50 +49,77 @@ export default function VideosPage() {
     }
   };
 
-  useEffect(() => {
-    function processVideoList(list: YouTubeVideoItem[]) {
-      setVideos(list);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const lastFetchTimeRef = useRef<number>(0);
 
-      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-      const targetV = params?.get("v") || params?.get("id");
-
-      if (targetV) {
-        const found = list.find((v) => v.youtubeId === targetV || v.id === targetV);
-        if (found) {
-          setActiveVideo(found);
-          return;
-        }
-      }
-
-      if (list.length > 0) {
-        setActiveVideo((prev) => prev || list[0]);
-      } else {
-        setActiveVideo(null);
-      }
+  const syncCentral = useCallback((force = false) => {
+    const now = Date.now();
+    // Throttle focus-based revalidation to at most once every 60s unless manually forced
+    if (!force && now - lastFetchTimeRef.current < 60000) {
+      return;
     }
-
-    const syncCentral = () => {
-      fetchCentralVideos().then(({ videos: centralList }) => {
+    lastFetchTimeRef.current = now;
+    setIsRefreshing(true);
+    fetchCentralVideos()
+      .then(({ videos: centralList }) => {
         if (Array.isArray(centralList) && centralList.length > 0) {
           processVideoList(centralList);
         }
+      })
+      .finally(() => {
+        setIsRefreshing(false);
       });
-    };
-
-    syncCentral();
-    const interval = setInterval(syncCentral, 15000);
-
-    const loadLocal = () => syncCentral();
-    window.addEventListener("storage", loadLocal);
-    window.addEventListener("popstate", loadLocal);
-    window.addEventListener("ga_videos_updated", loadLocal);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", loadLocal);
-      window.removeEventListener("popstate", loadLocal);
-      window.removeEventListener("ga_videos_updated", loadLocal);
-    };
   }, []);
+
+  function processVideoList(list: YouTubeVideoItem[]) {
+    setVideos(list);
+
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const targetV = params?.get("v") || params?.get("id");
+
+    if (targetV) {
+      const found = list.find((v) => v.youtubeId === targetV || v.id === targetV);
+      if (found) {
+        setActiveVideo(found);
+        return;
+      }
+    }
+
+    if (list.length > 0) {
+      setActiveVideo((prev) => prev || list[0]);
+    } else {
+      setActiveVideo(null);
+    }
+  }
+
+  useEffect(() => {
+    // 1. Initial fetch on mount
+    syncCentral(true);
+
+    // 2. Window focus & tab visibility revalidation (re-engage when user returns to tab)
+    const onFocusOrVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        syncCentral(false);
+      }
+    };
+
+    window.addEventListener("focus", onFocusOrVisible);
+    document.addEventListener("visibilitychange", onFocusOrVisible);
+
+    // 3. Admin / cross-tab updates trigger immediate sync
+    const onAdminOrStorageUpdate = () => syncCentral(true);
+    window.addEventListener("storage", onAdminOrStorageUpdate);
+    window.addEventListener("popstate", onAdminOrStorageUpdate);
+    window.addEventListener("ga_videos_updated", onAdminOrStorageUpdate);
+
+    return () => {
+      window.removeEventListener("focus", onFocusOrVisible);
+      document.removeEventListener("visibilitychange", onFocusOrVisible);
+      window.removeEventListener("storage", onAdminOrStorageUpdate);
+      window.removeEventListener("popstate", onAdminOrStorageUpdate);
+      window.removeEventListener("ga_videos_updated", onAdminOrStorageUpdate);
+    };
+  }, [syncCentral]);
 
   const categories = ["ALL", "World", "India", "Business", "Technology", "Sports", "Entertainment"];
 
@@ -218,7 +246,7 @@ export default function VideosPage() {
             </div>
           </div>
 
-          <div className="video-search-wrapper">
+          <div className="video-search-wrapper" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div style={{ position: "relative", width: "100%" }}>
               <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
               <input
@@ -230,6 +258,29 @@ export default function VideosPage() {
                 style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 12px 8px 36px", color: "#0f172a", fontSize: "0.85rem", outline: "none", width: "200px" }}
               />
             </div>
+            <button
+              type="button"
+              onClick={() => syncCentral(true)}
+              disabled={isRefreshing}
+              title="Refresh videos"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#ffffff",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                padding: "8px 12px",
+                color: "#475569",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: isRefreshing ? "wait" : "pointer",
+                whiteSpace: "nowrap"
+              }}
+            >
+              <RefreshCw size={13} style={{ animation: isRefreshing ? "spin 1s linear infinite" : "none" }} />
+              <span>{isRefreshing ? "Updating..." : "Refresh"}</span>
+            </button>
           </div>
         </div>
       </div>

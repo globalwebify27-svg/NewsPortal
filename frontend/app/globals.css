@@ -1447,7 +1447,27 @@ textarea,
     position: relative !important;
     top: 0 !important;
     margin-top: 0px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 8px !important;
+    min-height: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .sticky-leaderboard-ad-bar img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 140px !important;
+    object-fit: contain !important;
+    border-radius: 8px !important;
+    display: block !important;
+  }
+
+  .sticky-leaderboard-ad-bar .ad-dismiss-btn {
+    width: 20px !important;
+    height: 20px !important;
+    top: 4px !important;
+    right: 4px !important;
   }
 
   .active-pill-bar {
@@ -2765,8 +2785,7 @@ textarea,
 .video-page-wrapper {
   background: #ffffff;
   color: #0f172a;
-  min-height: 100vh;
-  padding-bottom: 60px;
+  padding-bottom: 14px;
   overflow-x: hidden;
   width: 100%;
 }
@@ -2954,8 +2973,22 @@ main.main-content,
   }
 
   .article-page-wrapper {
-    padding: 0 12px !important;
-    margin-top: 8px !important;
+    padding: 0 10px !important;
+    margin-top: 6px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .article-related-news-section {
+    margin: 16px 0 10px 0 !important;
+  }
+
+  .article-related-news-grid {
+    gap: 10px !important;
+  }
+
+  .article-social-share-card {
+    margin: 10px 0 12px 0 !important;
+    padding: 12px 14px !important;
   }
 }
 
@@ -3431,5 +3464,54 @@ h4[title]:hover {
     font-size: 1.05rem !important;
     line-height: 1.75 !important;
     padding: 0 4px !important;
+  }
+
+  /* ── CITY & STATE NEWS MOBILE CARD & GRID FIX ────────── */
+  .city-news-section {
+    padding: 14px 10px !important;
+    border-radius: 12px !important;
+    margin-top: 14px !important;
+    margin-bottom: 16px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .city-news-grid,
+  .state-news-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .city-news-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── REMOVE EXCESS UNWANTED BOTTOM GAPS ACROSS ALL PAGES ── */
+  main.main-content,
+  .main-content.container,
+  .main-content {
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
+  }
+
+  .article-page-wrapper,
+  .section-feed-page,
+  .category-page-container,
+  .video-page-wrapper,
+  .epaper-page-wrapper,
+  .trending-videos-section {
+    margin-bottom: 14px !important;
+  }
+
+  footer.site-main-footer,
+  footer {
+    padding-top: 24px !important;
   }
 }

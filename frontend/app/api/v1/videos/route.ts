@@ -7,9 +7,11 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminAuth } from "@/lib/apiAuth";
 import { fastRevalidateAfterVideos } from "@/lib/revalidation";
+import { serverCache, TTL } from "@/lib/cache";
 
 const VIDEOS_SETTING_KEY = "custom_videos_list";
 const LIVETV_SETTING_KEY = "livetv_stream_config";
+const CACHE_KEY = "settings:videos_and_livetv";
 
 const DEFAULT_INITIAL_VIDEOS = [
   {
@@ -28,6 +30,17 @@ const DEFAULT_INITIAL_VIDEOS = [
 // GET /api/v1/videos — Returns all videos and live TV configuration stored centrally in DB
 export async function GET() {
   try {
+    const cached = serverCache.get<{ videos: any[]; liveTvConfig: any }>(CACHE_KEY);
+    if (cached) {
+      const response = NextResponse.json({
+        success: true,
+        videos: cached.videos,
+        liveTvConfig: cached.liveTvConfig
+      });
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+      return response;
+    }
+
     const videoSetting = await prisma.siteSetting.findUnique({
       where: { key: VIDEOS_SETTING_KEY },
     });
@@ -57,12 +70,28 @@ export async function GET() {
       } catch (e) {}
     }
 
-    return NextResponse.json({
+    serverCache.set(CACHE_KEY, { videos, liveTvConfig }, TTL.SETTINGS);
+
+    const response = NextResponse.json({
       success: true,
       videos,
       liveTvConfig
     });
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return response;
   } catch (err: any) {
+    const stale = serverCache.getStale<{ videos: any[]; liveTvConfig: any }>(CACHE_KEY);
+    if (stale) {
+      const response = NextResponse.json({
+        success: true,
+        videos: stale.videos,
+        liveTvConfig: stale.liveTvConfig,
+        fallback: true
+      });
+      response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=86400");
+      return response;
+    }
+
     return NextResponse.json(
       { success: false, message: err?.message || "Failed to fetch videos" },
       { status: 500 }
@@ -106,6 +135,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    serverCache.delete(CACHE_KEY);
     fastRevalidateAfterVideos();
 
     return NextResponse.json({

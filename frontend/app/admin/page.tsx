@@ -119,20 +119,33 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [articlesRes, statsRes] = await Promise.all([
+        const [articlesRes, pendingRes, statsRes] = await Promise.all([
           fetch("/api/v1/articles?admin=true", { cache: "no-store" }),
+          fetch("/api/v1/articles?admin=true&status=PENDING_REVIEW", { cache: "no-store" }),
           fetch("/api/v1/admin/stats", { cache: "no-store" }),
         ]);
 
         const articlesJson = await articlesRes.json();
+        const pendingJson = await pendingRes.json();
+        const statsJson = await statsRes.json();
+
+        let list: AdminArticle[] = [];
         if (articlesJson && (articlesJson.data || articlesJson.articles)) {
-          const list = articlesJson.data || articlesJson.articles;
-          if (Array.isArray(list)) {
-            setArticles(list);
-          }
+          list = articlesJson.data || articlesJson.articles;
+        }
+        let pendingList: AdminArticle[] = [];
+        if (pendingJson && (pendingJson.data || pendingJson.articles)) {
+          pendingList = pendingJson.data || pendingJson.articles;
         }
 
-        const statsJson = await statsRes.json();
+        const combined = [...pendingList];
+        for (const a of list) {
+          if (!combined.some((item) => item.id === a.id)) {
+            combined.push(a);
+          }
+        }
+        setArticles(combined);
+
         if (statsJson && statsJson.success && statsJson.data) {
           setStats(statsJson.data);
         }
@@ -308,7 +321,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         {/* Pending Reviews KPI Card */}
-        <Link href="/admin/articles" style={{ textDecoration: "none" }}>
+        <Link href="/admin/articles?status=PENDING_REVIEW" style={{ textDecoration: "none" }}>
           <div style={{ background: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#fefce8" : "#ffffff", border: `1px solid ${(stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#fef08a" : "#e2e8f0"}`, borderRadius: "16px", padding: "20px", boxShadow: "0 4px 14px rgba(0,0,0,0.03)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
               <span style={{ fontSize: "0.8rem", color: (stats.pendingArticles || pendingReviewArticles.length) > 0 ? "#a16207" : "#64748b", fontWeight: 700 }}>Pending Review</span>
@@ -370,7 +383,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <Link
-              href="/admin/articles"
+              href="/admin/articles?status=PENDING_REVIEW"
               style={{ background: "#ca8a04", color: "#ffffff", padding: "8px 16px", borderRadius: "8px", fontWeight: 800, fontSize: "0.82rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
             >
               Open Full Queue <ArrowUpRight size={14} />
@@ -412,7 +425,7 @@ export default function AdminDashboardPage() {
                     <X size={14} /> Reject & Comment
                   </button>
                   <Link
-                    href="/admin/articles"
+                    href={`/admin/articles?status=PENDING_REVIEW&edit=${art.id}`}
                     style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", padding: "8px 14px", borderRadius: "8px", fontWeight: 800, fontSize: "0.8rem", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "4px" }}
                   >
                     <Edit size={14} /> Review Details

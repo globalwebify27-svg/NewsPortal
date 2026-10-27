@@ -11,7 +11,9 @@ import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 export async function GET() {
   try {
     const data = await getLogoSettings();
-    return NextResponse.json({ success: true, data });
+    const response = NextResponse.json({ success: true, data });
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return response;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to fetch logo settings";
     return NextResponse.json({ success: false, message: msg }, { status: 500 });

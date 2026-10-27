@@ -12,7 +12,9 @@ const CACHE_KEY_CATEGORIES = "categories:active";
 export async function GET() {
   const cached = serverCache.get(CACHE_KEY_CATEGORIES);
   if (cached) {
-    return NextResponse.json({ success: true, data: cached });
+    const response = NextResponse.json({ success: true, data: cached });
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return response;
   }
 
   try {

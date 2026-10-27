@@ -600,12 +600,13 @@ input {
 
 /* MAIN CONTENT WRAPPER */
 .main-content {
-  padding-top: var(--space-8);
+  padding-top: var(--space-4);
   padding-bottom: 0px !important;
+  margin-bottom: 0px !important;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  gap: var(--space-12);
+  justify-content: flex-start;
+  gap: 0;
 }
 
 /* HERO SECTION */
@@ -3554,7 +3555,8 @@ input {
   }
 
   .main-content {
-    padding-bottom: 80px !important;
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
   }
 }
 
@@ -5808,9 +5810,10 @@ span {
     font-weight: 800;
   }
 
-  /* Extra bottom padding for main content so it doesn't overlap the nav */
+  /* Main content no extra padding before footer */
   .main-content {
-    padding-bottom: 80px !important;
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
   }
 }
 

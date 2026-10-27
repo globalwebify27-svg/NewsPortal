@@ -1091,18 +1091,19 @@ export default function HomeClient({
               position: "sticky",
               top: stickyAdData?.enabled && !adDismissed ? "126px" : "70px",
               zIndex: 85,
-              background: "linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%)",
+              background: leaderboardAdData.image ? "transparent" : "linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%)",
               borderRadius: "12px",
               overflow: "hidden",
               marginBottom: "24px",
-              minHeight: "80px",
+              minHeight: leaderboardAdData.image ? "auto" : "80px",
               contain: "layout",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-              backdropFilter: "blur(12px)"
+              boxShadow: leaderboardAdData.image ? "none" : "0 8px 24px rgba(0,0,0,0.2)",
+              backdropFilter: leaderboardAdData.image ? "none" : "blur(12px)"
             }}
           >
             <button
               onClick={() => setLeaderboardAdDismissed(true)}
+              className="ad-dismiss-btn"
               style={{
                 position: "absolute",
                 top: "8px",
@@ -1129,13 +1130,20 @@ export default function HomeClient({
               <Link
                 href={leaderboardAdData.link || "/advertise"}
                 target={leaderboardAdData.link?.startsWith("http") ? "_blank" : "_self"}
-                style={{ display: "block", textDecoration: "none", width: "100%" }}
+                style={{ display: "block", textDecoration: "none", width: "100%", borderRadius: "12px", overflow: "hidden" }}
               >
                 <img
                   src={leaderboardAdData.image}
                   alt={leaderboardAdData.title || "Leaderboard Advertisement"}
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  style={{ width: "100%", height: "auto", maxHeight: `${leaderboardAdData.height || "110"}px`, objectFit: "cover", display: "block" }}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    maxHeight: `${leaderboardAdData.height || "140"}px`,
+                    objectFit: "contain",
+                    display: "block",
+                    borderRadius: "12px"
+                  }}
                 />
               </Link>
             ) : (
@@ -1808,7 +1816,7 @@ export default function HomeClient({
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
+        <div className="state-news-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: "16px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
           {stateArticles.map((item, idx) => (
             <article key={item.id} style={{ background: "var(--color-bg, #f8fafc)", border: "1px solid var(--color-border, #e2e8f0)", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
               <Link href={getArticleUrl(item)} title={item.title} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -1838,6 +1846,7 @@ export default function HomeClient({
           =========================== */}
       {cityNewsSettings.enabled && (
         <section
+          className="city-news-section"
           style={{
             background: "#f8fafc",
             border: "1px solid #e2e8f0",
@@ -1845,7 +1854,10 @@ export default function HomeClient({
             padding: "22px 24px",
             marginTop: "20px",
             marginBottom: "24px",
-            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)"
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.03)",
+            width: "100%",
+            maxWidth: "100%",
+            boxSizing: "border-box"
           }}
         >
           {/* Header Banner */}
@@ -1856,7 +1868,9 @@ export default function HomeClient({
               justifyContent: "space-between",
               flexWrap: "wrap",
               gap: "12px",
-              marginBottom: "18px"
+              marginBottom: "18px",
+              width: "100%",
+              boxSizing: "border-box"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -1927,6 +1941,7 @@ export default function HomeClient({
 
           {/* City Filter Pills */}
           <div
+            className="city-filter-pills-bar"
             style={{
               display: "flex",
               alignItems: "center",
@@ -1935,7 +1950,10 @@ export default function HomeClient({
               paddingBottom: "8px",
               marginBottom: "18px",
               scrollbarWidth: "none",
-              msOverflowStyle: "none"
+              msOverflowStyle: "none",
+              width: "100%",
+              maxWidth: "100%",
+              boxSizing: "border-box"
             }}
           >
             {cityNewsSettings.cities.map((city) => {
@@ -1971,10 +1989,14 @@ export default function HomeClient({
 
           {/* 3-Cards Grid */}
           <div
+            className="city-news-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))",
-              gap: "18px"
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+              gap: "18px",
+              width: "100%",
+              maxWidth: "100%",
+              boxSizing: "border-box"
             }}
           >
             {cityNewsDisplayArticles.map((item, idx) => {
@@ -1985,6 +2007,7 @@ export default function HomeClient({
               return (
                 <article
                   key={item.id}
+                  className="city-news-card"
                   style={{
                     background: "#ffffff",
                     border: "1px solid #e2e8f0",
@@ -1993,7 +2016,11 @@ export default function HomeClient({
                     display: "flex",
                     flexDirection: "column",
                     boxShadow: "0 2px 10px rgba(15, 23, 42, 0.04)",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease"
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                    minWidth: 0
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-3px)";
@@ -2011,7 +2038,11 @@ export default function HomeClient({
                       color: "inherit",
                       display: "flex",
                       flexDirection: "column",
-                      height: "100%"
+                      height: "100%",
+                      width: "100%",
+                      maxWidth: "100%",
+                      boxSizing: "border-box",
+                      minWidth: 0
                     }}
                   >
                     {/* Card Image with dark chip */}
@@ -2020,7 +2051,8 @@ export default function HomeClient({
                         position: "relative",
                         height: "195px",
                         overflow: "hidden",
-                        background: "#0f172a"
+                        background: "#0f172a",
+                        width: "100%"
                       }}
                     >
                       <img
@@ -2046,7 +2078,11 @@ export default function HomeClient({
                           borderRadius: "4px",
                           letterSpacing: 0,
                           fontFamily: "var(--font-ui)",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.35)"
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+                          maxWidth: "calc(100% - 20px)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
                         }}
                       >
                         📍 {displayCity} • {subBeat}
@@ -2059,7 +2095,12 @@ export default function HomeClient({
                         padding: "16px",
                         display: "flex",
                         flexDirection: "column",
-                        flex: 1
+                        flex: 1,
+                        width: "100%",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
+                        minWidth: 0,
+                        overflow: "hidden"
                       }}
                     >
                       {/* Red Beat Label */}
@@ -2227,7 +2268,7 @@ export default function HomeClient({
       {/* ===========================
           Trending Videos Section
           =========================== */}
-      <section className="trending-videos-section" style={{ marginTop: "-12px", marginBottom: "32px" }}>
+      <section className="trending-videos-section" style={{ marginTop: "-12px", marginBottom: "14px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
           <Link href="/videos" style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -2318,99 +2359,6 @@ export default function HomeClient({
         </div>
       )}
 
-      {/* Newsletter Subscription Bar */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <div className="relative bg-gradient-to-r from-zinc-950 via-zinc-900 to-[#1d080a] text-white rounded-[24px] p-5 sm:p-7 shadow-2xl border border-red-900/30 overflow-hidden">
-          {/* Background Decorative Glow */}
-          <div className="absolute top-0 right-0 w-80 h-full bg-red-600/10 blur-3xl pointer-events-none rounded-full" />
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-red-600/10 blur-2xl pointer-events-none rounded-full" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 lg:gap-10">
-            {/* Left Graphic Badge */}
-            <div className="relative shrink-0 flex items-center justify-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-red-600 via-red-700 to-red-900 border-4 border-red-950/60 shadow-xl flex items-center justify-center text-white relative">
-                <Mail className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white/20" />
-                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white shadow-md">
-                  <Send className="w-3 h-3 text-white" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Content & Form */}
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-1 tracking-tight">
-                {isHi ? (
-                  <>
-                    GLOBAL मॉर्निंग ब्रीफिंग के साथ <span className="text-red-500">आगे रहें</span>
-                  </>
-                ) : (
-                  <>
-                    Stay Ahead with <span className="text-red-500">Global Morning Briefing</span>
-                  </>
-                )}
-              </h2>
-
-              <p className="text-slate-400 text-xs sm:text-sm mb-4 max-w-2xl leading-relaxed font-normal">
-                {t("newsletterDesc")}
-              </p>
-
-              {/* Integrated Pill Form Input Bar */}
-              {newsletterSubscribed ? (
-                <div className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-2xl p-3.5 max-w-lg mx-auto md:mx-0 flex items-center gap-2.5 font-bold text-xs sm:text-sm">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <span>{isHi ? "✓ सदस्यता लेने के लिए धन्यवाद! दैनिक बुलेटिन आपके इनबॉक्स में भेजा जाएगा।" : "✓ Thanks for subscribing! Daily briefing will be delivered to your inbox."}</span>
-                </div>
-              ) : (
-                <form onSubmit={handleNewsletterSubmit} className="bg-white rounded-2xl p-1.5 flex items-center shadow-lg border border-slate-200/50 max-w-lg mx-auto md:mx-0">
-                  <Mail className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
-                  <input
-                    type="email"
-                    required
-                    aria-label="Email for newsletter subscription"
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    placeholder={isHi ? "अपना ईमेल पता दर्ज करें..." : "Enter your email address..."}
-                    className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none flex-1 min-w-0 pr-2"
-                  />
-                  <button
-                    type="submit"
-                    disabled={newsletterSubmitting}
-                    aria-label="Subscribe to newsletter"
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-75"
-                  >
-                    <span>{newsletterSubmitting ? (isHi ? "कृपया प्रतीक्षा करें..." : "Subscribing...") : (isHi ? "निःशुल्क सदस्यता लें" : "Subscribe Free")}</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </form>
-              )}
-
-              {/* Trust Badges Row */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-[11px] text-slate-400 mt-3.5 font-medium">
-                <span className="flex items-center gap-1 text-slate-300">
-                  <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
-                  {isHi ? "विश्वसनीय समाचार" : "Trusted Journalism"}
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className="flex items-center gap-1 text-slate-300">
-                  <Clock className="w-3.5 h-3.5 text-red-500" />
-                  {isHi ? "हर सुबह अपडेट" : "Daily Morning Updates"}
-                </span>
-                <span className="text-slate-600">•</span>
-                <span className="flex items-center gap-1 text-slate-300">
-                  <Globe className="w-3.5 h-3.5 text-red-500" />
-                  {isHi ? "स्थानीय से वैश्विक कवरेज" : "Global & Local Coverage"}
-                </span>
-              </div>
-
-              {/* Privacy Note */}
-              <div className="mt-2 text-[10px] text-slate-500 flex items-center justify-center md:justify-start gap-1">
-                <Lock className="w-3 h-3 text-slate-500" />
-                <span>{isHi ? "आपकी जानकारी सुरक्षित है। हम स्पैम नहीं भेजते।" : "Your information is 100% secure. We never spam."}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

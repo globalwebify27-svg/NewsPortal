@@ -30,6 +30,7 @@ import { API_ENDPOINTS } from "@/lib/config";
 import { cleanMediaUrl } from "@/lib/mediaUpload";
 import { extractYouTubeId } from "@/lib/youtube";
 import { useLanguage } from "@/context/LanguageContext";
+import { getSubCategories } from "@/lib/subCategories";
 
 /**
  * Sanitize HTML body content against XSS and ensure SEO heading hierarchy:
@@ -369,7 +370,7 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
       }];
 
   return (
-    <div className="article-page-wrapper" style={{ maxWidth: "1440px", margin: "16px auto 80px auto", padding: "0 16px", overflow: "visible" }}>
+    <div className="article-page-wrapper" style={{ maxWidth: "1440px", margin: "14px auto 16px auto", padding: "0 16px", overflow: "visible" }}>
       {/* 3-COLUMN RESPONSIVE LAYOUT: Center Main Column (FIRST in DOM for SEO H1 priority) | Left | Right */}
       <div className="article-3col-grid">
         {/* ========================================================
@@ -386,15 +387,55 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             </Link>
           </div>
 
-          {/* Category badge + Title */}
+          {/* Category & Sub-Category badge + Title */}
           <div style={{ marginBottom: "20px" }}>
-            <span style={{
-              display: "inline-block", background: categoryColor, color: "#fff",
-              fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase",
-              letterSpacing: "0.06em", padding: "5px 12px", borderRadius: "6px", marginBottom: "14px"
-            }}>
-              {article.category?.name || "EDITORIAL"}
-            </span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+              <Link
+                href={`/${(article.category?.slug || article.category?.name || "news").toLowerCase()}`}
+                style={{
+                  display: "inline-block",
+                  background: categoryColor,
+                  color: "#fff",
+                  fontSize: "0.72rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  padding: "5px 12px",
+                  borderRadius: "6px",
+                  textDecoration: "none"
+                }}
+              >
+                {article.category?.name || "EDITORIAL"}
+              </Link>
+
+              {article.subCategory && article.subCategory.toLowerCase() !== "general" && (
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(0,0,0,0.06)",
+                  color: "var(--color-primary)",
+                  fontSize: "0.74rem",
+                  fontWeight: 700,
+                  padding: "5px 11px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--color-border)"
+                }}>
+                  <span style={{ opacity: 0.45, fontWeight: 900 }}>›</span>
+                  <span>{(() => {
+                    const catName = article.category?.name || "";
+                    const subs = getSubCategories(catName);
+                    const match = subs.find(
+                      (s) =>
+                        s.en.toLowerCase() === article.subCategory?.toLowerCase() ||
+                        s.hi.toLowerCase() === article.subCategory?.toLowerCase()
+                    );
+                    if (match) return lang === "HI" ? match.hi : match.en;
+                    return article.subCategory;
+                  })()}</span>
+                </span>
+              )}
+            </div>
 
             <h1 style={{
               fontFamily: "var(--font-headline)",
@@ -565,49 +606,53 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                         {para}
                       </p>
                       {/* Insert Mid-Story In-Article Advertisement Banner after 2nd paragraph */}
-                      {i === 1 && currentAd && (
-                        <div style={{
-                          margin: "20px 0",
-                          padding: "16px 20px",
-                          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-                          color: "#ffffff",
-                          borderRadius: "14px",
-                          border: "1px solid rgba(255,255,255,0.12)",
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.12)"
-                        }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                            <span style={{ background: "#e50914", color: "#fff", fontSize: "0.65rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              {currentAd.badge || "SPONSORED"}
-                            </span>
-                            <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>
-                              GLOBAL AWAAZ SPONSORSHIP
-                            </span>
-                          </div>
-                          {currentAd.image ? (
-                            <a href={currentAd.link || "/advertise"} target="_blank" rel="noopener noreferrer">
-                              <img src={currentAd.image} alt="Sponsored Ad" style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover" }} />
-                            </a>
-                          ) : (
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                              <div>
-                                <h3 style={{ margin: "0 0 4px 0", fontSize: "1rem", fontWeight: 800, color: "#ffffff" }}>
-                                  {currentAd.title || "GLOBAL AWAAZ DIGITAL SPONSORSHIP"}
-                                </h3>
-                                <p style={{ margin: 0, fontSize: "0.82rem", color: "#cbd5e1" }}>
-                                  {currentAd.subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
-                                </p>
-                              </div>
-                              <Link
-                                href={currentAd.link || "/advertise"}
-                                style={{
-                                  background: "#e50914", color: "#ffffff", padding: "8px 16px", borderRadius: "8px",
-                                  fontWeight: 800, fontSize: "0.8rem", textDecoration: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "6px"
-                                }}
-                              >
-                                {adSettings.ad_leaderboard_btn_text || "Advertise With Us"} <ExternalLink size={13} />
-                              </Link>
-                            </div>
-                          )}
+                      {i === 1 && currentAd?.image && (
+                        <div style={{ margin: "24px 0", width: "100%" }}>
+                          <a
+                            href={currentAd.link || "/advertise"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ display: "block", textDecoration: "none" }}
+                          >
+                            <img
+                              src={currentAd.image}
+                              alt={currentAd.title || "Sponsored Advertisement"}
+                              loading="lazy"
+                              decoding="async"
+                              style={{
+                                width: "100%",
+                                height: "auto",
+                                borderRadius: "10px",
+                                objectFit: "contain",
+                                display: "block",
+                                boxShadow: "0 2px 10px rgba(0,0,0,0.12)"
+                              }}
+                            />
+                          </a>
+                          <a
+                            href={currentAd.link || "/advertise"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "6px",
+                              width: "100%",
+                              padding: "8px 16px",
+                              background: "#e50914",
+                              color: "#ffffff",
+                              borderRadius: "8px",
+                              fontSize: "0.82rem",
+                              fontWeight: 700,
+                              textDecoration: "none",
+                              marginTop: "10px",
+                              boxShadow: "0 2px 8px rgba(229, 9, 20, 0.25)"
+                            }}
+                          >
+                            <span>{adSettings.ad_leaderboard_btn_text || (lang === "HI" ? "विज्ञापन देखें" : "View Advertisement")}</span>
+                            <ExternalLink size={13} />
+                          </a>
                         </div>
                       )}
                     </React.Fragment>
@@ -631,39 +676,39 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
 
           {/* Related Articles Section (H2 Header -> H3 per Story Title) */}
           {sideNews.length > 0 && (
-            <section style={{ margin: "32px 0 24px 0" }}>
+            <section className="article-related-news-section" style={{ margin: "20px 0 12px 0" }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderBottom: "2px solid #e50914",
-                paddingBottom: "10px",
-                marginBottom: "16px"
+                paddingBottom: "8px",
+                marginBottom: "12px"
               }}>
                 <h2 style={{
                   margin: 0,
-                  fontSize: "1.15rem",
+                  fontSize: "1.05rem",
                   fontWeight: 900,
                   color: "var(--color-primary)",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px"
                 }}>
-                  <BookOpen size={18} style={{ color: "#e50914" }} />
+                  <BookOpen size={17} style={{ color: "#e50914" }} />
                   {lang === "HI" ? "संबंधित प्रमुख खबरें एवं ताज़ा अपडेट्स" : "Related News Coverage & Analysis"}
                 </h2>
                 <Link
                   href={`/${article.category?.slug || ""}`}
-                  style={{ fontSize: "0.78rem", color: "#e50914", fontWeight: 800, textDecoration: "none" }}
+                  style={{ fontSize: "0.76rem", color: "#e50914", fontWeight: 800, textDecoration: "none" }}
                 >
                   {lang === "HI" ? "सभी संबंधित खबरें देखें →" : "View All Stories →"}
                 </Link>
               </div>
 
-              <div style={{
+              <div className="article-related-news-grid" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "16px"
+                gap: "12px"
               }}>
                 {sideNews.slice(0, 3).map((relItem, relIdx) => (
                   <article
@@ -720,18 +765,18 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           )}
 
           {/* Bottom Social Media Share Bar */}
-          <div style={{
-            margin: "28px 0 16px 0",
-            padding: "18px 24px",
+          <div className="article-social-share-card" style={{
+            margin: "12px 0 14px 0",
+            padding: "14px 18px",
             background: "var(--color-card-bg, #ffffff)",
-            borderRadius: "16px",
+            borderRadius: "14px",
             border: "1px solid var(--color-border, #e2e8f0)",
             boxShadow: "var(--shadow-sm)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
-            gap: "16px"
+            gap: "12px"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{
@@ -785,14 +830,14 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
             scrollbarWidth: "none"
           }}
         >
-          {/* CARD 1: TOP NEWS GRID */}
+          {/* CARD 1: TOP NEWS GRID (FLAT / NO OUTER BORDER) */}
           <div
             style={{
-              background: "var(--color-card-bg, #ffffff)",
-              border: "1px solid var(--color-border, #e2e8f0)",
-              borderRadius: "14px",
-              padding: "16px",
-              boxShadow: "var(--shadow-sm)"
+              background: "transparent",
+              border: "none",
+              borderRadius: "0px",
+              padding: "0",
+              boxShadow: "none"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #e50914", paddingBottom: "8px", marginBottom: "12px" }}>
@@ -810,7 +855,19 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
                 <article key={item.id || idx} style={{ borderBottom: idx < sideNews.length - 1 ? "1px solid var(--color-border, #f1f5f9)" : "none", paddingBottom: "10px" }}>
                   <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", gap: "10px", alignItems: "center" }}>
                     <div style={{ width: "70px", height: "55px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "#0f172a" }}>
-                      <img src={getArticleImage(item, idx, 300)} alt={item.title} loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img
+                        src={getArticleImage(item, idx, 300)}
+                        alt={item.title}
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/logo.png";
+                          e.currentTarget.style.objectFit = "contain";
+                          e.currentTarget.style.padding = "6px";
+                        }}
+                      />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <span style={{
@@ -832,300 +889,143 @@ export default function ArticleClientContent({ slug, initialArticle }: Props) {
           {/* CARD 2: STANDALONE ADVERTISEMENT CARD (BELOW TOP NEWS GRID CARD) */}
           {leftCustomAds.length > 0 ? (
             leftCustomAds.map((adItem, index) => (
-              <div
-                key={adItem.id || index}
-                style={{
-                  background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-                  color: "#ffffff",
-                  borderRadius: "14px",
-                  padding: "16px",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  boxShadow: "0 4px 18px rgba(0,0,0,0.14)",
-                  flexShrink: 0
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {adItem.badge || "SPONSORED"}
-                  </span>
-                  <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
-                    ADVERTISEMENT
-                  </span>
-                </div>
-                {adItem.image ? (
-                  <a href={adItem.link || "/advertise"} target="_blank" rel="noopener noreferrer">
-                    {adItem.title || adItem.subtitle ? (
-                      <div style={{ marginBottom: "8px" }}>
-                        {adItem.title && <div style={{ margin: "0 0 2px 0", fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>{adItem.title}</div>}
-                        {adItem.subtitle && <p style={{ margin: 0, fontSize: "0.76rem", color: "#cbd5e1" }}>{adItem.subtitle}</p>}
-                      </div>
-                    ) : null}
+              adItem.image ? (
+                <div key={adItem.id || index} style={{ flexShrink: 0 }}>
+                  <a
+                    href={adItem.link || "/advertise"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "block", textDecoration: "none" }}
+                  >
                     <img
                       src={adItem.image}
-                      alt={adItem.title || "Grid Ad Banner"}
+                      alt={adItem.title || "Advertisement Banner"}
                       loading="lazy"
                       decoding="async"
-                      style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        borderRadius: "10px",
+                        objectFit: "contain",
+                        display: "block",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.12)"
+                      }}
                     />
                   </a>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
-                      {adItem.title || "GLOBAL AWAAZ SPONSORSHIP"}
-                    </div>
-                    <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.4 }}>
-                      {adItem.subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
-                    </p>
-                    <Link
-                      href={adItem.link || "/advertise"}
-                      style={{
-                        background: "#e50914",
-                        color: "#ffffff",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        fontWeight: 800,
-                        fontSize: "0.75rem",
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        width: "fit-content",
-                        marginTop: "4px"
-                      }}
-                    >
-                      {adSettings.ad_left_grid_btn_text || "Advertise With Us"} <ExternalLink size={12} />
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : adSettings.ad_left_grid_enabled !== "false" && (
-            <div
-              style={{
-                background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-                color: "#ffffff",
-                borderRadius: "14px",
-                padding: "16px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 4px 18px rgba(0,0,0,0.14)",
-                flexShrink: 0
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {adSettings.ad_left_grid_badge || "SPONSORED"}
-                </span>
-                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
-                  ADVERTISEMENT
-                </span>
-              </div>
-              {adSettings.ad_left_grid_image ? (
-                <a href={adSettings.ad_left_grid_link || "/advertise"} target="_blank" rel="noopener noreferrer">
-                  {adSettings.ad_left_grid_title ? (
-                    <div style={{ marginBottom: "8px" }}>
-                      <div style={{ margin: "0 0 2px 0", fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>{adSettings.ad_left_grid_title}</div>
-                      {adSettings.ad_left_grid_subtitle && <p style={{ margin: 0, fontSize: "0.76rem", color: "#cbd5e1" }}>{adSettings.ad_left_grid_subtitle}</p>}
-                    </div>
-                  ) : null}
-                  <img
-                    src={adSettings.ad_left_grid_image}
-                    alt="Grid Ad Banner"
-                    style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
-                  />
-                </a>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
-                    {adSettings.ad_left_grid_title || "GLOBAL AWAAZ SPONSORSHIP"}
-                  </div>
-                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.4 }}>
-                    {adSettings.ad_left_grid_subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
-                  </p>
-                  <Link
-                    href={adSettings.ad_left_grid_link || "/advertise"}
+                  <a
+                    href={adItem.link || "/advertise"}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
-                      background: "#e50914",
-                      color: "#ffffff",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      fontWeight: 800,
-                      fontSize: "0.75rem",
-                      textDecoration: "none",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: "4px",
-                      width: "fit-content",
-                      marginTop: "4px"
+                      justifyContent: "center",
+                      gap: "6px",
+                      width: "100%",
+                      padding: "8px 16px",
+                      background: "#e50914",
+                      color: "#ffffff",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      textDecoration: "none",
+                      marginTop: "10px",
+                      boxShadow: "0 2px 8px rgba(229, 9, 20, 0.25)"
                     }}
                   >
-                    {adSettings.ad_left_grid_btn_text || "Advertise With Us"} <ExternalLink size={12} />
-                  </Link>
+                    <span>{adSettings.ad_left_grid_btn_text || (lang === "HI" ? "विज्ञापन देखें" : "View Advertisement")}</span>
+                    <ExternalLink size={13} />
+                  </a>
                 </div>
-              )}
-            </div>
-          )}
+              ) : null
+            ))
+          ) : null}
         </aside>
 
         {/* ========================================================
             RIGHT COLUMN (1fr) — ADVERTISEMENTS FROM ADMIN
            ======================================================== */}
-        <aside
-          className="article-right-col"
-          style={{
-            position: "sticky",
-            top: "70px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-            maxHeight: "calc(100vh - 85px)",
-            overflowY: "auto",
-            scrollbarWidth: "none"
-          }}
-        >
-          {/* Header Badge */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
-            <h2 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 900, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Megaphone size={16} />
-              {lang === "HI" ? "प्रायोजित विज्ञापन" : "Sponsored Ads"} ({rightCustomAds.length})
-            </h2>
-            <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>
-              AD
-            </span>
-          </div>
+        {rightCustomAds.some((a) => Boolean(a.image)) && (
+          <aside
+            className="article-right-col"
+            style={{
+              position: "sticky",
+              top: "70px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px",
+              maxHeight: "calc(100vh - 85px)",
+              overflowY: "auto",
+              scrollbarWidth: "none"
+            }}
+          >
+            {/* Header Badge */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #e50914", paddingBottom: "8px" }}>
+              <h2 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 900, color: "#e50914", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Megaphone size={16} />
+                {lang === "HI" ? "प्रायोजित विज्ञापन" : "Sponsored Ads"}
+              </h2>
+              <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>
+                AD
+              </span>
+            </div>
 
-          {/* Render custom right column ads */}
-          {rightCustomAds.map((adItem, index) => (
-            <div
-              key={adItem.id || index}
-              style={{
-                background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-                color: "#ffffff",
-                borderRadius: "14px",
-                padding: "16px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 4px 18px rgba(0,0,0,0.14)",
-                flexShrink: 0
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 8px", borderRadius: "4px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {adItem.badge || "SPONSORED"}
-                </span>
-                <span style={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
-                  ADVERTISEMENT
-                </span>
-              </div>
-              {adItem.image ? (
-                <a href={adItem.link || "/advertise"} target="_blank" rel="noopener noreferrer">
-                  {adItem.title || adItem.subtitle ? (
-                    <div style={{ marginBottom: "8px" }}>
-                      {adItem.title && <div style={{ margin: "0 0 2px 0", fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>{adItem.title}</div>}
-                      {adItem.subtitle && <p style={{ margin: 0, fontSize: "0.76rem", color: "#cbd5e1" }}>{adItem.subtitle}</p>}
-                    </div>
-                  ) : null}
-                  <img
-                    src={adItem.image}
-                    alt={adItem.title || "Right Ad Banner"}
-                    loading="lazy"
-                    decoding="async"
-                    style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "cover", display: "block" }}
-                  />
-                </a>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div style={{ margin: 0, fontSize: "0.88rem", fontWeight: 800, color: "#ffffff", lineHeight: 1.35 }}>
-                    {adItem.title || "GLOBAL AWAAZ SPONSORSHIP"}
+            {/* Render custom right column ads */}
+            {rightCustomAds.map((adItem, index) => (
+              <div key={adItem.id || index} style={{ flexShrink: 0 }}>
+                {adItem.image ? (
+                  <div>
+                    <a
+                      href={adItem.link || "/advertise"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "block", textDecoration: "none" }}
+                    >
+                      <img
+                        src={adItem.image}
+                        alt={adItem.title || "Advertisement Banner"}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          borderRadius: "10px",
+                          objectFit: "contain",
+                          display: "block",
+                          boxShadow: "0 2px 10px rgba(0,0,0,0.12)"
+                        }}
+                      />
+                    </a>
+                    <a
+                      href={adItem.link || "/advertise"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        width: "100%",
+                        padding: "8px 16px",
+                        background: "#e50914",
+                        color: "#ffffff",
+                        borderRadius: "8px",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        marginTop: "10px",
+                        boxShadow: "0 2px 8px rgba(229, 9, 20, 0.25)"
+                      }}
+                    >
+                      <span>{adSettings.ad_leaderboard_btn_text || (lang === "HI" ? "विज्ञापन देखें" : "View Advertisement")}</span>
+                      <ExternalLink size={13} />
+                    </a>
                   </div>
-                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#cbd5e1", lineHeight: 1.4 }}>
-                    {adItem.subtitle || "Promote your brand to millions of readers across Bihar, Jharkhand & India."}
-                  </p>
-                  <Link
-                    href={adItem.link || "/advertise"}
-                    style={{
-                      background: "#e50914",
-                      color: "#ffffff",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      fontWeight: 800,
-                      fontSize: "0.75rem",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      width: "fit-content",
-                      marginTop: "4px"
-                    }}
-                  >
-                    {adSettings.ad_leaderboard_btn_text || "Advertise With Us"} <ExternalLink size={12} />
-                  </Link>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Ad Card 2: Sticky Announcement Banner Ad */}
-          <div style={{
-            background: adSettings.ad_sticky_bg || "#000000",
-            color: "#ffffff",
-            borderRadius: "14px",
-            padding: "14px 16px",
-            border: "1px solid #e50914",
-            boxShadow: "0 4px 16px rgba(229,9,20,0.15)"
-          }}>
-            <span style={{ background: "#e50914", color: "#fff", fontSize: "0.62rem", padding: "2px 6px", borderRadius: "4px", fontWeight: 800, marginBottom: "6px", display: "inline-block" }}>
-              {adSettings.ad_sticky_badge || "SPONSORED"}
-            </span>
-            <p style={{ margin: "0 0 10px 0", fontSize: "0.82rem", fontWeight: 700, lineHeight: 1.45, color: "#ffffff" }}>
-              {adSettings.ad_sticky_text || "📢 SPECIAL ANNOUNCEMENT: Partner with Global Awaaz Digital News Platform!"}
-            </p>
-            <Link
-              href={adSettings.ad_sticky_link || "/advertise"}
-              style={{
-                color: "#f87171",
-                fontWeight: 800,
-                fontSize: "0.78rem",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px"
-              }}
-            >
-              {lang === "HI" ? "अधिक जानकारी ▶" : "Learn More ▶"}
-            </Link>
-          </div>
-
-          {/* Ad Card 3: Direct Admin Booking Box */}
-          <div style={{
-            background: "var(--color-card-bg, #ffffff)",
-            border: "2px dashed var(--color-border, #cbd5e1)",
-            borderRadius: "14px",
-            padding: "16px",
-            textAlign: "center"
-          }}>
-            <div style={{ fontSize: "2rem", marginBottom: "6px" }}>🎯</div>
-            <div style={{ margin: "0 0 6px 0", fontSize: "0.92rem", fontWeight: 800, color: "var(--color-primary)" }}>
-              {lang === "HI" ? "यहाँ अपना विज्ञापन दिखाएँ" : "Place Your Banner Here"}
-            </div>
-            <p style={{ margin: "0 0 12px 0", fontSize: "0.76rem", color: "var(--color-secondary)", lineHeight: 1.4 }}>
-              {lang === "HI" ? "लाखों पाठकों तक सीधे पहुँचें।" : "Direct target reach for business & brand campaigns."}
-            </p>
-            <Link
-              href="/advertise"
-              style={{
-                background: "var(--color-primary, #0f172a)",
-                color: "#ffffff",
-                padding: "7px 16px",
-                borderRadius: "8px",
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                textDecoration: "none",
-                display: "inline-block"
-              }}
-            >
-              {lang === "HI" ? "विज्ञापन दरें देखें" : "View Ad Rates"}
-            </Link>
-          </div>
-        </aside>
+                ) : null}
+              </div>
+            ))}
+          </aside>
+        )}
       </div>
 
       {/* Floating Action Success Toast */}
