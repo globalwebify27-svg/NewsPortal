@@ -1,6 +1,3 @@
-// =============================================================================
-// Prisma Client Singleton with Production Connection Pooling — Global Awaaz
-// =============================================================================
 
 import { PrismaClient } from "@prisma/client";
 
@@ -9,49 +6,43 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
-/**
- * Normalizes connection pool parameters to prevent connection starvation or overload.
- * Ensures connection_limit=10, pool_timeout=15, and connect_timeout=15.
- */
-function getOptimizedDatabaseUrl(): string | undefined {
-  const urlStr = process.env.DATABASE_URL;
-  if (!urlStr) return undefined;
+function getDatabaseUrl(): string | undefined {
+  const url = process.env.DATABASE_URL;
+
+  if (!url) return undefined;
 
   try {
-    const url = new URL(urlStr);
-    const params = url.searchParams;
+    const dbUrl = new URL(url);
 
-    // Set or optimize connection pool size
-    const currentLimit = Number(params.get("connection_limit"));
+    // Optimized connection pool for serverless & edge reliability
+    const currentLimit = Number(dbUrl.searchParams.get("connection_limit"));
     if (!currentLimit || currentLimit < 5) {
-      params.set("connection_limit", "10");
+      dbUrl.searchParams.set("connection_limit", "5");
+    }
+    if (!dbUrl.searchParams.has("pool_timeout")) {
+      dbUrl.searchParams.set("pool_timeout", "15");
+    }
+    if (!dbUrl.searchParams.has("connect_timeout")) {
+      dbUrl.searchParams.set("connect_timeout", "15");
     }
 
-    if (!params.has("pool_timeout")) {
-      params.set("pool_timeout", "15");
-    }
-
-    if (!params.has("connect_timeout")) {
-      params.set("connect_timeout", "15");
-    }
-
-    return url.toString();
+    return dbUrl.toString();
   } catch {
-    return urlStr;
+    return url;
   }
 }
 
-const optimizedUrl = getOptimizedDatabaseUrl();
+const databaseUrl = getDatabaseUrl();
 
 export const prisma =
   globalThis.__prisma ??
   new PrismaClient({
-    ...(optimizedUrl
+    ...(databaseUrl
       ? {
-          datasources: {
-            db: { url: optimizedUrl },
-          },
-        }
+        datasources: {
+          db: { url: databaseUrl },
+        },
+      }
       : {}),
     log:
       process.env.NODE_ENV === "development"
@@ -60,32 +51,6 @@ export const prisma =
   });
 
 globalThis.__prisma = globalThis.__prisma ?? prisma;
-
-/**
- * Health check utility to probe the database connection pool.
- * Measures round-trip ping latency and validates active connectivity.
- */
-export async function checkDatabasePoolHealth(): Promise<{
-  ok: boolean;
-  latencyMs: number;
-  error?: string;
-}> {
-  const start = Date.now();
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    return {
-      ok: true,
-      latencyMs: Date.now() - start,
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Database connection failed";
-    return {
-      ok: false,
-      latencyMs: Date.now() - start,
-      error: msg,
-    };
-  }
-}
 
 // Graceful pool disconnection on process termination
 if (typeof process !== "undefined" && typeof process.on === "function") {

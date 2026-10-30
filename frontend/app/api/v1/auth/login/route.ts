@@ -86,36 +86,71 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── 1. Look up user in MySQL by email or name/username ─────────────────
+    // ── 1. Look up user in MySQL by email, username, or alias ──────────────
+    const searchConditions: Array<{ email?: string; name?: string }> = [
+      { email: loginIdentifier },
+      { name: loginIdentifier },
+    ];
+
+    if (!loginIdentifier.includes("@")) {
+      searchConditions.push(
+        { email: `${loginIdentifier}@globalawaaz.com` },
+        { email: `${loginIdentifier}@gmail.com` }
+      );
+    }
+
+    if (loginIdentifier === "global2409" || loginIdentifier === "admin") {
+      searchConditions.push(
+        { email: "global2409@globalawaaz.com" },
+        { email: "admin@globalawaaz.com" },
+        { name: "Global Awaaz Admin" },
+        { name: "Global Admin" }
+      );
+    }
+
     let user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: { equals: loginIdentifier } },
-          { name: { equals: loginIdentifier } },
-        ],
+        OR: searchConditions,
       },
     });
 
-    // ── Fallback bootstrap: if database has no superadmin, check env vars ──
+    // ── Fallback bootstrap: only if database truly has no superadmin account ──
     if (!user) {
-      const superEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
-      const superEmail2 = process.env.SUPER_ADMIN_EMAIL2?.trim().toLowerCase();
-      const isSuperEmail =
-        (superEmail && loginIdentifier === superEmail) ||
-        (superEmail2 && loginIdentifier === superEmail2) ||
-        loginIdentifier === "global2409";
+      const isSuperIdentifier =
+        loginIdentifier === "global2409" ||
+        loginIdentifier === "global2409@globalawaaz.com" ||
+        loginIdentifier === "admin@globalawaaz.com";
 
-      if (isSuperEmail && process.env.SUPER_ADMIN_PASSWORD) {
-        const initialHash = await hashPassword(process.env.SUPER_ADMIN_PASSWORD);
-        user = await prisma.user.create({
-          data: {
-            name: "Global Awaaz Admin",
-            email: process.env.SUPER_ADMIN_EMAIL || "global2409@globalawaaz.com",
-            password: initialHash,
-            role: "SUPERADMIN",
-            isActive: true,
+      if (isSuperIdentifier) {
+        // Double check if any superadmin exists before attempting to create
+        const existingSuper = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: "global2409@globalawaaz.com" },
+              { email: "admin@globalawaaz.com" },
+              { role: "SUPERADMIN" },
+            ],
           },
         });
+
+        if (existingSuper) {
+          user = existingSuper;
+        } else if (process.env.SUPER_ADMIN_PASSWORD) {
+          try {
+            const initialHash = await hashPassword(process.env.SUPER_ADMIN_PASSWORD);
+            user = await prisma.user.create({
+              data: {
+                name: "Global Awaaz Admin",
+                email: "global2409@globalawaaz.com",
+                password: initialHash,
+                role: "SUPERADMIN",
+                isActive: true,
+              },
+            });
+          } catch (createErr) {
+            console.error("[AUTH] Fallback bootstrap create error:", createErr);
+          }
+        }
       }
     }
 
@@ -189,13 +224,17 @@ export async function POST(req: NextRequest) {
         newLockedUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
       }
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: { increment: 1 },
-          lockedUntil: newLockedUntil,
-        },
-      });
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: { increment: 1 },
+            lockedUntil: newLockedUntil,
+          },
+        });
+      } catch (lockErr) {
+        console.warn("[AUTH] Failed to update failed login attempts:", lockErr);
+      }
 
       await logAuditEvent({
         userId: user.id,
@@ -224,10 +263,14 @@ export async function POST(req: NextRequest) {
       updates.password = await hashPassword(password);
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: updates,
-    });
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: updates,
+      });
+    } catch (updErr) {
+      console.warn("[AUTH] Failed to update login timestamp/counters:", updErr);
+    }
 
     // ── 6. Normalize Role Slug ─────────────────────────────────────────────
     let roleSlug = (user.role as string || "editor").toLowerCase();
@@ -297,10 +340,15 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set(ADMIN_COOKIE_NAME, token, COOKIE_OPTIONS);
     return response;
-  } catch (err) {
-    console.error("[auth/login] error:", err);
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[auth/login] Fatal error during login:", errorMsg, err);
     return NextResponse.json(
-      { success: false, message: "Server error during authentication." },
+      {
+        success: false,
+        message: "Server error during authentication.",
+        error: process.env.NODE_ENV === "development" ? errorMsg : undefined,
+      },
       { status: 500 }
     );
   }
