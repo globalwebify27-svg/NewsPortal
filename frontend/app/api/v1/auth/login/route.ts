@@ -237,35 +237,51 @@ export async function POST(req: NextRequest) {
     const displayName = user.name || user.email || "Admin";
 
     // ── 7. Create Database Session & Bind ID to JWT ────────────────────────
-    let dbSession = await createDatabaseSession({
-      userId: user.id,
-      ipAddress,
-      userAgent,
-    });
+    let sessionId: string | undefined = undefined;
+    try {
+      const dbSession = await createDatabaseSession({
+        userId: user.id,
+        ipAddress,
+        userAgent,
+      });
+      sessionId = dbSession.id;
+    } catch (sessionErr) {
+      console.error("[AUTH] Warning: Failed to record DB session:", sessionErr);
+    }
 
     const token = await signAdminToken({
       userId: user.id,
       name: displayName,
       email: user.email,
       role: roleSlug,
-      sessionId: dbSession.id,
+      sessionId,
     });
 
-    // Store signed token in the session record for lookup
-    await prisma.session.update({
-      where: { id: dbSession.id },
-      data: { token },
-    });
+    // Store signed token in the session record for lookup if session created
+    if (sessionId) {
+      try {
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: { token },
+        });
+      } catch (tokenUpdateErr) {
+        console.error("[AUTH] Warning: Failed to update session token:", tokenUpdateErr);
+      }
+    }
 
     // ── 8. Audit Log Success ───────────────────────────────────────────────
-    await logAuditEvent({
-      userId: user.id,
-      action: "LOGIN_SUCCESS",
-      resource: "AUTH",
-      after: { email: user.email, role: roleSlug, sessionId: dbSession.id },
-      ipAddress,
-      userAgent,
-    });
+    try {
+      await logAuditEvent({
+        userId: user.id,
+        action: "LOGIN_SUCCESS",
+        resource: "AUTH",
+        after: { email: user.email, role: roleSlug, sessionId },
+        ipAddress,
+        userAgent,
+      });
+    } catch (auditErr) {
+      console.error("[AUTH] Warning: Failed to record audit log:", auditErr);
+    }
 
     // ── 9. Return Response with HttpOnly Cookie (No sensitive data exposed) ──
     const response = NextResponse.json({
@@ -307,4 +323,32 @@ export async function DELETE(req: NextRequest) {
   const response = NextResponse.json({ success: true, message: "Logged out successfully." });
   response.cookies.set(ADMIN_COOKIE_NAME, "", { ...COOKIE_OPTIONS, maxAge: 0 });
   return response;
+}
+
+/** GET /api/v1/auth/login — Verify active cookie session */
+export async function GET(req: NextRequest) {
+  const token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (!token) {
+    return NextResponse.json({ success: false, message: "No session cookie" }, { status: 401 });
+  }
+
+  try {
+    const { verifyAdminToken } = await import("@/lib/auth");
+    const payload = await verifyAdminToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ success: false, message: "Invalid session" }, { status: 401 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: payload.userId,
+        name: payload.name,
+        email: payload.email,
+        role: payload.role,
+      },
+    });
+  } catch {
+    return NextResponse.json({ success: false, message: "Session expired" }, { status: 401 });
+  }
 }

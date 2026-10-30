@@ -101,6 +101,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setActualRole(savedActual);
         setAdminRole(savedActual !== "super_admin" ? savedActual : savedRole);
         setIsAuthenticated(isAuth);
+
+        // Verify active server session cookie to prevent ghost-login desync
+        if (isAuth) {
+          fetch("/api/v1/auth/login")
+            .then((res) => {
+              if (res.status === 401) {
+                sessionStorage.removeItem("ga_admin_logged_in");
+                sessionStorage.removeItem("ga_admin_user");
+                sessionStorage.removeItem("ga_actual_role");
+                sessionStorage.removeItem("ga_admin_role");
+                setIsAuthenticated(false);
+              }
+            })
+            .catch(() => {});
+        }
       } catch (err) {
         setIsAuthenticated(false);
       } finally {
