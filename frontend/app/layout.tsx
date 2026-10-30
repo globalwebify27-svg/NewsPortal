@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_Devanagari, Mukta } from "next/font/google";
+import { Inter, Mukta } from "next/font/google";
 import "./styles.css";
 import "./globals.css";
 import Script from "next/script";
@@ -11,14 +11,6 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
-  weight: ["400", "600", "700"],
-  preload: true,
-});
-
-const notoDevanagari = Noto_Sans_Devanagari({
-  subsets: ["devanagari", "latin"],
-  display: "swap",
-  variable: "--font-noto-devanagari",
   weight: ["400", "600", "700"],
   preload: true,
 });
@@ -142,11 +134,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const websiteSchema = generateWebSiteSchema();
 
   return (
-    <html lang="hi" data-theme="light" className={`${inter.variable} ${notoDevanagari.variable} ${mukta.variable}`} suppressHydrationWarning>
+    <html lang="hi" data-theme="light" className={`${inter.variable} ${mukta.variable}`} suppressHydrationWarning>
       <head>
         <meta name="google-site-verification" content="XfHMvnanRRb4BCQfIflKveJH7FLoTwRtDO3FXvnBGHA" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://yellowgreen-rook-384455.hostingersite.com" />
         <link rel="alternate" type="application/rss+xml" title="GLOBAL AWAAZ RSS Feed" href="https://globalawaaz.com/feed.xml" />

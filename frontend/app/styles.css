@@ -13,7 +13,8 @@
   --color-green-light: #e3fcef;
   --color-red-light: #ffebe6;
 
-  /* Typography - Multi-lingual Editorial Stack with Next.js Font Optimization */
+  /* Typography - Multi-lingual Editorial Stack */
+  --font-noto-devanagari: "Noto Sans Devanagari", sans-serif;
   --font-mukta-stack: var(--font-mukta), "Mukta", sans-serif;
   --font-noto-stack: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
   --font-inter-stack: var(--font-inter), "Inter", -apple-system, sans-serif;
