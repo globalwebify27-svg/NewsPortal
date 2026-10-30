@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 import { getLogoSettings, saveLogoSettings, deleteLogoSetting } from "@/lib/services/settings";
 import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
@@ -22,7 +22,7 @@ export async function GET() {
 
 // POST /api/v1/logo-settings — upsert logo settings
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireChiefOrAbove(request);
   if (!auth.ok) return auth.response;
 
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/v1/logo-settings?key=site_logo_url — delete a logo setting
 export async function DELETE(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireChiefOrAbove(request);
   if (!auth.ok) return auth.response;
 
   try {

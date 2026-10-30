@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
+import { serverCache, TTL } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
+
+const CACHE_KEY_TEAM = "team:public:members";
 
 // Helper to get TeamMember model dynamically from Prisma instance
 function getTeamModel() {
@@ -33,6 +37,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const admin = searchParams.get("admin") === "true";
 
+  if (!admin) {
+    const cached = serverCache.get<any[]>(CACHE_KEY_TEAM);
+    if (cached) {
+      const response = NextResponse.json({ success: true, data: cached });
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+      return response;
+    }
+  }
+
   try {
     const dbTeamMember = getTeamModel();
     let members: any[] = [];
@@ -60,18 +73,35 @@ export async function GET(request: NextRequest) {
       avatar: cleanImageUrl(m.avatar)
     }));
 
-    return NextResponse.json({
+    if (!admin) {
+      serverCache.set(CACHE_KEY_TEAM, sanitizedMembers, TTL.TEAM);
+    }
+
+    const response = NextResponse.json({
       success: true,
       data: sanitizedMembers,
     });
+    if (!admin) {
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    }
+    return response;
   } catch (error: any) {
     console.error("Error fetching team members:", error);
+    if (!admin) {
+      const fallback = serverCache.getStale<any[]>(CACHE_KEY_TEAM);
+      if (fallback) {
+        return NextResponse.json({ success: true, data: fallback });
+      }
+    }
     return NextResponse.json({ success: false, data: [] }, { status: 500 });
   }
 }
 
 // POST /api/v1/team -> Create or Update Team Member
 export async function POST(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const {
@@ -213,6 +243,14 @@ export async function POST(request: NextRequest) {
       member = await saveViaRawSql(id, payload);
     }
 
+    serverCache.delete(CACHE_KEY_TEAM);
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/team");
+      revalidatePath("/about");
+      revalidatePath("/");
+    } catch (e) {}
+
     return NextResponse.json({
       success: true,
       data: member,
@@ -229,6 +267,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/v1/team?id=... -> Delete team member
 export async function DELETE(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -246,6 +287,14 @@ export async function DELETE(request: NextRequest) {
     } else {
       await prisma.$executeRawUnsafe(`DELETE FROM team_members WHERE id = ?`, id);
     }
+
+    serverCache.delete(CACHE_KEY_TEAM);
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/team");
+      revalidatePath("/about");
+      revalidatePath("/");
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,

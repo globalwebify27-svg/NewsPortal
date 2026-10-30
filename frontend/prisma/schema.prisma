@@ -95,6 +95,9 @@ model User {
   facebookId    String?  @unique
   twoFASecret   String?
   twoFAEnabled  Boolean  @default(false)
+  mustChangePassword Boolean @default(false)
+  failedLoginAttempts Int    @default(0)
+  lockedUntil   DateTime?
   isVerified    Boolean  @default(false)
   isActive      Boolean  @default(true)
   lastLoginAt   DateTime?
@@ -117,6 +120,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 

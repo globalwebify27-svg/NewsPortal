@@ -1,3 +1,10 @@
+// =============================================================================
+// Edge Middleware — Global Awaaz Route Protection
+// Protects all `/admin/*` sub-routes:
+// - Verifies the cryptographic signature of the `ga_admin_token` JWT cookie.
+// - Redirects unauthenticated requests directly to `/admin` (login page).
+// =============================================================================
+
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
@@ -9,6 +16,7 @@ const ALLOWED_ADMIN_ROLES = new Set([
   "chief_editor",
   "editor",
   "admin",
+  "publisher",
   "reporter",
   "author",
   "moderator",
@@ -16,9 +24,13 @@ const ALLOWED_ADMIN_ROLES = new Set([
 
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
-  return new TextEncoder().encode(
-    secret || "ga_default_jwt_secret_newsportal_globalawaaz_2026_fallback"
-  );
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("FATAL: JWT_SECRET environment variable is missing in production environment.");
+    }
+    return new TextEncoder().encode("ga_local_dev_only_jwt_secret_not_for_production_use_2026");
+  }
+  return new TextEncoder().encode(secret);
 }
 
 export async function middleware(request: NextRequest) {
@@ -29,34 +41,45 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Always let the root /admin page load so the client component or login form renders
-  if (pathname === "/admin") {
+  // Always let the root /admin page load so the login form renders
+  if (pathname === "/admin" || pathname === "/admin/") {
     return NextResponse.next();
   }
 
   const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
 
-  // If token is present, verify and validate role
-  if (token) {
-    try {
-      const { payload } = await jwtVerify(token, getJwtSecret());
-      const rawRole = ((payload.role as string) || "").toLowerCase().replace("-", "_").trim();
-
-      if (rawRole && ALLOWED_ADMIN_ROLES.has(rawRole)) {
-        const response = NextResponse.next();
-        response.headers.set("x-user-role", rawRole);
-        return response;
-      }
-    } catch {
-      // If token verification fails, allow through so admin/layout.tsx can verify sessionStorage or prompt login
-    }
+  // If token is missing, redirect to admin login
+  if (!token) {
+    const loginUrl = new URL("/admin", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Pass through to allow admin/layout.tsx to manage the client-side session guard and role access
-  return NextResponse.next();
+  try {
+    const { payload } = await jwtVerify(token, getJwtSecret());
+    const rawRole = ((payload.role as string) || "").toLowerCase().replace("-", "_").trim();
+
+    if (rawRole && ALLOWED_ADMIN_ROLES.has(rawRole)) {
+      const response = NextResponse.next();
+      response.headers.set("x-user-role", rawRole);
+      if (payload.userId) {
+        response.headers.set("x-user-id", String(payload.userId));
+      }
+      return response;
+    }
+
+    // Role not authorized
+    const loginUrl = new URL("/admin", request.url);
+    return NextResponse.redirect(loginUrl);
+  } catch {
+    // Token verification failed or expired -> redirect to login
+    const loginUrl = new URL("/admin", request.url);
+    const response = NextResponse.redirect(loginUrl);
+    // Clear invalid cookie
+    response.cookies.set(ADMIN_COOKIE_NAME, "", { path: "/", maxAge: 0 });
+    return response;
+  }
 }
 
 export const config = {
-  // Apply to all /admin/* routes (Next.js app router paths)
   matcher: ["/admin/:path*"],
 };

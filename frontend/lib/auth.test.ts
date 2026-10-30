@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { signAdminToken, verifyAdminToken, hashPassword, comparePassword } from "./auth";
+import { signAdminToken, verifyAdminToken, hashPassword, comparePassword, generateSecurePassword, isBcryptHash } from "./auth";
 
 describe("Authentication Utilities (lib/auth.ts)", () => {
   beforeAll(() => {
@@ -50,5 +50,25 @@ describe("Authentication Utilities (lib/auth.ts)", () => {
   it("should reject tampered or invalid JWT tokens", async () => {
     const verified = await verifyAdminToken("invalid.tampered.token");
     expect(verified).toBeNull();
+  });
+
+  it("should generate cryptographically secure temporary passwords", () => {
+    const pwd1 = generateSecurePassword(16);
+    const pwd2 = generateSecurePassword(16);
+
+    expect(pwd1.length).toBe(16);
+    expect(pwd2.length).toBe(16);
+    expect(pwd1).not.toBe(pwd2);
+
+    // Checks for character diversity
+    expect(/[A-Z]/.test(pwd1)).toBe(true);
+    expect(/[a-z]/.test(pwd1)).toBe(true);
+    expect(/[0-9]/.test(pwd1)).toBe(true);
+  });
+
+  it("should properly identify bcrypt hashes vs plaintext", () => {
+    expect(isBcryptHash("$2b$12$e80yqf0/iG7H")).toBe(true);
+    expect(isBcryptHash("$2a$12$e80yqf0/iG7H")).toBe(true);
+    expect(isBcryptHash("PlaintextPassword123")).toBe(false);
   });
 });

@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireSuperAdmin } from "@/lib/apiAuth";
 import { getAdSettings, saveAdSettings, deleteAdSetting } from "@/lib/services/settings";
 import { fastRevalidateAfterSettings } from "@/lib/revalidation";
 
@@ -22,7 +22,7 @@ export async function GET() {
 
 // POST /api/v1/ad-settings — upsert ad settings
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/v1/ad-settings — reset settings
 export async function DELETE(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {

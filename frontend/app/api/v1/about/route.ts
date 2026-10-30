@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
+import { serverCache, TTL } from "@/lib/cache";
+
+const CACHE_KEY_ABOUT = "about:page:content";
 
 const DB_FILE_PATH = path.join(process.cwd(), "..", "backend", "prisma", "about_db.json");
 const ALT_DB_FILE_PATH = path.join(process.cwd(), "about_db.json");
@@ -32,14 +36,31 @@ function writeAboutData(data: any): boolean {
 }
 
 export async function GET() {
+  const cached = serverCache.get(CACHE_KEY_ABOUT);
+  if (cached) {
+    const response = NextResponse.json({ success: true, data: cached });
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return response;
+  }
+
   const data = readAboutData();
-  return NextResponse.json({ success: true, data: data || {} });
+  if (data) {
+    serverCache.set(CACHE_KEY_ABOUT, data, TTL.ABOUT);
+  }
+
+  const response = NextResponse.json({ success: true, data: data || {} });
+  response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+  return response;
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     writeAboutData(body);
+    serverCache.delete(CACHE_KEY_ABOUT);
     try {
       const { revalidatePath } = await import("next/cache");
       revalidatePath("/about");

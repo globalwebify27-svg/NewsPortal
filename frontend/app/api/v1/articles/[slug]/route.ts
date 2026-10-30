@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getArticleBySlug, deleteArticleByIdOrSlug } from "@/lib/services/articles";
 import { fastRevalidateAfterArticle } from "@/lib/revalidation";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 
 export async function GET(
   _request: NextRequest,
@@ -28,15 +29,21 @@ export async function GET(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   const { slug } = params;
   if (!slug) {
     return NextResponse.json({ success: false, message: "Slug/ID is required" }, { status: 400 });
   }
 
-  const success = await deleteArticleByIdOrSlug(slug);
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id") || undefined;
+
+  const success = await deleteArticleByIdOrSlug(slug, id);
 
   if (success) {
     fastRevalidateAfterArticle({ slug });

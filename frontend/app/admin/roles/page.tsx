@@ -22,7 +22,12 @@ import {
   Key,
   Copy,
   Eye,
-  EyeOff
+  EyeOff,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 
 interface Permission {
@@ -47,9 +52,10 @@ interface StaffUser {
   id: string;
   name: string;
   email: string;
-  password?: string;
   roleSlug: string;
   roleName: string;
+  isActive?: boolean;
+  mustChangePassword?: boolean;
   createdBy?: string;
   createdAt?: string;
 }
@@ -89,8 +95,35 @@ export default function RolesManagementPage() {
   } | null>(null);
 
   const [createdUsersList, setCreatedUsersList] = useState<StaffUser[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState<string>("");
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Reset Password Modal State
+  const [resetModalUser, setResetModalUser] = useState<StaffUser | null>(null);
+  const [resetModalPassword, setResetModalPassword] = useState<string>("");
+  const [showResetModalPassword, setShowResetModalPassword] = useState<boolean>(false);
+  const [isSubmittingReset, setIsSubmittingReset] = useState<boolean>(false);
+
+  // Staff Table Pagination State
+  const [staffPage, setStaffPage] = useState<number>(1);
+  const [staffPageSize, setStaffPageSize] = useState<number>(10);
+
+  // Synchronize dynamic userCount on role cards whenever staff users change
+  useEffect(() => {
+    if (roles.length > 0) {
+      setRoles((prev) =>
+        prev.map((r) => {
+          const count = createdUsersList.filter((u) => {
+            const s = (u.roleSlug || "").toLowerCase();
+            const n = (u.roleName || "").toLowerCase().replace(/\s+/g, "_");
+            return s === r.slug || n === r.slug;
+          }).length;
+          return { ...r, userCount: count };
+        })
+      );
+    }
+  }, [createdUsersList]);
 
   const togglePasswordVisibility = (userId: string) => {
     setVisiblePasswords((prev) => ({
@@ -105,6 +138,30 @@ export default function RolesManagementPage() {
     setCopiedId(userId);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  const filteredStaffUsers = createdUsersList.filter((u) => {
+    if (!userSearchQuery.trim()) return true;
+    const q = userSearchQuery.toLowerCase();
+    return (
+      u.name?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      u.roleName?.toLowerCase().includes(q) ||
+      u.roleSlug?.toLowerCase().includes(q)
+    );
+  });
+
+  // Reset page when search or page size changes
+  useEffect(() => {
+    setStaffPage(1);
+  }, [userSearchQuery, staffPageSize]);
+
+  // Staff Table Pagination calculations
+  const totalStaffItems = filteredStaffUsers.length;
+  const totalStaffPages = Math.max(1, Math.ceil(totalStaffItems / staffPageSize));
+  const activeStaffPage = Math.min(Math.max(1, staffPage), totalStaffPages);
+  const startStaffIndex = (activeStaffPage - 1) * staffPageSize;
+  const endStaffIndex = Math.min(startStaffIndex + staffPageSize, totalStaffItems);
+  const paginatedStaffUsers = filteredStaffUsers.slice(startStaffIndex, endStaffIndex);
 
   // Fetch Roles and Permissions from API or seed defaults fallback
   useEffect(() => {
@@ -272,94 +329,171 @@ export default function RolesManagementPage() {
   // Submit Create User Account (Enforcing Super Admin & Chief Editor creation rules)
   const handleCreateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
+    if (!newUserName.trim() || !newUserEmail.trim()) return;
 
-    // Creation rule check:
-    // Chief Editor can ONLY create Editors.
     let selectedSlug = targetUserRoleSlug;
     if (activeAdminRole === "chief_editor") {
       selectedSlug = "editor";
     }
 
     setIsCreatingUser(true);
+    setErrorMsg("");
 
     const roleObj = roles.find((r) => r.slug === selectedSlug) || roles.find((r) => r.slug === "editor");
     const roleDisplayName = roleObj?.name || (selectedSlug === "chief_editor" ? "Chief Editor" : "Editor");
-
-    // Increment role count
-    setRoles((prev) =>
-      prev.map((r) => (r.slug === selectedSlug ? { ...r, userCount: r.userCount + 1 } : r))
-    );
-
-    const newUserObj: StaffUser = {
-      id: "usr_" + Date.now(),
-      name: newUserName.trim(),
-      email: newUserEmail.trim().toLowerCase(),
-      password: newUserPassword,
-      roleSlug: selectedSlug,
-      roleName: roleDisplayName,
-      createdBy: activeAdminRole === "super_admin" ? "Super Admin" : "Chief Editor",
-      createdAt: new Date().toLocaleDateString()
-    };
 
     try {
       const res = await fetch("/api/v1/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUserObj)
+        body: JSON.stringify({
+          name: newUserName.trim(),
+          email: newUserEmail.trim().toLowerCase(),
+          password: newUserPassword.trim() || undefined,
+          roleSlug: selectedSlug,
+        })
       });
       const json = await res.json();
       if (json && json.success) {
+        const generatedPassword = json.temporaryPassword || newUserPassword.trim() || "GeneratedSecurePass";
+        setCreatedCredentialsCard({
+          name: newUserName.trim(),
+          email: newUserEmail.trim().toLowerCase(),
+          pass: generatedPassword,
+          roleName: roleDisplayName,
+        });
+
+        // Refresh staff list from MySQL
         const getRes = await fetch("/api/v1/staff");
         const getJson = await getRes.json();
         if (getJson && getJson.success && Array.isArray(getJson.data)) {
           setCreatedUsersList(getJson.data);
-        } else {
-          setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
         }
+
+        setSuccessMsg(`User Account for '${newUserName.trim()}' created in MySQL! Please copy the temporary credentials.`);
+        setTimeout(() => setSuccessMsg(""), 6000);
       } else {
-        setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
+        setErrorMsg(json.message || "Failed to create user account.");
+        setTimeout(() => setErrorMsg(""), 5000);
       }
-    } catch (e) {
-      setCreatedUsersList((prev) => [newUserObj, ...prev.filter((u) => u.email !== newUserObj.email)]);
+    } catch (e: any) {
+      setErrorMsg(e?.message || "Network error creating user account.");
+      setTimeout(() => setErrorMsg(""), 5000);
+    } finally {
+      setIsCreatingUser(false);
+      setShowCreateUserModal(false);
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("");
     }
+  };
 
-    setCreatedCredentialsCard({
-      name: newUserName.trim(),
-      email: newUserEmail.trim().toLowerCase(),
-      pass: newUserPassword,
-      roleName: roleDisplayName
-    });
+  const handleToggleUserStatus = async (user: StaffUser) => {
+    const newStatus = !user.isActive;
+    try {
+      const res = await fetch("/api/v1/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggle_status",
+          userId: user.id,
+          isActive: newStatus,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setCreatedUsersList((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, isActive: newStatus } : u))
+        );
+        setSuccessMsg(`Account for ${user.email} is now ${newStatus ? "Active" : "Suspended"}.`);
+        setTimeout(() => setSuccessMsg(""), 4000);
+      } else {
+        setErrorMsg(json.message || "Failed to update user status.");
+        setTimeout(() => setErrorMsg(""), 4000);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error toggling status.");
+      setTimeout(() => setErrorMsg(""), 4000);
+    }
+  };
 
-    setIsCreatingUser(false);
-    setShowCreateUserModal(false);
+  const handleOpenResetModal = (user: StaffUser) => {
+    setResetModalUser(user);
+    setResetModalPassword("");
+    setShowResetModalPassword(false);
+  };
 
-    // Reset form
-    setNewUserName("");
-    setNewUserEmail("");
-    setNewUserPassword("");
+  const handleGenerateRandomPassForModal = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
+    let pass = "";
+    for (let i = 0; i < 14; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setResetModalPassword(pass);
+    setShowResetModalPassword(true);
+  };
 
-    setSuccessMsg(`User Account for '${newUserName.trim()}' (${roleDisplayName}) saved to database! Credentials active for login.`);
-    setTimeout(() => setSuccessMsg(""), 5000);
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModalUser) return;
+    setIsSubmittingReset(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/v1/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset_password",
+          userId: resetModalUser.id,
+          newPassword: resetModalPassword.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json && json.success) {
+        const finalPass = json.temporaryPassword || resetModalPassword || "UpdatedSecurely";
+        setCreatedCredentialsCard({
+          name: resetModalUser.name,
+          email: resetModalUser.email,
+          pass: finalPass,
+          roleName: resetModalUser.roleName,
+        });
+        setSuccessMsg(`Password successfully reset for ${resetModalUser.email}! Credentials generated below.`);
+        setResetModalUser(null);
+        setTimeout(() => setSuccessMsg(""), 6000);
+      } else {
+        setErrorMsg(json.message || "Failed to reset password.");
+        setTimeout(() => setErrorMsg(""), 4000);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Error generating new password.");
+      setTimeout(() => setErrorMsg(""), 4000);
+    } finally {
+      setIsSubmittingReset(false);
+    }
   };
 
   const handleDeleteUserAccount = async (emailToDelete: string) => {
+    const confirmDel = window.confirm(`Are you sure you want to revoke access and delete account for ${emailToDelete}?`);
+    if (!confirmDel) return;
+
     try {
-      await fetch(`/api/v1/staff?email=${encodeURIComponent(emailToDelete)}`, {
+      const res = await fetch(`/api/v1/staff?email=${encodeURIComponent(emailToDelete)}`, {
         method: "DELETE"
       });
-      const getRes = await fetch("/api/v1/staff");
-      const getJson = await getRes.json();
-      if (getJson && getJson.success && Array.isArray(getJson.data)) {
-        setCreatedUsersList(getJson.data);
-      } else {
+      const json = await res.json();
+      if (json.success) {
         setCreatedUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== emailToDelete.toLowerCase()));
+        setSuccessMsg(`Revoked login credentials for ${emailToDelete}.`);
+        setTimeout(() => setSuccessMsg(""), 4000);
+      } else {
+        setErrorMsg(json.message || "Failed to delete staff account.");
+        setTimeout(() => setErrorMsg(""), 4000);
       }
-    } catch (e) {
-      setCreatedUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== emailToDelete.toLowerCase()));
+    } catch (e: any) {
+      setErrorMsg(e?.message || "Network error deleting staff account.");
+      setTimeout(() => setErrorMsg(""), 4000);
     }
-    setSuccessMsg(`Revoked login credentials for ${emailToDelete}.`);
-    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   if (loading) {
@@ -508,127 +642,36 @@ export default function RolesManagementPage() {
               <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#f43f5e", marginTop: "2px", letterSpacing: "0.05em" }}>{createdCredentialsCard.pass}</div>
             </div>
           </div>
-          <p style={{ margin: "12px 0 0 0", fontSize: "0.78rem", color: "#94a3b8" }}>
-            💡 Provide these credentials to the staff member. They can log in directly at <strong>/admin</strong>.
-          </p>
-        </div>
-      )}
-
-      {/* Active Registered Staff Accounts Table */}
-      {createdUsersList.length > 0 && (
-        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Users size={20} style={{ color: "#2563eb" }} />
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
-                Created Staff Accounts & Login Credentials ({createdUsersList.length})
-              </h3>
-            </div>
-            <span style={{ fontSize: "0.78rem", background: "#eff6ff", color: "#2563eb", padding: "4px 10px", borderRadius: "6px", fontWeight: 700 }}>
-              Active Admin Database Logins
-            </span>
-          </div>
-
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
-              <thead>
-                <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0", textAlign: "left" }}>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Staff Member</th>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Login Email</th>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Password</th>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Assigned Role</th>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Created By</th>
-                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {createdUsersList.map((user) => (
-                  <tr key={user.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "12px 14px", fontWeight: 700, color: "#0f172a" }}>{user.name}</td>
-                    <td style={{ padding: "12px 14px", fontWeight: 700 }}>
-                      <a href={`mailto:${user.email}`} style={{ color: "#2563eb", textDecoration: "none" }} onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")} onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}>
-                        {user.email}
-                      </a>
-                    </td>
-                    <td style={{ padding: "12px 14px", verticalAlign: "middle" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontFamily: "monospace",
-                            fontSize: "0.88rem",
-                            color: visiblePasswords[user.id] ? (user.password ? "#0f172a" : "#94a3b8") : "#64748b",
-                            letterSpacing: visiblePasswords[user.id] ? "0.02em" : "0.15em",
-                            background: visiblePasswords[user.id] && user.password ? "#f1f5f9" : "transparent",
-                            padding: visiblePasswords[user.id] && user.password ? "3px 8px" : "0",
-                            borderRadius: "6px",
-                            fontStyle: visiblePasswords[user.id] && !user.password ? "italic" : "normal"
-                          }}
-                        >
-                          {visiblePasswords[user.id]
-                            ? user.password || "Not set"
-                            : "••••••••"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => togglePasswordVisibility(user.id)}
-                          title={visiblePasswords[user.id] ? "Hide password" : "Show password"}
-                          style={{
-                            background: visiblePasswords[user.id] ? "#eff6ff" : "#f8fafc",
-                            border: "1px solid " + (visiblePasswords[user.id] ? "#bfdbfe" : "#e2e8f0"),
-                            color: visiblePasswords[user.id] ? "#2563eb" : "#64748b",
-                            borderRadius: "6px",
-                            padding: "4px 6px",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "all 0.15s ease"
-                          }}
-                        >
-                          {visiblePasswords[user.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        {visiblePasswords[user.id] && user.password && (
-                          <button
-                            type="button"
-                            onClick={() => handleCopyPassword(user.id, user.password!)}
-                            title={copiedId === user.id ? "Copied!" : "Copy password"}
-                            style={{
-                              background: copiedId === user.id ? "#dcfce7" : "#f8fafc",
-                              border: "1px solid " + (copiedId === user.id ? "#86efac" : "#e2e8f0"),
-                              color: copiedId === user.id ? "#16a34a" : "#64748b",
-                              borderRadius: "6px",
-                              padding: "4px 6px",
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              transition: "all 0.15s ease"
-                            }}
-                          >
-                            {copiedId === user.id ? <Check size={14} /> : <Copy size={14} />}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#dbeafe" : "#dcfce7", color: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#1e40af" : "#166534" }}>
-                        {user.roleName === "ADMIN" ? "Chief Editor" : (user.roleName === "SUPERADMIN" ? "Super Admin" : user.roleName)}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 14px", fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>{user.createdBy || "Admin"}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <button
-                        onClick={() => handleDeleteUserAccount(user.email)}
-                        style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "6px 12px", borderRadius: "8px", fontWeight: 700, fontSize: "0.76rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                      >
-                        <Trash2 size={14} /> Revoke Access
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "14px", flexWrap: "wrap", gap: "10px" }}>
+            <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>
+              💡 Provide these credentials to the staff member. This temporary password will only be displayed once.
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Global Awaaz Admin Portal\nName: ${createdCredentialsCard.name}\nEmail: ${createdCredentialsCard.email}\nTemporary Password: ${createdCredentialsCard.pass}\nRole: ${createdCredentialsCard.roleName}\nLogin URL: /admin`
+                );
+                setCopiedId("all_credentials");
+                setTimeout(() => setCopiedId(null), 2500);
+              }}
+              style={{
+                background: copiedId === "all_credentials" ? "#10b981" : "#2563eb",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "7px 14px",
+                fontSize: "0.8rem",
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "background 0.2s ease"
+              }}
+            >
+              {copiedId === "all_credentials" ? <Check size={14} /> : <Copy size={14} />}
+              {copiedId === "all_credentials" ? "Copied Credentials!" : "Copy Credentials"}
+            </button>
           </div>
         </div>
       )}
@@ -709,6 +752,350 @@ export default function RolesManagementPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Active Registered Staff Accounts Table */}
+      <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Users size={22} style={{ color: "#2563eb" }} />
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
+                  Created Staff Accounts &amp; Login Credentials ({createdUsersList.length})
+                </h3>
+                <span style={{ fontSize: "0.78rem", background: "#eff6ff", color: "#2563eb", padding: "3px 10px", borderRadius: "9999px", fontWeight: 800 }}>
+                  Active Admin Database Logins
+                </span>
+              </div>
+              <p style={{ margin: "2px 0 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+                Active editorial user accounts and database logins with Role-Based Access Control
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+              <input
+                type="text"
+                placeholder="Search staff user..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                style={{ padding: "6px 10px 6px 30px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", outline: "none" }}
+              />
+            </div>
+            {(activeAdminRole === "super_admin" || activeAdminRole === "chief_editor") && (
+              <button
+                onClick={() => setShowCreateUserModal(true)}
+                style={{ background: "#2563eb", color: "#ffffff", border: "none", padding: "7px 14px", borderRadius: "8px", fontWeight: 800, fontSize: "0.8rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                <UserPlus size={14} /> Add User Account
+              </button>
+            )}
+          </div>
+        </div>
+
+        {filteredStaffUsers.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 20px", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+            <Users size={32} style={{ color: "#94a3b8", margin: "0 auto 8px" }} />
+            <h4 style={{ margin: "0 0 4px", fontSize: "0.95rem", fontWeight: 800, color: "#334155" }}>
+              {userSearchQuery ? "No matching staff users found" : "No RBAC Staff Accounts Registered Yet"}
+            </h4>
+            <p style={{ margin: "0 0 16px", fontSize: "0.82rem", color: "#64748b" }}>
+              {userSearchQuery ? "Try clearing your search query." : "Click below to create staff user accounts and assign roles."}
+            </p>
+            {!userSearchQuery && (activeAdminRole === "super_admin" || activeAdminRole === "chief_editor") && (
+              <button
+                onClick={() => setShowCreateUserModal(true)}
+                style={{ background: "#e50914", color: "#ffffff", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 800, fontSize: "0.84rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                <Plus size={15} /> Create User Account
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0", textAlign: "left" }}>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Staff Member</th>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Login Email</th>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Password</th>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Assigned Role</th>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Status</th>
+                  <th style={{ padding: "12px 14px", fontWeight: 800, color: "#475569" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedStaffUsers.map((user) => {
+                  const isUserActive = user.isActive !== false;
+                  return (
+                    <tr key={user.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px 14px", fontWeight: 700, color: "#0f172a" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: (user.roleSlug === "super_admin" || user.roleName === "Super Admin" || user.roleName === "SUPERADMIN") ? "#fee2e2" : (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#eff6ff" : "#ecfdf5", color: (user.roleSlug === "super_admin" || user.roleName === "Super Admin" || user.roleName === "SUPERADMIN") ? "#dc2626" : (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#2563eb" : "#059669", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "0.8rem" }}>
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span>{user.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 14px", fontWeight: 700 }}>
+                        <a href={`mailto:${user.email}`} style={{ color: "#2563eb", textDecoration: "none" }} onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")} onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}>
+                          {user.email}
+                        </a>
+                      </td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontFamily: "monospace", letterSpacing: "2px", color: "#64748b", fontSize: "0.88rem", fontWeight: 700 }}>
+                            ••••••••
+                          </span>
+                          <button
+                            onClick={() => handleOpenResetModal(user)}
+                            title="Reset password for this account"
+                            style={{
+                              background: "#eff6ff",
+                              color: "#2563eb",
+                              border: "1px solid #bfdbfe",
+                              padding: "4px 9px",
+                              borderRadius: "7px",
+                              fontWeight: 700,
+                              fontSize: "0.75rem",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <Key size={12} /> Reset
+                          </button>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 800, padding: "3px 8px", borderRadius: "6px", background: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#dbeafe" : (user.roleSlug === "super_admin" || user.roleName === "Super Admin" || user.roleName === "SUPERADMIN") ? "#fee2e2" : "#dcfce7", color: (user.roleSlug === "chief_editor" || user.roleName === "Chief Editor" || user.roleName === "ADMIN") ? "#1e40af" : (user.roleSlug === "super_admin" || user.roleName === "Super Admin" || user.roleName === "SUPERADMIN") ? "#dc2626" : "#166534" }}>
+                          {user.roleName === "ADMIN" ? "Chief Editor" : (user.roleName === "SUPERADMIN" ? "Super Admin" : user.roleName)}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 14px", verticalAlign: "middle" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{
+                            fontSize: "0.74rem",
+                            fontWeight: 800,
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            background: isUserActive ? "#dcfce7" : "#fee2e2",
+                            color: isUserActive ? "#15803d" : "#b91c1c",
+                          }}>
+                            {isUserActive ? "Active" : "Suspended"}
+                          </span>
+                          {user.roleSlug !== "super_admin" && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleUserStatus(user)}
+                              title={isUserActive ? "Suspend this account" : "Activate this account"}
+                              style={{
+                                background: "#f8fafc",
+                                border: "1px solid #cbd5e1",
+                                color: "#475569",
+                                borderRadius: "6px",
+                                padding: "2px 6px",
+                                fontSize: "0.72rem",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {isUserActive ? "Suspend" : "Activate"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <button
+                            onClick={() => handleOpenResetModal(user)}
+                            title="Reset password"
+                            style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", padding: "6px 10px", borderRadius: "8px", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                          >
+                            <Key size={13} /> Reset Pass
+                          </button>
+                          {user.roleSlug !== "super_admin" && (
+                            <button
+                              onClick={() => handleDeleteUserAccount(user.email)}
+                              style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "6px 10px", borderRadius: "8px", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                            >
+                              <Trash2 size={13} /> Revoke Access
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Staff Table Pagination Bar */}
+          {totalStaffItems > 0 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+                padding: "14px 20px",
+                borderTop: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                borderRadius: "0 0 16px 16px"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", fontSize: "0.84rem", color: "#64748b" }}>
+                <span>
+                  Showing <strong style={{ color: "#0f172a" }}>{startStaffIndex + 1}</strong> to{" "}
+                  <strong style={{ color: "#0f172a" }}>{endStaffIndex}</strong> of{" "}
+                  <strong style={{ color: "#0f172a" }}>{totalStaffItems}</strong> staff accounts
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Rows per page:</span>
+                  <select
+                    value={staffPageSize}
+                    onChange={(e) => {
+                      setStaffPageSize(Number(e.target.value));
+                      setStaffPage(1);
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      background: "#ffffff",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              {totalStaffPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <button
+                    onClick={() => setStaffPage(1)}
+                    disabled={activeStaffPage === 1}
+                    title="First Page"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activeStaffPage === 1 ? "#cbd5e1" : "#475569",
+                      cursor: activeStaffPage === 1 ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronsLeft size={15} />
+                  </button>
+
+                  <button
+                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                    disabled={activeStaffPage === 1}
+                    title="Previous Page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      height: "30px",
+                      padding: "0 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activeStaffPage === 1 ? "#cbd5e1" : "#475569",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      cursor: activeStaffPage === 1 ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronLeft size={14} /> Prev
+                  </button>
+
+                  {Array.from({ length: totalStaffPages }, (_, i) => i + 1).map((pg) => (
+                    <button
+                      key={pg}
+                      onClick={() => setStaffPage(pg)}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "6px",
+                        border: pg === activeStaffPage ? "1px solid #e50914" : "1px solid #e2e8f0",
+                        background: pg === activeStaffPage ? "#e50914" : "#ffffff",
+                        color: pg === activeStaffPage ? "#ffffff" : "#334155",
+                        fontSize: "0.78rem",
+                        fontWeight: pg === activeStaffPage ? 800 : 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {pg}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setStaffPage((p) => Math.min(totalStaffPages, p + 1))}
+                    disabled={activeStaffPage === totalStaffPages}
+                    title="Next Page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      height: "30px",
+                      padding: "0 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activeStaffPage === totalStaffPages ? "#cbd5e1" : "#475569",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      cursor: activeStaffPage === totalStaffPages ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    Next <ChevronRight size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => setStaffPage(totalStaffPages)}
+                    disabled={activeStaffPage === totalStaffPages}
+                    title="Last Page"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activeStaffPage === totalStaffPages ? "#cbd5e1" : "#475569",
+                      cursor: activeStaffPage === totalStaffPages ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronsRight size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
       </div>
 
       {/* Permission Matrix Grid Table */}
@@ -875,15 +1262,14 @@ export default function RolesManagementPage() {
 
               <div>
                 <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#475569", marginBottom: "6px", textTransform: "uppercase" }}>
-                  Login Security Password
+                  Temporary Initial Password (Optional)
                 </label>
                 <div style={{ position: "relative" }}>
                   <input
                     type={showNewPassword ? "text" : "password"}
-                    placeholder="Set temporary initial password..."
+                    placeholder="Leave blank to auto-generate secure temporary password..."
                     value={newUserPassword}
                     onChange={(e) => setNewUserPassword(e.target.value)}
-                    required
                     style={{ width: "100%", padding: "12px 44px 12px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: "0.9rem", fontWeight: 600, outline: "none" }}
                   />
                   <button
@@ -894,6 +1280,9 @@ export default function RolesManagementPage() {
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <span style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                  🔐 If blank, a cryptographically secure 16-character temporary password will be auto-generated.
+                </span>
               </div>
 
               {/* Role Selection according to rules */}
@@ -1026,6 +1415,95 @@ export default function RolesManagementPage() {
                   style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#e50914", color: "#ffffff", fontWeight: 800, fontSize: "0.86rem", cursor: "pointer" }}
                 >
                   {isSubmittingRole ? "Creating Role..." : "Create Custom Role"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Reset Staff Password */}
+      {resetModalUser && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(6px)", zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <div style={{ background: "#ffffff", borderRadius: "20px", width: "100%", maxWidth: "480px", padding: "30px", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Key size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 900, color: "#0f172a", margin: 0 }}>
+                    Reset Staff Password
+                  </h3>
+                  <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+                    {resetModalUser.name} &bull; <strong style={{ color: "#2563eb" }}>{resetModalUser.email}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetModalUser(null)}
+                style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmResetPassword} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase" }}>
+                    New Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomPassForModal}
+                    style={{ background: "none", border: "none", color: "#2563eb", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <Sparkles size={13} /> Auto-Generate
+                  </button>
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showResetModalPassword ? "text" : "password"}
+                    placeholder="Enter custom password or leave blank to auto-generate..."
+                    value={resetModalPassword}
+                    onChange={(e) => setResetModalPassword(e.target.value)}
+                    style={{ width: "100%", padding: "12px 44px 12px 14px", borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: "0.9rem", fontWeight: 600, outline: "none", fontFamily: resetModalPassword ? "monospace" : "inherit" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModalPassword(!showResetModalPassword)}
+                    style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer" }}
+                  >
+                    {showResetModalPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <span style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                  🔐 If blank, a cryptographically secure 16-character temporary password will be auto-generated.
+                </span>
+              </div>
+
+              <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "12px", fontSize: "0.78rem", color: "#475569", lineHeight: 1.5 }}>
+                ℹ️ <strong>Security policy:</strong> This will update the user&apos;s password in the database and require them to use this new password on their next login.
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setResetModalUser(null)}
+                  style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid #cbd5e1", background: "#ffffff", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", color: "#475569" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReset}
+                  style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "#2563eb", color: "#ffffff", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <Key size={15} />
+                  {isSubmittingReset ? "Resetting..." : "Save & Apply New Password"}
                 </button>
               </div>
             </form>

@@ -5,11 +5,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = params;
 

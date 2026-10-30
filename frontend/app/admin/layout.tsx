@@ -87,28 +87,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    async function initSession() {
+    function initSession() {
       try {
         const isAuth = sessionStorage.getItem("ga_admin_logged_in") === "true";
         const user = sessionStorage.getItem("ga_admin_user");
         let savedActual = (sessionStorage.getItem("ga_actual_role") as AdminRoleSlug);
         let savedRole = (sessionStorage.getItem("ga_admin_role") as AdminRoleSlug);
-
-        // Auto-resolve role from central DB API for staff accounts
-        if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
-          try {
-            const res = await fetch("/api/v1/staff");
-            const json = await res.json();
-            const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-            const found = storedUsers.find((u: any) => u.name === user || u.email === user);
-            if (found && found.roleSlug) {
-              savedActual = found.roleSlug as AdminRoleSlug;
-              savedRole = found.roleSlug as AdminRoleSlug;
-              sessionStorage.setItem("ga_actual_role", found.roleSlug);
-              sessionStorage.setItem("ga_admin_role", found.roleSlug);
-            }
-          } catch (e) { }
-        }
 
         if (!savedActual) savedActual = "super_admin";
         if (!savedRole) savedRole = savedActual;
@@ -122,6 +106,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } finally {
         setIsCheckingSession(false);
       }
+
+      // Non-blocking background sync for staff accounts
+      try {
+        const user = sessionStorage.getItem("ga_admin_user");
+        if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          fetch("/api/v1/staff", { signal: controller.signal })
+            .then((res) => res.json())
+            .then((json) => {
+              clearTimeout(timeoutId);
+              const storedUsers = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+              const found = storedUsers.find((u: any) => u.name === user || u.email === user);
+              if (found && found.roleSlug) {
+                sessionStorage.setItem("ga_actual_role", found.roleSlug);
+                sessionStorage.setItem("ga_admin_role", found.roleSlug);
+                setActualRole(found.roleSlug as AdminRoleSlug);
+                setAdminRole(found.roleSlug as AdminRoleSlug);
+              }
+            })
+            .catch(() => {});
+        }
+      } catch (_) {}
     }
     initSession();
   }, []);

@@ -16,10 +16,13 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state") || undefined;
   const district = searchParams.get("district") || undefined;
   const admin = searchParams.get("admin") === "true" || !!role || !!status;
-  const limit = admin ? Math.min(1000, limitRaw) : Math.min(100, limitRaw); // cap to prevent DoS
+  const limit = admin ? Math.min(10000, limitRaw) : Math.min(100, limitRaw); // cap to prevent DoS
 
   // Admin Request (queue, drafts, pending reviews, approvals, rejections)
   if (admin) {
+    const auth = await requireAdminAuth(request);
+    if (!auth.ok) return auth.response;
+
     const result = await getAllArticlesForAdmin({ page, limit, category, tag, search, status, role, authorId });
     return NextResponse.json({
       success: true,
@@ -95,6 +98,32 @@ export async function POST(request: NextRequest) {
       success: true,
       data: created,
       message: "Article saved to global database successfully",
+    });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, message: err?.message || "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const slug = searchParams.get("slug") || undefined;
+    const id = searchParams.get("id") || undefined;
+    const target = slug || id;
+
+    if (!target) {
+      return NextResponse.json({ success: false, message: "Slug or ID is required" }, { status: 400 });
+    }
+
+    const { deleteArticleByIdOrSlug } = await import("@/lib/services/articles");
+    const success = await deleteArticleByIdOrSlug(target, id !== target ? id : undefined);
+    if (success) {
+      fastRevalidateAfterArticle({ slug: target });
+    }
+
+    return NextResponse.json({
+      success,
+      message: success ? "Article deleted successfully" : "Failed to delete article",
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err?.message || "Internal server error" }, { status: 500 });

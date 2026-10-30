@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 import { fastRevalidateAfterVideos } from "@/lib/revalidation";
 import { serverCache, TTL } from "@/lib/cache";
 
@@ -101,7 +101,7 @@ export async function GET() {
 
 // POST /api/v1/videos — Save custom videos list or live TV configuration to central DB
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireChiefOrAbove(request);
   if (!auth.ok) return auth.response;
 
   try {

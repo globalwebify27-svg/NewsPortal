@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 import { fastRevalidateAfterEpaper } from "@/lib/revalidation";
+import { serverCache, TTL } from "@/lib/cache";
+
+const CACHE_KEY_EPAPER = "epaper:editions:all";
 
 const DB_FILE_PATH = path.join(process.cwd(), "..", "backend", "prisma", "epaper_db.json");
 const ALT_DB_FILE_PATH = path.join(process.cwd(), "epaper_db.json");
@@ -56,17 +59,31 @@ function writeEpaperData(data: unknown): boolean {
 }
 
 export async function GET() {
+  const cached = serverCache.get<EPaperEdition[]>(CACHE_KEY_EPAPER);
+  if (cached) {
+    const res = NextResponse.json({ success: true, data: cached });
+    res.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    return res;
+  }
+
   const data = readEpaperData();
-  return NextResponse.json({ success: true, data: data || [] });
+  if (data && data.length > 0) {
+    serverCache.set(CACHE_KEY_EPAPER, data, TTL.SETTINGS);
+  }
+
+  const res = NextResponse.json({ success: true, data: data || [] });
+  res.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+  return res;
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireChiefOrAbove(request);
   if (!auth.ok) return auth.response;
 
   try {
     const body = await request.json();
     writeEpaperData(body);
+    serverCache.delete(CACHE_KEY_EPAPER);
     fastRevalidateAfterEpaper();
     return NextResponse.json({ success: true, data: body, message: "e-Paper data saved to database" });
   } catch (err: unknown) {

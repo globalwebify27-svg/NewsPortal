@@ -26,6 +26,9 @@ import {
   Check,
   Globe,
   ChevronRight,
+  ChevronLeft,
+  ChevronsRight,
+  ChevronsLeft,
   BookOpen
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/config";
@@ -149,6 +152,11 @@ function AdminArticlesContent() {
   const [languageFilter, setLanguageFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
   const [toastMessage, setToastMessage] = useState("");
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Sync filter when URL search params change
   useEffect(() => {
@@ -279,6 +287,8 @@ function AdminArticlesContent() {
       try {
         let rawRole = sessionStorage.getItem("ga_admin_role") || "";
         const user = sessionStorage.getItem("ga_admin_user") || "Global Admin";
+        if (rawRole) setAdminRole(rawRole.toLowerCase());
+        if (user) setAdminUserName(user);
 
         try {
           const res = await fetch("/api/v1/staff");
@@ -288,14 +298,10 @@ function AdminArticlesContent() {
           if (user && user !== "Global Awaaz Admin" && user !== "Chief Editor" && user !== "Staff Editor") {
             const found = storedUsers.find((u: any) => u.name === user || u.email === user);
             if (found && found.roleSlug) {
-              rawRole = found.roleSlug;
+              setAdminRole(found.roleSlug.toLowerCase());
             }
           }
         } catch (e) {}
-
-        const role = (rawRole || "super_admin").toLowerCase();
-        setAdminRole(role);
-        setAdminUserName(user);
       } catch (e) {}
     }
 
@@ -437,14 +443,14 @@ function AdminArticlesContent() {
       try {
         setLoading(true);
         const filter = statusFilter;
-        let url = "/api/v1/articles?admin=true&limit=200";
+        let url = "/api/v1/articles?admin=true&limit=10000";
         if (filter && filter !== "ALL") {
           url += `&status=${filter}`;
         }
 
         const promises: Promise<Response>[] = [fetch(url, { cache: "no-store" })];
         if (filter === "ALL") {
-          promises.push(fetch("/api/v1/articles?admin=true&status=PENDING_REVIEW&limit=50", { cache: "no-store" }));
+          promises.push(fetch("/api/v1/articles?admin=true&status=PENDING_REVIEW&limit=1000", { cache: "no-store" }));
         }
 
         const responses = await Promise.all(promises);
@@ -782,7 +788,13 @@ function AdminArticlesContent() {
       showToast(`Article "${title}" deleted.`);
 
       try {
-        await fetch(`${API_ENDPOINTS.articles}/${slug}`, { method: "DELETE" });
+        const target = encodeURIComponent(slug || id);
+        const idParam = encodeURIComponent(id || slug);
+        const res = await fetch(`/api/v1/articles/${target}?id=${idParam}`, { method: "DELETE" });
+        const json = await res.json();
+        if (json?.success) {
+          showToast(`✅ "${title}" permanently removed from database.`);
+        }
       } catch (err) {
         console.warn("DB delete failed:", err);
       }
@@ -811,6 +823,52 @@ function AdminArticlesContent() {
     const matchesDate = !dateFilter || (art.publishedAt ? art.publishedAt.slice(0, 10) === dateFilter : false);
     return matchesSearch && matchesStatus && matchesLang && matchesDate;
   });
+
+  // Reset pagination when search query or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, dateFilter, languageFilter, pageSize]);
+
+  // Pagination Calculations
+  const totalItems = filteredArticles.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const activePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (activePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedArticles = filteredArticles.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    const target = Math.min(Math.max(1, newPage), totalPages);
+    setCurrentPage(target);
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (activePage <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push("...");
+      pages.push(totalPages);
+    } else if (activePage >= totalPages - 3) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      pages.push("...");
+      pages.push(activePage - 1);
+      pages.push(activePage);
+      pages.push(activePage + 1);
+      pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const handleToggleHero = (artId: string) => {
     const updatedList = articles.map((a) => ({
@@ -887,7 +945,7 @@ function AdminArticlesContent() {
       </div>
 
       {/* Live Articles Table */}
-      <div className="admin-table-container">
+      <div className="admin-table-container" ref={tableContainerRef}>
         <div className="admin-table-header">
           <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>
             {statusFilter === "PENDING_REVIEW" ? (
@@ -1002,7 +1060,7 @@ function AdminArticlesContent() {
                 </tr>
               </thead>
               <tbody>
-                {filteredArticles.map((art) => (
+                {paginatedArticles.map((art) => (
                   <tr key={art.id}>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -1208,6 +1266,203 @@ function AdminArticlesContent() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Bar */}
+        {!loading && filteredArticles.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "14px",
+              padding: "16px 24px",
+              borderTop: "1px solid #e2e8f0",
+              background: "#fafbfc",
+            }}
+          >
+            {/* Left Info: Range & Page size */}
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", fontSize: "0.85rem", color: "#64748b" }}>
+              <span>
+                Showing <strong style={{ color: "#0f172a" }}>{totalItems === 0 ? 0 : startIndex + 1}</strong> to{" "}
+                <strong style={{ color: "#0f172a" }}>{endIndex}</strong> of{" "}
+                <strong style={{ color: "#0f172a" }}>{totalItems}</strong> news stories
+              </span>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "0.82rem", color: "#64748b" }}>Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    background: "#ffffff",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Right Controls: Page Buttons */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                {/* First Page */}
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={activePage === 1}
+                  title="First Page"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "6px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: activePage === 1 ? "#cbd5e1" : "#475569",
+                    cursor: activePage === 1 ? "not-allowed" : "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+
+                {/* Prev Page */}
+                <button
+                  onClick={() => handlePageChange(activePage - 1)}
+                  disabled={activePage === 1}
+                  title="Previous Page"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "32px",
+                    padding: "0 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: activePage === 1 ? "#cbd5e1" : "#475569",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    cursor: activePage === 1 ? "not-allowed" : "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <ChevronLeft size={15} /> Prev
+                </button>
+
+                {/* Page Numbers */}
+                {getPageNumbers().map((p, idx) => {
+                  if (p === "...") {
+                    return (
+                      <span
+                        key={`dots-${idx}`}
+                        style={{
+                          width: "28px",
+                          height: "32px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#94a3b8",
+                          fontWeight: 800,
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNum = p as number;
+                  const isActive = pageNum === activePage;
+
+                  return (
+                    <button
+                      key={`page-${pageNum}`}
+                      onClick={() => handlePageChange(pageNum)}
+                      style={{
+                        minWidth: "32px",
+                        height: "32px",
+                        padding: "0 8px",
+                        borderRadius: "6px",
+                        border: isActive ? "1px solid #e50914" : "1px solid #e2e8f0",
+                        background: isActive ? "#e50914" : "#ffffff",
+                        color: isActive ? "#ffffff" : "#334155",
+                        fontWeight: isActive ? 800 : 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        boxShadow: isActive ? "0 2px 8px rgba(229,9,20,0.3)" : "none",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                {/* Next Page */}
+                <button
+                  onClick={() => handlePageChange(activePage + 1)}
+                  disabled={activePage === totalPages}
+                  title="Next Page"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "32px",
+                    padding: "0 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: activePage === totalPages ? "#cbd5e1" : "#475569",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    cursor: activePage === totalPages ? "not-allowed" : "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Next <ChevronRight size={15} />
+                </button>
+
+                {/* Last Page */}
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={activePage === totalPages}
+                  title="Last Page"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "6px",
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: activePage === totalPages ? "#cbd5e1" : "#475569",
+                    cursor: activePage === totalPages ? "not-allowed" : "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

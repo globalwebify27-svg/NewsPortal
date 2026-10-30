@@ -5,10 +5,14 @@ import prisma from "@/lib/prisma";
 import { MediaType } from "@prisma/client";
 import sharp from "sharp";
 import { cleanMediaUrl } from "@/lib/mediaUpload";
+import { requireAdminAuth } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminAuth(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

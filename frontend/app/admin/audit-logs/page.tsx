@@ -10,6 +10,9 @@ import {
   Clock,
   Globe,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   Eye,
   X,
   FileCode
@@ -38,6 +41,10 @@ export default function AuditLogsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterAction, setFilterAction] = useState<string>("ALL");
   const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
 
   useEffect(() => {
     async function loadAuditLogs() {
@@ -125,6 +132,19 @@ export default function AuditLogsPage() {
 
     return matchesSearch && matchesAction;
   });
+
+  // Reset page when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterAction, pageSize]);
+
+  // Pagination calculations
+  const totalItems = filteredLogs.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const activePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (activePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -230,7 +250,7 @@ export default function AuditLogsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
+                paginatedLogs.map((log) => (
                   <tr key={log.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "14px 20px", fontSize: "0.84rem", fontWeight: 600, color: "#475569" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -307,6 +327,165 @@ export default function AuditLogsPage() {
               )}
             </tbody>
           </table>
+
+          {/* Audit Logs Pagination Bar */}
+          {totalItems > 0 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+                padding: "14px 20px",
+                borderTop: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                borderRadius: "0 0 16px 16px"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap", fontSize: "0.84rem", color: "#64748b" }}>
+                <span>
+                  Showing <strong style={{ color: "#0f172a" }}>{startIndex + 1}</strong> to{" "}
+                  <strong style={{ color: "#0f172a" }}>{endIndex}</strong> of{" "}
+                  <strong style={{ color: "#0f172a" }}>{totalItems}</strong> audit events
+                </span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Rows per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      background: "#ffffff",
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      color: "#0f172a",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              {totalPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={activePage === 1}
+                    title="First Page"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activePage === 1 ? "#cbd5e1" : "#475569",
+                      cursor: activePage === 1 ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronsLeft size={15} />
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={activePage === 1}
+                    title="Previous Page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      height: "30px",
+                      padding: "0 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activePage === 1 ? "#cbd5e1" : "#475569",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      cursor: activePage === 1 ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronLeft size={14} /> Prev
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                    <button
+                      key={pg}
+                      onClick={() => setCurrentPage(pg)}
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "6px",
+                        border: pg === activePage ? "1px solid #0284c7" : "1px solid #e2e8f0",
+                        background: pg === activePage ? "#0284c7" : "#ffffff",
+                        color: pg === activePage ? "#ffffff" : "#334155",
+                        fontSize: "0.78rem",
+                        fontWeight: pg === activePage ? 800 : 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {pg}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={activePage === totalPages}
+                    title="Next Page"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      height: "30px",
+                      padding: "0 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activePage === totalPages ? "#cbd5e1" : "#475569",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      cursor: activePage === totalPages ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    Next <ChevronRight size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={activePage === totalPages}
+                    title="Last Page"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      color: activePage === totalPages ? "#cbd5e1" : "#475569",
+                      cursor: activePage === totalPages ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    <ChevronsRight size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

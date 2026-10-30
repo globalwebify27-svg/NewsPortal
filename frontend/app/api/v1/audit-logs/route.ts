@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireSuperAdmin } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/v1/audit-logs -> Fetch real audit logs from database
+// GET /api/v1/audit-logs -> Fetch real audit logs from database (Super Admin only)
 export async function GET(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireSuperAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {

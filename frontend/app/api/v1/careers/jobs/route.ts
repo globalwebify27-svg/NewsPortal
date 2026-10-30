@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
+import { serverCache, TTL } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
+
+const CACHE_KEY_JOBS = "jobs:public:list";
 
 function getJobModel() {
   return (prisma as any).job || (prisma as any).Job;
@@ -11,6 +15,15 @@ function getJobModel() {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const admin = searchParams.get("admin") === "true";
+
+  if (!admin) {
+    const cached = serverCache.get<any[]>(CACHE_KEY_JOBS);
+    if (cached) {
+      const response = NextResponse.json({ success: true, data: cached });
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+      return response;
+    }
+  }
 
   try {
     const dbJob = getJobModel();
@@ -26,7 +39,9 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: { createdAt: "desc" },
         include: {
-          applications: admin ? true : false,
+          applications: admin
+            ? { select: { id: true, name: true, email: true, status: true, createdAt: true } }
+            : false,
         },
       });
     } else {
@@ -36,18 +51,35 @@ export async function GET(request: NextRequest) {
       jobs = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
     }
 
-    return NextResponse.json({
+    if (!admin) {
+      serverCache.set(CACHE_KEY_JOBS, jobs, TTL.JOBS);
+    }
+
+    const response = NextResponse.json({
       success: true,
       data: jobs,
     });
+    if (!admin) {
+      response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=86400");
+    }
+    return response;
   } catch (error: any) {
     console.error("Error fetching jobs:", error);
+    if (!admin) {
+      const fallback = serverCache.getStale<any[]>(CACHE_KEY_JOBS);
+      if (fallback) {
+        return NextResponse.json({ success: true, data: fallback });
+      }
+    }
     return NextResponse.json({ success: false, data: [] }, { status: 500 });
   }
 }
 
 // POST /api/v1/careers/jobs -> Create or Update job posting
 export async function POST(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const {
@@ -157,6 +189,13 @@ export async function POST(request: NextRequest) {
       job = await saveJobViaRawSql(id, payload);
     }
 
+    serverCache.delete(CACHE_KEY_JOBS);
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/careers");
+      revalidatePath("/");
+    } catch (e) {}
+
     return NextResponse.json({
       success: true,
       data: job,
@@ -173,6 +212,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/v1/careers/jobs?id=... -> Delete job
 export async function DELETE(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -190,6 +232,13 @@ export async function DELETE(request: NextRequest) {
     } else {
       await prisma.$executeRawUnsafe(`DELETE FROM jobs WHERE id = ?`, id);
     }
+
+    serverCache.delete(CACHE_KEY_JOBS);
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/careers");
+      revalidatePath("/");
+    } catch (e) {}
 
     return NextResponse.json({
       success: true,

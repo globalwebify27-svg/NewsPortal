@@ -83,26 +83,27 @@ export async function getLogoSettings(): Promise<Record<string, string>> {
 }
 
 export async function saveLogoSettings(pairs: { key: string; value: string }[]): Promise<{ count: number }> {
-  let count = 0;
-  for (const { key, value } of pairs) {
-    if (!LOGO_SETTING_KEYS.includes(key)) continue;
+  const validPairs = pairs.filter(({ key }) => LOGO_SETTING_KEYS.includes(key));
+  if (validPairs.length === 0) return { count: 0 };
 
+  const operations = validPairs.map(({ key, value }) => {
     const valStr = String(value);
     const cleanVal =
       key === "site_logo_url" || key === "header_bg_gif" || key.includes("_url")
         ? cleanMediaUrl(valStr)
         : valStr;
 
-    await prisma.siteSetting.upsert({
+    return prisma.siteSetting.upsert({
       where: { key },
       update: { value: cleanVal },
       create: { key, value: cleanVal, label: key, group: "branding" },
     });
-    count++;
-  }
+  });
+
+  await prisma.$transaction(operations);
 
   serverCache.delete(CACHE_KEY_LOGO);
-  return { count };
+  return { count: operations.length };
 }
 
 export async function deleteLogoSetting(key: string): Promise<boolean> {
@@ -164,20 +165,21 @@ export async function getAdSettings(): Promise<Record<string, string>> {
 }
 
 export async function saveAdSettings(pairs: { key: string; value: string }[]): Promise<{ count: number }> {
-  let count = 0;
-  for (const { key, value } of pairs) {
-    if (!AD_SETTING_KEYS.includes(key)) continue;
+  const validPairs = pairs.filter(({ key }) => AD_SETTING_KEYS.includes(key));
+  if (validPairs.length === 0) return { count: 0 };
 
-    await prisma.siteSetting.upsert({
+  const operations = validPairs.map(({ key, value }) =>
+    prisma.siteSetting.upsert({
       where: { key },
       update: { value: String(value) },
       create: { key, value: String(value), label: key, group: "advertisements" },
-    });
-    count++;
-  }
+    })
+  );
+
+  await prisma.$transaction(operations);
 
   serverCache.delete(CACHE_KEY_ADS);
-  return { count };
+  return { count: operations.length };
 }
 
 export async function deleteAdSetting(key?: string | null): Promise<boolean> {
@@ -246,19 +248,20 @@ export async function getCityNewsSettings(): Promise<Record<string, string>> {
 }
 
 export async function saveCityNewsSettings(pairs: { key: string; value: string }[]): Promise<{ count: number }> {
-  let count = 0;
-  for (const { key, value } of pairs) {
-    if (!CITY_NEWS_SETTING_KEYS.includes(key)) continue;
+  const validPairs = pairs.filter(({ key }) => CITY_NEWS_SETTING_KEYS.includes(key));
+  if (validPairs.length === 0) return { count: 0 };
 
-    await prisma.siteSetting.upsert({
+  const operations = validPairs.map(({ key, value }) =>
+    prisma.siteSetting.upsert({
       where: { key },
       update: { value: String(value) },
       create: { key, value: String(value), label: key, group: "city_news" },
-    });
-    count++;
-  }
+    })
+  );
+
+  await prisma.$transaction(operations);
 
   serverCache.delete(CACHE_KEY_CITY_NEWS);
-  return { count };
+  return { count: operations.length };
 }
 

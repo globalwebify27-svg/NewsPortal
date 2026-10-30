@@ -138,6 +138,36 @@ function saveSingleDiskArticle(article: any): void {
   }
 }
 
+function deleteDiskArticle(idOrSlug: string, altId?: string): boolean {
+  try {
+    if (!fs.existsSync(ARTICLES_SNAPSHOT_FILE)) return false;
+    const content = fs.readFileSync(ARTICLES_SNAPSHOT_FILE, "utf8");
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed) || parsed.length === 0) return false;
+
+    const targets = [idOrSlug, altId]
+      .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+      .map((s) => s.trim().toLowerCase());
+
+    if (targets.length === 0) return false;
+
+    const initialLen = parsed.length;
+    const filtered = parsed.filter((art: any) => {
+      const artId = (art?.id ? String(art.id) : "").trim().toLowerCase();
+      const artSlug = (art?.slug ? String(art.slug) : "").trim().toLowerCase();
+      return !targets.includes(artId) && !targets.includes(artSlug);
+    });
+
+    if (filtered.length !== initialLen) {
+      fs.writeFileSync(ARTICLES_SNAPSHOT_FILE, JSON.stringify(filtered, null, 2), "utf8");
+      return true;
+    }
+  } catch (err) {
+    console.error("Error removing article from disk snapshot:", err);
+  }
+  return false;
+}
+
 
 /**
  * Get Public Articles — Strictly Returns Status: "PUBLISHED" directly from MySQL DB
@@ -256,7 +286,7 @@ export async function getPublicArticles(params: ArticleQueryParams = {}) {
  */
 export async function getAllArticlesForAdmin(params: ArticleQueryParams = {}) {
   const page = Math.max(1, Number(params.page) || 1);
-  const limit = Math.min(200, Math.max(1, Number(params.limit) || 50));
+  const limit = Math.min(10000, Math.max(1, Number(params.limit) || 1000));
   const skip = (page - 1) * limit;
 
   const cacheKey = `articles:admin:${page}:${limit}:${params.status || "ALL"}:${params.authorId || ""}:${params.search || ""}`;
@@ -447,23 +477,45 @@ export async function getArticleBySlug(slug: string) {
 }
 
 /**
- * Delete Article by ID or Slug directly from MySQL DB
+ * Delete Article by ID or Slug directly from MySQL DB and Disk Cache
  */
-export async function deleteArticleByIdOrSlug(idOrSlug: string) {
+export async function deleteArticleByIdOrSlug(idOrSlug: string, altId?: string) {
+  let dbDeleted = false;
   try {
-    await prisma.article.deleteMany({
+    const rawTarget = decodeURIComponent(idOrSlug).trim();
+    const rawAlt = altId ? decodeURIComponent(altId).trim() : "";
+
+    const orConditions: any[] = [
+      { id: rawTarget },
+      { slug: rawTarget },
+      { slug: rawTarget.toLowerCase() },
+    ];
+    if (rawAlt) {
+      orConditions.push({ id: rawAlt });
+      orConditions.push({ slug: rawAlt });
+      orConditions.push({ slug: rawAlt.toLowerCase() });
+    }
+
+    const res = await prisma.article.deleteMany({
       where: {
-        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+        OR: orConditions,
       },
     });
-    // Invalidate all article and sitemap caches after deletion
-    serverCache.invalidatePrefix("articles:");
-    serverCache.invalidatePrefix("sitemap:");
-    return true;
+    if (res.count > 0) {
+      dbDeleted = true;
+    }
   } catch (error) {
     console.error("Error deleting article from MySQL DB:", error);
-    return false;
   }
+
+  // Also purge from disk snapshot file (articles_db.json)
+  const diskDeleted = deleteDiskArticle(idOrSlug, altId);
+
+  // Invalidate all article and sitemap caches after deletion
+  serverCache.invalidatePrefix("articles:");
+  serverCache.invalidatePrefix("sitemap:");
+
+  return dbDeleted || diskDeleted;
 }
 
 /**
@@ -492,14 +544,21 @@ export async function createOrUpdateArticle(data: any) {
     }
     slug = normalizeSlugDateToYyMmDd(slug);
 
-    // Category Resolution: check by ID first, then by name or slug
+    // Category Resolution with in-memory caching to avoid N+1 DB lookups
     let catId: string | null = data.categoryId || null;
-    if (catId) {
+    const catSearchKey = catId || (typeof data.category === "string" ? data.category : data.category?.slug || data.category?.name);
+    const cachedCatId = catSearchKey ? serverCache.get<string>(`cat:res:${catSearchKey.toLowerCase()}`) : null;
+
+    if (cachedCatId) {
+      catId = cachedCatId;
+    } else if (catId) {
       const existingCat = await prisma.category.findFirst({
-        where: { OR: [{ id: catId }, { name: catId }, { slug: catId.toLowerCase() }] }
+        where: { OR: [{ id: catId }, { name: catId }, { slug: catId.toLowerCase() }] },
+        select: { id: true },
       });
       if (existingCat) {
         catId = existingCat.id;
+        serverCache.set(`cat:res:${catSearchKey!.toLowerCase()}`, catId, TTL.CATEGORIES);
       } else {
         catId = null;
       }
@@ -514,61 +573,77 @@ export async function createOrUpdateArticle(data: any) {
       const cat = await prisma.category.upsert({
         where: { slug: catSlug },
         update: { name: catName },
-        create: { name: catName, slug: catSlug, color: (typeof data.category === "object" && data.category.color) || "#e50914" }
+        create: { name: catName, slug: catSlug, color: (typeof data.category === "object" && data.category.color) || "#e50914" },
+        select: { id: true },
       });
       catId = cat.id;
+      if (catSearchKey) {
+        serverCache.set(`cat:res:${catSearchKey.toLowerCase()}`, catId, TTL.CATEGORIES);
+      }
     }
 
     if (!catId) {
-      const defaultCat = await prisma.category.findFirst();
+      const defaultCat = await prisma.category.findFirst({ select: { id: true } });
       if (defaultCat) {
         catId = defaultCat.id;
       } else {
         const createdCat = await prisma.category.create({
-          data: { name: "General", slug: "general", color: "#e50914" }
+          data: { name: "General", slug: "general", color: "#e50914" },
+          select: { id: true },
         });
         catId = createdCat.id;
       }
     }
 
-    // Author Resolution: convert authorId / author.name to valid User DB ID
+    // Author Resolution with in-memory caching to avoid N+1 user queries
     const targetAuthorName = (typeof data.author === "object" && data.author?.name)
       ? data.author.name
       : (data.authorId || data.submittedBy || data.userName || "Global Awaaz Staff");
 
-    let authorId: string | null = null;
-    let validAuthor = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { id: targetAuthorName },
-          { name: targetAuthorName },
-          { email: targetAuthorName }
-        ]
-      }
-    });
+    const authorCacheKey = `author:res:${String(targetAuthorName).toLowerCase().trim()}`;
+    let authorId: string | null = serverCache.get<string>(authorCacheKey);
 
-    if (!validAuthor && data.submittedBy) {
-      validAuthor = await prisma.user.findFirst({
+    if (!authorId) {
+      let validAuthor = await prisma.user.findFirst({
         where: {
           OR: [
-            { name: data.submittedBy },
-            { email: data.submittedBy }
+            { id: targetAuthorName },
+            { name: targetAuthorName },
+            { email: targetAuthorName }
           ]
-        }
+        },
+        select: { id: true },
       });
-    }
 
-    if (validAuthor) {
-      authorId = validAuthor.id;
-    } else {
-      const createdUser = await prisma.user.create({
-        data: {
-          name: targetAuthorName,
-          email: `${targetAuthorName.toLowerCase().replace(/[^a-z0-9]/g, "") || "editor"}_${Date.now()}@globalawaaz.com`,
-          role: "EDITOR"
-        }
-      });
-      authorId = createdUser.id;
+      if (!validAuthor && data.submittedBy) {
+        validAuthor = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { name: data.submittedBy },
+              { email: data.submittedBy }
+            ]
+          },
+          select: { id: true },
+        });
+      }
+
+      if (validAuthor) {
+        authorId = validAuthor.id;
+      } else {
+        const createdUser = await prisma.user.create({
+          data: {
+            name: targetAuthorName,
+            email: `${targetAuthorName.toLowerCase().replace(/[^a-z0-9]/g, "") || "editor"}_${Date.now()}@globalawaaz.com`,
+            role: "EDITOR"
+          },
+          select: { id: true },
+        });
+        authorId = createdUser.id;
+      }
+
+      if (authorId) {
+        serverCache.set(authorCacheKey, authorId, 300_000); // 5m cache
+      }
     }
 
     const payload = {

@@ -123,6 +123,9 @@ export function fastRevalidateEverything(): { success: boolean; timestamp: numbe
   safeRevalidate("/latest");
   safeRevalidate("/videos");
   safeRevalidate("/epaper");
+  safeRevalidate("/team");
+  safeRevalidate("/about");
+  safeRevalidate("/careers");
   safeRevalidate("/feed.xml");
   safeRevalidate("/sitemap.xml");
   safeRevalidate("/categories-sitemap.xml");

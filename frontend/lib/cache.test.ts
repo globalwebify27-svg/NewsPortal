@@ -39,4 +39,17 @@ describe("Server-Side In-Memory Cache (lib/cache.ts)", () => {
     serverCache.delete("key_to_delete");
     expect(serverCache.get("key_to_delete")).toBeNull();
   });
+
+  it("should support new domain TTL constants for staff, team, jobs, and about", () => {
+    expect(TTL.STAFF).toBe(60_000);
+    expect(TTL.TEAM).toBe(300_000);
+    expect(TTL.JOBS).toBe(300_000);
+    expect(TTL.ABOUT).toBe(300_000);
+
+    serverCache.set("team:public:members", [{ name: "Reporter 1" }], TTL.TEAM);
+    expect(serverCache.get<any[]>("team:public:members")?.length).toBe(1);
+
+    serverCache.set("jobs:public:list", [{ title: "Editor" }], TTL.JOBS);
+    expect(serverCache.get<any[]>("jobs:public:list")?.length).toBe(1);
+  });
 });

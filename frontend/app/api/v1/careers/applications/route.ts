@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireSuperAdmin, requireChiefOrAbove } from "@/lib/apiAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +8,11 @@ function getJobAppModel() {
   return (prisma as any).jobApplication || (prisma as any).JobApplication;
 }
 
-// GET /api/v1/careers/applications -> List candidate applications for admin
+// GET /api/v1/careers/applications -> List candidate applications for admin (Super Admin only)
 export async function GET(request: NextRequest) {
+  const auth = await requireSuperAdmin(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get("jobId");
@@ -26,14 +30,27 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: { appliedAt: "desc" },
         include: {
-          job: true,
+          job: {
+            select: { id: true, title: true, department: true },
+          },
         },
       });
     } else {
-      const rawQuery = jobId
-        ? `SELECT a.*, j.title as jobTitle, j.department as jobDepartment FROM job_applications a LEFT JOIN jobs j ON a.jobId = j.id WHERE a.jobId = '${jobId}' ORDER BY a.appliedAt DESC`
-        : `SELECT a.*, j.title as jobTitle, j.department as jobDepartment FROM job_applications a LEFT JOIN jobs j ON a.jobId = j.id ORDER BY a.appliedAt DESC`;
-      const rawRes = (await prisma.$queryRawUnsafe(rawQuery)) as any[];
+      const rawRes = jobId
+        ? ((await prisma.$queryRaw`
+            SELECT a.*, j.title as jobTitle, j.department as jobDepartment 
+            FROM job_applications a 
+            LEFT JOIN jobs j ON a.jobId = j.id 
+            WHERE a.jobId = ${jobId} 
+            ORDER BY a.appliedAt DESC
+          `) as any[])
+        : ((await prisma.$queryRaw`
+            SELECT a.*, j.title as jobTitle, j.department as jobDepartment 
+            FROM job_applications a 
+            LEFT JOIN jobs j ON a.jobId = j.id 
+            ORDER BY a.appliedAt DESC
+          `) as any[]);
+
       applications = rawRes.map((r) => ({
         ...r,
         job: r.jobTitle ? { title: r.jobTitle, department: r.jobDepartment } : null,
@@ -142,6 +159,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/v1/careers/applications -> Update application status
 export async function PATCH(request: NextRequest) {
+  const auth = await requireChiefOrAbove(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const { id, status } = body;
@@ -182,6 +202,9 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE /api/v1/careers/applications?id=... -> Delete application
 export async function DELETE(request: NextRequest) {
+  const auth = await requireSuperAdmin(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

@@ -20,11 +20,15 @@ export async function GET() {
   const isHealthy = dbStatus === "connected";
   const statusCode = isHealthy ? 200 : 503;
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       status: isHealthy ? "healthy" : "degraded",
       service: "Global Awaaz Enterprise News CMS",
       version: "1.0.0",
+      instance: {
+        port: process.env.PORT || "3000",
+        pid: process.pid,
+      },
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || "development",
@@ -38,4 +42,9 @@ export async function GET() {
     },
     { status: statusCode }
   );
+
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  response.headers.set("X-Instance-Port", process.env.PORT || "3000");
+
+  return response;
 }

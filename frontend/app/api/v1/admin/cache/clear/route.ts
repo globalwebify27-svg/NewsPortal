@@ -4,13 +4,13 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminAuth } from "@/lib/apiAuth";
+import { requireChiefOrAbove } from "@/lib/apiAuth";
 import { fastRevalidateEverything } from "@/lib/revalidation";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAdminAuth(request);
+  const auth = await requireChiefOrAbove(request);
   if (!auth.ok) return auth.response;
 
   try {

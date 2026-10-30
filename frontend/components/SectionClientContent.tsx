@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Clock, Calendar, Loader2 } from "lucide-react";
+import { Clock, Calendar, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import SocialShareButtons from "@/components/SocialShareButtons";
 import { useLanguage } from "@/context/LanguageContext";
@@ -94,6 +94,11 @@ export default function SectionClientContent({
   const [selectedState, setSelectedState] = useState<string>(
     detectedStateFromPath ? detectedStateFromPath.code : ""
   );
+
+  // Pagination State (12 articles per page)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 12;
+  const gridContainerRef = useRef<HTMLDivElement>(null);
 
   const searchParams = useSearchParams();
   const subParam = searchParams?.get("sub");
@@ -264,6 +269,27 @@ export default function SectionClientContent({
     // All India, any sub-tab: show everything returned by the API
     return districtFiltered;
   })();
+
+  // Reset pagination on filter or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [section, activeDistrict, selectedState, activeSubCat]);
+
+  // Pagination Calculations
+  const totalItems = displayArticles.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const activePage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (activePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedArticles = displayArticles.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    const target = Math.min(Math.max(1, newPage), totalPages);
+    setCurrentPage(target);
+    if (gridContainerRef.current) {
+      gridContainerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const sectionDisplayName = isStatePage
     ? (selectedStateObj
@@ -490,65 +516,210 @@ export default function SectionClientContent({
           </div>
         </div>
       ) : (
-        <div className="articles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: "20px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-          {displayArticles.map((item) => (
-            <article key={item.id || item.slug} style={{ border: "1px solid var(--color-border)", borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-              <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
-                {getArticleImage(item) && (
-                  <img
-                    src={getArticleImage(item, 0, 800)}
-                    alt={item.title}
-                    className="hero-image-sharp"
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      objectFit: "cover",
-                      imageRendering: "-webkit-optimize-contrast" as any,
-                      transform: "translateZ(0)",
-                    }}
-                  />
-                )}
-                <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>
-                  <h2 style={{
-                    fontFamily: "var(--font-headline)",
-                    fontSize: "1.08rem",
-                    fontWeight: 600,
-                    lineHeight: 1.48,
-                    letterSpacing: 0,
-                    margin: 0
-                  }}>
-                    {item.title}
-                  </h2>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Clock size={13} /> {formatCardTime(item.createdAt)}
-                    </span>
-                    <span>|</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Calendar size={13} /> {formatCardDate(item.createdAt)}
-                    </span>
+        <>
+          <div ref={gridContainerRef} className="articles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: "20px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+            {paginatedArticles.map((item) => (
+              <article key={item.id || item.slug} style={{ border: "1px solid var(--color-border)", borderRadius: "8px", overflow: "hidden", display: "flex", flexDirection: "column", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+                <Link href={getArticleUrl(item)} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", height: "100%" }}>
+                  {getArticleImage(item) && (
+                    <img
+                      src={getArticleImage(item, 0, 800)}
+                      alt={item.title}
+                      className="hero-image-sharp"
+                      loading="lazy"
+                      decoding="async"
+                      style={{
+                        width: "100%",
+                        height: "200px",
+                        objectFit: "cover",
+                        imageRendering: "-webkit-optimize-contrast" as any,
+                        transform: "translateZ(0)",
+                      }}
+                    />
+                  )}
+                  <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1, gap: "10px" }}>
+                    <h2 style={{
+                      fontFamily: "var(--font-headline)",
+                      fontSize: "1.08rem",
+                      fontWeight: 600,
+                      lineHeight: 1.48,
+                      letterSpacing: 0,
+                      margin: 0
+                    }}>
+                      {item.title}
+                    </h2>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "0.78rem", color: "var(--color-secondary)" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Clock size={13} /> {formatCardTime(item.createdAt)}
+                      </span>
+                      <span>|</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Calendar size={13} /> {formatCardDate(item.createdAt)}
+                      </span>
+                    </div>
+                    <p style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.88rem",
+                      color: "var(--color-secondary)",
+                      margin: 0,
+                      flex: 1,
+                      lineHeight: 1.65,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden"
+                    }}>
+                      {stripHtml(item.summary) || (item.body ? stripHtml(item.body).slice(0, 200) : item.title)}
+                    </p>
                   </div>
-                  <p style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.88rem",
-                    color: "var(--color-secondary)",
-                    margin: 0,
-                    flex: 1,
-                    lineHeight: 1.65,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 4,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden"
-                  }}>
-                    {stripHtml(item.summary) || (item.body ? stripHtml(item.body).slice(0, 200) : item.title)}
-                  </p>
-                </div>
-              </Link>
-            </article>
-          ))}
-        </div>
+                </Link>
+              </article>
+            ))}
+          </div>
+
+          {/* Section Pagination Bar */}
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "14px",
+                marginTop: "36px",
+                padding: "16px 20px",
+                borderRadius: "12px",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-bg)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.03)"
+              }}
+            >
+              <div style={{ fontSize: "0.86rem", color: "var(--color-secondary)", fontWeight: 600 }}>
+                {lang === "HI" ? (
+                  <span>
+                    कुल <strong style={{ color: "var(--color-text)" }}>{totalItems}</strong> में से{" "}
+                    <strong style={{ color: "var(--color-text)" }}>{startIndex + 1} - {endIndex}</strong> समाचार प्रदर्शित
+                  </span>
+                ) : (
+                  <span>
+                    Showing <strong style={{ color: "var(--color-text)" }}>{startIndex + 1} - {endIndex}</strong> of{" "}
+                    <strong style={{ color: "var(--color-text)" }}>{totalItems}</strong> articles
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={activePage === 1}
+                  title={lang === "HI" ? "पहला पेज" : "First Page"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-border)",
+                    backgroundColor: "transparent",
+                    color: activePage === 1 ? "var(--color-border)" : "var(--color-text)",
+                    cursor: activePage === 1 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(activePage - 1)}
+                  disabled={activePage === 1}
+                  title={lang === "HI" ? "पिछला पेज" : "Previous Page"}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "34px",
+                    padding: "0 10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-border)",
+                    backgroundColor: "transparent",
+                    color: activePage === 1 ? "var(--color-border)" : "var(--color-text)",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    cursor: activePage === 1 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  <ChevronLeft size={15} /> {lang === "HI" ? "पिछला" : "Prev"}
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => {
+                  const isCurrent = pg === activePage;
+                  return (
+                    <button
+                      key={pg}
+                      onClick={() => handlePageChange(pg)}
+                      style={{
+                        minWidth: "34px",
+                        height: "34px",
+                        padding: "0 8px",
+                        borderRadius: "8px",
+                        border: isCurrent ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
+                        backgroundColor: isCurrent ? "var(--color-primary)" : "transparent",
+                        color: isCurrent ? "#ffffff" : "var(--color-text)",
+                        fontSize: "0.85rem",
+                        fontWeight: isCurrent ? 800 : 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      {pg}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => handlePageChange(activePage + 1)}
+                  disabled={activePage === totalPages}
+                  title={lang === "HI" ? "अगला पेज" : "Next Page"}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "34px",
+                    padding: "0 10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-border)",
+                    backgroundColor: "transparent",
+                    color: activePage === totalPages ? "var(--color-border)" : "var(--color-text)",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    cursor: activePage === totalPages ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {lang === "HI" ? "अगला" : "Next"} <ChevronRight size={15} />
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={activePage === totalPages}
+                  title={lang === "HI" ? "अंतिम पेज" : "Last Page"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-border)",
+                    backgroundColor: "transparent",
+                    color: activePage === totalPages ? "var(--color-border)" : "var(--color-text)",
+                    cursor: activePage === totalPages ? "not-allowed" : "pointer"
+                  }}
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

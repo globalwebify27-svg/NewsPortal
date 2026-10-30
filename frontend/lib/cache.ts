@@ -66,4 +66,8 @@ export const TTL = {
   CATEGORIES: 300_000,       // 5m (was 1m) — categories
   BREAKING_NEWS: 30_000,     // 30s (was 10s) — rapid breaking news propagation
   SETTINGS: 300_000,         // 5m (was 1m) — branding & settings
+  STAFF: 60_000,             // 1m — staff user listings
+  TEAM: 300_000,             // 5m — team members
+  JOBS: 300_000,             // 5m — career job postings
+  ABOUT: 300_000,            // 5m — about page content
 } as const;
